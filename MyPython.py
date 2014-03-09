@@ -49,7 +49,7 @@ class switch(object):
 
 def ReportError(ErrorString):
     '''
-    For generic reporting.  Generally this produces a print to the console and a messagebox in the case that we're using wxPython.
+    For generic reporting.  Generally this produces a print to the console and a MessageBox in the case that we're using wxPython.
     '''
 
     # Get information about the caller.
