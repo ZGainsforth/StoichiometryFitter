@@ -32,15 +32,11 @@ def ComputeOxygenStoichiometry(Counts, AtomCharges, ByMass=True):
         # Also zero out any negatively charged atoms, since they aren't going to pair with oxygen.
         AtomCharges[AtomCharges<0] = 0
 
-        # Test synching line one.
-
         # Element weights vector.
         M_el = array(pb.ElementalWeights[1:])
         M_O = array(pb.ElementalWeights[pb.O])
         Q_O = 2
         Q_el = AtomCharges
-
-        #Test synching line 2
 
         if ByMass == True:
             C_O = sum(nan_to_num(Counts * M_O / M_el * Q_el / Q_O))
