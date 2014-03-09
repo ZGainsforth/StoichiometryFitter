@@ -40,8 +40,6 @@ def ComputeOxygenStoichiometry(Counts, AtomCharges, ByMass=True):
         Q_O = 2
         Q_el = AtomCharges
 
-        #Test synching line 2
-
         if ByMass == True:
             C_O = sum(nan_to_num(Counts * M_O / M_el * Q_el / Q_O))
         else:
