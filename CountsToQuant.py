@@ -29,6 +29,9 @@ def ComputeOxygenStoichiometry(Counts, AtomCharges, ByMass=True):
         # First zero out the existing O.
         Counts[pb.O - 1] = 0
 
+        # Also zero out any negatively charged atoms, since they aren't going to pair with oxygen.
+        AtomCharges[AtomCharges<0] = 0
+
         # Element weights vector.
         M_el = array(pb.ElementalWeights[1:])
         M_O = array(pb.ElementalWeights[pb.O])
@@ -113,5 +116,7 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', Absorpti
         M_el = array(pb.ElementalWeights[1:])
         AtPct = nan_to_num(WtPct / M_el)
         AtPct = nan_to_num(AtPct / sum(AtPct) *100)
+
+    # TODO Oxide Wt%
 
     return (WtPct, AtPct)
