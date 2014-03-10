@@ -18,7 +18,6 @@ def FormatQuantResults(Quant):
     entry is H and the next is He, etc on up the periodic table until PhysicsBasics.MAXELEMENT
     """
     # TODO implement output for Ox Wt %.
-    # TODO implement ppm reporting for elements below 0.1 wt%.
 
     # Start with a blank report.
     ReportStr = ''
