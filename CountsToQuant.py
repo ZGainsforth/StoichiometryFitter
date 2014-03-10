@@ -5,6 +5,8 @@ __copyright__ = 'Copyright 2014, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
 
 from numpy import *
+from collections import OrderedDict
+
 import MyPython as mp
 import PhysicsBasics as pb
 
@@ -119,4 +121,5 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', Absorpti
 
     # TODO Oxide Wt%
 
-    return (WtPct, AtPct)
+    Quant = OrderedDict(zip(pb.ElementalSymbols[1:], zip(AtPct, WtPct)))
+    return Quant

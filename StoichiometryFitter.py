@@ -10,6 +10,7 @@
 import wx
 from numpy import *
 import os
+import ReportResults
 
 # begin wxGlade: dependencies
 import gettext
@@ -66,7 +67,7 @@ class MyFrame(wx.Frame):
         self.sizer_5_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("Oxygen by stoichiometry?"))
         self.btnGo = wx.Button(self.panel_1, wx.ID_ANY, _("Go!"))
         self.panel_3 = wx.Panel(self.panel_1, wx.ID_ANY)
-        self.text_ctrl_1 = wx.TextCtrl(self, wx.ID_ANY, "")
+        self.txtOutput = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_MULTILINE | wx.TE_READONLY)
 
         self.__set_properties()
         self.__do_layout()
@@ -107,6 +108,7 @@ class MyFrame(wx.Frame):
         self.PhasesListCtrl.SetMinSize((300, -1))
         self.chkOByStoichiometry.SetValue(1)
         self.panel_1.SetMinSize((250, -1))
+        self.txtOutput.SetFont(wx.Font(11, wx.MODERN, wx.NORMAL, wx.NORMAL, 0, ""))
         # end wxGlade
 
     def __do_layout(self):
@@ -154,7 +156,7 @@ class MyFrame(wx.Frame):
         grid_sizer_1.AddGrowableRow(5)
         grid_sizer_1.AddGrowableCol(0)
         sizer_2.Add(self.panel_1, 0, wx.EXPAND, 0)
-        sizer_2.Add(self.text_ctrl_1, 1, wx.ALL | wx.EXPAND, 2)
+        sizer_2.Add(self.txtOutput, 1, wx.ALL | wx.EXPAND, 2)
         sizer_2.AddGrowableRow(0)
         sizer_2.AddGrowableCol(1)
         sizer_2.AddGrowableCol(3)
@@ -278,16 +280,28 @@ class MyFrame(wx.Frame):
         else:
             OByStoich = None
 
+        # Stuff the user entered data into a black box and get out At%, Wt% results.
         Quant = CountsToQuant.GetAbundancesFromCounts(self.Counts, kfacsfile=kfacsfile, InputType=self.rdioInputType.StringSelection, AbsorptionCorrection=0, OByStoichiometry=OByStoich)
-        print Quant
+
+        # Make it human readable.
+        ReportStr = ReportResults.FormatQuantResults(Quant)
+
+        # Report it by printing to console and put it in the output text box.
+        print ReportStr
+        self.txtOutput.SetValue(ReportStr)
+
         event.Skip()
 
     def OnInputType(self, event):  # wxGlade: MyFrame.<event_handler>
-        # By default, we use kfacs for counts.  At%and Wt% don't.
+        # We use kfacs (optionally) for counts.  At% and Wt% don't, ever.
         if self.rdioInputType.GetSelection() == 0:
-            self.chkKfacs.SetValue(True)
+            self.chkKfacs.SetValue(True)    # By default we'll use kfacs.
+            self.chkKfacs.Enable()      # But let the user choose.
+            self.comboKfacs.Enable()
         else:
-            self.chkKfacs.SetValue(False)
+            self.chkKfacs.SetValue(False)   # Uncheck it.
+            self.chkKfacs.Disable()    # And also disable it so the user can't check it.  (Breaks our algorithms.)
+            self.comboKfacs.Disable()
 
         # Get the column which is labeled Counts or At % or Wt %.
         col = self.ElementsListCtrl.GetColumn(1)
