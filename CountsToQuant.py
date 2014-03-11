@@ -79,7 +79,7 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', Absorpti
             # Now we want a single array of the k-factors for quanting each element.  For now, we only implement K-shell.
             # TODO implement L, M shells.
             kfactors = ones(pb.MAXELEMENT)
-            for Z in range(1, pb.MAXELEMENT):
+            for Z in range(1, pb.MAXELEMENT + 1):
                 kfactors[Z-1] = kfacs[Z-1][1] # First column is the K-shell.
 
             # Now multiply by the k-factors.

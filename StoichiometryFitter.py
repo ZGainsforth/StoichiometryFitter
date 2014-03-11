@@ -15,6 +15,7 @@ import wx
 from numpy import *
 import os
 import ReportResults
+from collections import OrderedDict
 
 # begin wxGlade: dependencies
 import gettext
@@ -55,6 +56,21 @@ class EditableTextListCtrl(wx.ListCtrl, TextEditMixin):
 
 
 
+
+class MyMenuBar(wx.MenuBar):
+    def __init__(self, *args, **kwds):
+        # Content of this block not found. Did you rename this class?
+        pass
+
+    def __set_properties(self):
+        # Content of this block not found. Did you rename this class?
+        pass
+
+    def __do_layout(self):
+        # Content of this block not found. Did you rename this class?
+        pass
+
+# end of class MyMenuBar
 class MyFrame(wx.Frame):
     def __init__(self, *args, **kwds):
         # begin wxGlade: MyFrame.__init__
@@ -81,6 +97,16 @@ class MyFrame(wx.Frame):
         self.btnGo = wx.Button(self.panel_1, wx.ID_ANY, _("Go!"))
         self.panel_3 = wx.Panel(self.panel_1, wx.ID_ANY)
         self.txtOutput = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_MULTILINE | wx.TE_READONLY)
+        
+        # Menu Bar
+        self.MainMenu = wx.MenuBar()
+        wxglade_tmp_menu = wx.Menu()
+        wxglade_tmp_menu.Append(wx.ID_OPEN, _("&Open Inputs..."), "", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(wx.ID_SAVE, _("&Save Results..."), "", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(wx.ID_ABOUT, _("&About"), "", wx.ITEM_NORMAL)
+        self.MainMenu.Append(wxglade_tmp_menu, _("File"))
+        self.SetMenuBar(self.MainMenu)
+        # Menu Bar end
 
         self.__set_properties()
         self.__do_layout()
@@ -90,7 +116,12 @@ class MyFrame(wx.Frame):
         self.Bind(wx.EVT_CHECKBOX, self.OnStoichSelect, self.chkOByStoichiometry)
         self.Bind(wx.EVT_COMBOBOX, self.OnStoichSelect, self.comboStoich)
         self.Bind(wx.EVT_BUTTON, self.OnGo, self.btnGo)
+        self.Bind(wx.EVT_MENU, self.OnOpen, id=wx.ID_OPEN)
+        self.Bind(wx.EVT_MENU, self.OnSave, id=wx.ID_SAVE)
+        self.Bind(wx.EVT_MENU, self.OnAbout, id=wx.ID_ABOUT)
         # end wxGlade
+
+        self.Bind(wx.EVT_MENU, self.OnAbout, id=wx.ID_ABOUT)
 
         # Make sure the window never gets too small to see the controls.
         self.SetMinSize((650, 500))
@@ -248,7 +279,7 @@ class MyFrame(wx.Frame):
         self.ElementsListCtrl.SetColumnWidth(1, 60)
         self.ElementsListCtrl.InsertColumn(2, 'Charge') # Used for stoichiometry calculation.
         self.ElementsListCtrl.SetColumnWidth(2, 60)
-        for Z in range(1, pb.MAXELEMENT - 1):
+        for Z in range(1, pb.MAXELEMENT + 1):
             self.ElementsListCtrl.InsertStringItem(Z - 1, pb.ElementalSymbols[Z])
             self.ElementsListCtrl.SetStringItem(Z - 1, 1, '0')
         # The stoichometry column is separately populated by this function...
@@ -259,7 +290,7 @@ class MyFrame(wx.Frame):
         """OnReset(self, event):
             Set all the elements back to zero so the user can type in a new sample.
         """
-        for Z in range(1, pb.MAXELEMENT - 1):
+        for Z in range(1, pb.MAXELEMENT + 1):
             self.ElementsListCtrl.SetStringItem(Z - 1, 1, '0')
         event.Skip()
 
@@ -271,9 +302,16 @@ class MyFrame(wx.Frame):
         # Extract the counts vector out of the ElementsListControl.
         # Z-1 since H=1 is the first atom, and the list is zero based.
         self.Counts = zeros(pb.MAXELEMENT)
-        for Z in range(1, pb.MAXELEMENT - 1):
+        for Z in range(1, pb.MAXELEMENT + 1):
             self.Counts[Z-1] = float(self.ElementsListCtrl.GetItem(Z - 1,1).GetText())
 
+        # Make the input human readable and output it for reference.
+        InputDat = OrderedDict(zip(pb.ElementalSymbols[1:], self.Counts))
+        ReportStr = ReportResults.FormatInputResults(InputDat, self.rdioInputType.StringSelection)
+        # Report it by printing to console and put it in the output text box.
+        print ReportStr
+        self.txtOutput.SetValue(ReportStr)
+        
         # Find out if there is a k-factor file to use.
         if self.chkKfacs.IsChecked():
             kfacsfile = self.comboKfacs.StringSelection
@@ -305,7 +343,7 @@ class MyFrame(wx.Frame):
 
         # Report it by printing to console and put it in the output text box.
         print ReportStr
-        self.txtOutput.SetValue(ReportStr)
+        self.txtOutput.AppendText(ReportStr)
 
         """ FIT PHASES """
         SelectedPhases = GetSelectedItemsFromListCtrl(self.PhasesListCtrl)
@@ -323,22 +361,31 @@ class MyFrame(wx.Frame):
 
             # Report it to console and output text box.
             ReportStr = ReportResults.FormatPhaseResults(FitResult, Residual)
-            print '\n\n {:s}'.format(ReportStr)
-            self.txtOutput.AppendText('\n\n {:s}'.format(ReportStr))
+            print ReportStr
+            self.txtOutput.AppendText(ReportStr)
 
         event.Skip()
 
-    def OnInputType(self, event):  # wxGlade: MyFrame.<event_handler>
+    def UpdateInputType(self, InputType=None):
+        # If InputType=None, then this is being called because the user changed the input type.
+        # If it is 'Counts', 'At%' or 'Wt%' then we are being asked to update the type ourselves.
+        if InputType == 'Counts':
+            self.rdioInputType.SetSelection(0)
+        elif InputType == 'At%':
+            self.rdioInputType.SetSelection(1)
+        elif InputType == 'Wt%':
+            self.rdioInputType.SetSelection(2)
+
         # We use kfacs (optionally) for counts.  At% and Wt% don't, ever.
         if self.rdioInputType.GetSelection() == 0:
-            self.chkKfacs.SetValue(True)    # By default we'll use kfacs.
+            self.chkKfacs.SetValue(True)  # By default we'll use kfacs.
             # For now, the chkKfacs is permanently disabled.  If we ever provide an SEM
             # algorithm, or something then it should be a radio box.
             self.chkKfacs.Disable()
             self.comboKfacs.Enable()
         else:
-            self.chkKfacs.SetValue(False)   # Uncheck it.
-            self.chkKfacs.Disable()    # And also disable it so the user can't check it.  (Breaks our algorithms.)
+            self.chkKfacs.SetValue(False)  # Uncheck it.
+            self.chkKfacs.Disable()  # And also disable it so the user can't check it.  (Breaks our algorithms.)
             self.comboKfacs.Disable()
 
         # Get the column which is labeled Counts or At % or Wt %.
@@ -352,6 +399,9 @@ class MyFrame(wx.Frame):
             col.SetText('Wt %')
         # And stuff that modified column back into the ListBox.
         self.ElementsListCtrl.SetColumn(1, col)
+
+    def OnInputType(self, event):  # wxGlade: MyFrame.<event_handler>
+        self.UpdateInputType()
         event.Skip()
         
     def OnStoichSelect(self, event):  # wxGlade: MyFrame.<event_handler>
@@ -360,7 +410,7 @@ class MyFrame(wx.Frame):
 
         # If we are not using oxygen by stoichometry, then mark out the stoichiometry column.
         if self.chkOByStoichiometry.IsChecked() == False:
-            for Z in range(1, pb.MAXELEMENT):
+            for Z in range(1, pb.MAXELEMENT + 1):
                 self.ElementsListCtrl.SetStringItem(Z-1, 2, 'n/a')
             # Make sure the user can only edit the counts column.
             self.ElementsListCtrl.SetEditableColumns((1, ))
@@ -368,7 +418,7 @@ class MyFrame(wx.Frame):
             # If we are using it then we populate it from the self.Stoich variable read by LoadStoichiometryFile
             # Since that was a csv, we have a list of tuples like [('H', 1), ('He', 2), ...]  So index to the right tuple
             # [Z-1] and then into the tuple [Z-1][1]
-            for Z in range(1, pb.MAXELEMENT):
+            for Z in range(1, pb.MAXELEMENT + 1):
                 self.ElementsListCtrl.SetStringItem(Z-1, 2, str(self.Stoich[Z-1][1]))
             # The user can edit the counts column and the stoichiometry column.
             self.ElementsListCtrl.SetEditableColumns((1,2))
@@ -376,6 +426,65 @@ class MyFrame(wx.Frame):
         if event != None:
             event.Skip()
 
+    def OnOpen(self, event):  # wxGlade: MyFrame.<event_handler>
+        dlg = wx.FileDialog(self, 'Open counts/At%/Wt% input file', '','','Comma space delimited (*.csv)|*'
+                                                                          '.csv|Any file (*.*)|*.*', wx.FD_OPEN |
+                                                                          wx.FD_FILE_MUST_EXIST)
+
+        if dlg.ShowModal() == wx.ID_CANCEL:
+            return
+
+        InputDat = genfromtxt(dlg.GetPath(), dtype=float, delimiter=',', usecols=(1), autostrip=True, comments='#',
+                              names=True)
+
+        HowlBadFile = lambda s: wx.MessageBox("Input file does not match the expected format.\n"
+                                              "It should be a CSV with the header:\n"
+                                              "Element,Counts\n"
+                                              "Where Counts can be replaced by At% or Wt%.\n"
+                                              "It should have a line for each element from H to Uuo.""",
+                                              "Invalid file format: "+s,
+                                              style=wx.OK)
+
+        # Verify the quality of the input data.  It should have as many rows as we have rows in the input listbox.
+        if len(InputDat) != self.ElementsListCtrl.GetItemCount():
+            HowlBadFile('Incorrect number of lines')
+            return
+
+        # If the input type is valid, this will be set True.  Otherwise, we bail by default.
+        InputTypeValid = False
+
+        if InputDat.dtype.names[0] in ['Counts', 'At', 'Wt']:
+            # Note that the file reader filters out the % symbol, so we have to add that in.  Kind of stupid...
+            if InputDat.dtype.names[0] == 'Counts':
+                # Set the input type radio to Counts
+                self.UpdateInputType(InputDat.dtype.names[0])
+            else:
+                self.UpdateInputType(InputDat.dtype.names[0] + '%')
+        else:
+            HowlBadFile('Incorrect header')
+            return
+
+        # Now populate it with the numbers from the input file.
+        for Z in range(1, pb.MAXELEMENT + 1):
+            self.ElementsListCtrl.SetStringItem(Z-1, 1, str(InputDat[Z-1][0]))
+        return
+
+    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
+        dlg = wx.FileDialog(self, 'Save report', '', '', 'Text file (*.txt)|*'
+                                                                            '.txt|Any file (*.*)|*.*', wx.FD_SAVE)
+
+        if dlg.ShowModal() == wx.ID_CANCEL:
+            return
+
+        fid = open(dlg.GetPath(), 'w')
+        fid.write(self.txtOutput.GetString(0, -1))
+        fid.close()
+
+        return
+
+    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnAbout' not implemented!"
+        event.Skip()
 # end of class MyFrame
 
 if __name__ == "__main__":
