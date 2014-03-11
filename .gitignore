@@ -38,3 +38,8 @@ nosetests.xml
 # PyCharm
 .idea/*
 .idea/
+
+# Stoichiometry Fitter temp files.
+Temp/*
+Temp/
+

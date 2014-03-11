@@ -39,5 +39,25 @@ def FormatQuantResults(Quant):
 
     return ReportStr
 
+def FormatPhaseResults(FitResult, Residual):
+    """FormatPhaseResults(FitResult, Residual): Generates human readable report strings for the reesults of
+    fitting phases against the quantitative element abundances.
+
+    :param FitResult: OrderedDict with key = phase name (e.g. 'Forsterite') and value = (Formula, mol%),
+    where formula is a string and mol % is a float.
+    :param Residual: A float giving the residual of the fit.
+    """
+
+    # Start with a blank report.
+    ReportStr = ''
+
+    ReportStr += '{:30s} {:5s}\n'.format('Phase', 'Molar %')
+    for Phase, Result in FitResult.iteritems():
+        ReportStr += '{:30s} {:5.3f}%\n'.format(Phase, Result[1])
+
+    ReportStr += '{:30s} {:g}\n'.format('Fit residual', Residual)
+
+    return ReportStr
+
 if __name__ == '__main__':
     print FormatQuantResults.__doc__

@@ -1,5 +1,6 @@
 import wx
 import inspect
+import pickle
 
 # From http://code.activestate.com/recipes/410692/
 # This class provides the functionality we want. You only need to look at
@@ -48,8 +49,8 @@ class switch(object):
 #         # No need to break here, it'll stop anyway
 
 def ReportError(ErrorString):
-    '''
-    For generic reporting.  Generally this produces a print to the console and a MessageBox in the case that we're using wxPython.
+    ''' ReportError(ErrorString): For generic reporting.  This produces a print to the console and a
+    MessageBox (wxPython).
     '''
 
     # Get information about the caller.
@@ -75,3 +76,35 @@ def ReportError(ErrorString):
     wx.MessageBox(ReportStr, "Error", style=wx.OK)
 
     return
+
+
+def GetSelectedItemsFromListCtrl(ListCtrl):
+    """ GetSelectedItemsFromListCtrl(ListCtrl): Produces a list of only the selected items from a wxListCtrl.
+
+    :param ListCtrl: A multiselect ListCtrl
+
+    returns: List of strings: Text of selected item
+    """
+
+    # List of strings that the user clicked on.
+    Strings = []
+    #Start with item -1 means we get the first one.
+    item = -1
+
+    # Loop until GetNextSelected returns -1 which means no more items.
+    while True:
+        item = ListCtrl.GetNextSelected(item)
+
+        # Got all selected items.
+        if item == -1:
+            break
+
+        # Build our list of strings.
+        Strings.append(ListCtrl.GetItemText(item))
+
+    # If there aren't any selected items, then say so to the caller.
+    if len(Strings) == 0:
+        return None
+
+    # Return the list.
+    return Strings

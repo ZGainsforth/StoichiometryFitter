@@ -1,5 +1,6 @@
 from __future__ import division
 #numpy.set_printoptions(threshold=numpy.nan) # Makes arrays print fully when they are large.
+from collections import OrderedDict
 
 # Planck's constant [eV-s]
 h = 4.135667517e-15;
@@ -167,3 +168,6 @@ ElementalWeights = [0, 1.00794, 4.002602, 6.941, 9.012182, 10.811, 12.0107, 14.0
        164.930, 167.259, 168.93421, 173.04, 174.967, 178.49, 180.94788, 183.84, 186.207, 190.23, 192.217, 195.084, 196.966569, 
        200.59, 204.3833, 207.2, 208.98040, 210, 210, 220, 223, 226, 227, 231.03588, 232.03806, 237, 238.02891, 243, 
        244, 247, 247, 251, 0, 0, 0, 259, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+# And the end all cooleset thing in the world is an ordered dictionary that has El: Z, weight
+ElementDict= OrderedDict(zip(ElementalSymbols, zip(range(0, MAXELEMENT), ElementalWeights)))
