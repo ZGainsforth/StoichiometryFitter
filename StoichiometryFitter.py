@@ -5,10 +5,7 @@
 #
 
 # TODO Output quant from minerals and delta.
-# TODO Output intputs as well.
-# TODO Save to a report file.
-# TODO Load quant inputs.
-# TODO Spectrum reconstituter from phases.
+# TODO Subphase reporter.
 # TODO Add and compute errorbars
 
 import wx
@@ -27,6 +24,8 @@ import CountsToQuant
 import PhaseFit
 
 wx.SystemOptions.SetOption('mac.listctrl.always_use_generic', '1')
+
+ID_SAVEINPUTS = 1000
 
 # begin wxGlade: extracode
 from wx.lib.mixins.listctrl import TextEditMixin
@@ -76,6 +75,17 @@ class MyFrame(wx.Frame):
         # begin wxGlade: MyFrame.__init__
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
+        
+        # Menu Bar
+        self.MainMenu = wx.MenuBar()
+        wxglade_tmp_menu = wx.Menu()
+        wxglade_tmp_menu.Append(wx.ID_OPEN, _("&Open Inputs..."), "", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(ID_SAVEINPUTS, _("Save &Inputs..."), "", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(wx.ID_SAVE, _("&Save Results..."), "", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(wx.ID_ABOUT, _("&About"), "", wx.ITEM_NORMAL)
+        self.MainMenu.Append(wxglade_tmp_menu, _("File"))
+        self.SetMenuBar(self.MainMenu)
+        # Menu Bar end
         self.panel_4 = wx.Panel(self, wx.ID_ANY)
         self.ElementsListCtrl = EditableTextListCtrl(self.panel_4, wx.ID_ANY, style=wx.LC_REPORT | wx.LC_EDIT_LABELS | wx.LC_SINGLE_SEL | wx.SUNKEN_BORDER | wx.FULL_REPAINT_ON_RESIZE)
         self.rdioInputType = wx.RadioBox(self.panel_4, wx.ID_ANY, _("Input Type"), choices=[_("Counts"), _("At %"), _("Wt %")], majorDimension=0, style=wx.RA_SPECIFY_ROWS)
@@ -84,6 +94,9 @@ class MyFrame(wx.Frame):
         self.PhasesListCtrl = wx.ListCtrl(self.panel_5, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER)
         self.panel_1 = wx.Panel(self, wx.ID_ANY)
         self.panel_2 = wx.Panel(self.panel_1, wx.ID_ANY)
+        self.chkArbAbsCorrection = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
+        self.comboArbAbsCorrection = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        self.sizer_5_copy_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("Arbitrary absorption"))
         self.chkAbsCorr = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
         self.txtAbsCorr = wx.TextCtrl(self.panel_1, wx.ID_ANY, "")
         self.label_1 = wx.StaticText(self.panel_1, wx.ID_ANY, _("g/cm3 * nm"))
@@ -97,28 +110,21 @@ class MyFrame(wx.Frame):
         self.btnGo = wx.Button(self.panel_1, wx.ID_ANY, _("Go!"))
         self.panel_3 = wx.Panel(self.panel_1, wx.ID_ANY)
         self.txtOutput = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_MULTILINE | wx.TE_READONLY)
-        
-        # Menu Bar
-        self.MainMenu = wx.MenuBar()
-        wxglade_tmp_menu = wx.Menu()
-        wxglade_tmp_menu.Append(wx.ID_OPEN, _("&Open Inputs..."), "", wx.ITEM_NORMAL)
-        wxglade_tmp_menu.Append(wx.ID_SAVE, _("&Save Results..."), "", wx.ITEM_NORMAL)
-        wxglade_tmp_menu.Append(wx.ID_ABOUT, _("&About"), "", wx.ITEM_NORMAL)
-        self.MainMenu.Append(wxglade_tmp_menu, _("File"))
-        self.SetMenuBar(self.MainMenu)
-        # Menu Bar end
 
         self.__set_properties()
         self.__do_layout()
 
+        self.Bind(wx.EVT_MENU, self.OnOpen, id=wx.ID_OPEN)
+        self.Bind(wx.EVT_MENU, self.OnSaveInputs, id=ID_SAVEINPUTS)
+        self.Bind(wx.EVT_MENU, self.OnSave, id=wx.ID_SAVE)
+        self.Bind(wx.EVT_MENU, self.OnAbout, id=wx.ID_ABOUT)
         self.Bind(wx.EVT_RADIOBOX, self.OnInputType, self.rdioInputType)
         self.Bind(wx.EVT_BUTTON, self.OnReset, self.btnReset)
+        self.Bind(wx.EVT_CHECKBOX, self.OnStoichSelect, self.chkArbAbsCorrection)
+        self.Bind(wx.EVT_COMBOBOX, self.OnDetectorSelect, self.comboArbAbsCorrection)
         self.Bind(wx.EVT_CHECKBOX, self.OnStoichSelect, self.chkOByStoichiometry)
         self.Bind(wx.EVT_COMBOBOX, self.OnStoichSelect, self.comboStoich)
         self.Bind(wx.EVT_BUTTON, self.OnGo, self.btnGo)
-        self.Bind(wx.EVT_MENU, self.OnOpen, id=wx.ID_OPEN)
-        self.Bind(wx.EVT_MENU, self.OnSave, id=wx.ID_SAVE)
-        self.Bind(wx.EVT_MENU, self.OnAbout, id=wx.ID_ABOUT)
         # end wxGlade
 
         self.Bind(wx.EVT_MENU, self.OnAbout, id=wx.ID_ABOUT)
@@ -151,6 +157,7 @@ class MyFrame(wx.Frame):
         self.panel_4.SetMinSize((200, -1))
         self.PhasesListCtrl.SetMinSize((300, 300))
         self.panel_5.SetMinSize((305,300))
+        self.chkArbAbsCorrection.SetValue(1)
         self.chkKfacs.Enable(False)
         self.chkOByStoichiometry.SetValue(1)
         self.panel_1.SetMinSize((250, -1))
@@ -169,6 +176,8 @@ class MyFrame(wx.Frame):
         sizer_4 = wx.StaticBoxSizer(self.sizer_4_staticbox, wx.HORIZONTAL)
         self.sizer_3_staticbox.Lower()
         sizer_3 = wx.StaticBoxSizer(self.sizer_3_staticbox, wx.HORIZONTAL)
+        self.sizer_5_copy_staticbox.Lower()
+        sizer_5_copy = wx.StaticBoxSizer(self.sizer_5_copy_staticbox, wx.HORIZONTAL)
         sizer_11 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_6 = wx.FlexGridSizer(2, 1, 0, 0)
         sizer_8 = wx.BoxSizer(wx.HORIZONTAL)
@@ -187,6 +196,9 @@ class MyFrame(wx.Frame):
         self.panel_5.SetSizer(sizer_11)
         sizer_2.Add(self.panel_5, 0, wx.EXPAND, 0)
         grid_sizer_1.Add(self.panel_2, 1, wx.EXPAND, 0)
+        sizer_5_copy.Add(self.chkArbAbsCorrection, 0, 0, 0)
+        sizer_5_copy.Add(self.comboArbAbsCorrection, 0, wx.ALL | wx.EXPAND, 2)
+        grid_sizer_1.Add(sizer_5_copy, 1, wx.EXPAND, 0)
         sizer_3.Add(self.chkAbsCorr, 0, 0, 0)
         sizer_3.Add(self.txtAbsCorr, 0, wx.EXPAND, 0)
         sizer_3.Add(self.label_1, 0, 0, 0)
@@ -256,6 +268,15 @@ class MyFrame(wx.Frame):
         # For counts we will want the kfactors.
         self.chkKfacs.SetValue(True)
 
+        """ POPULATE ARBITRARY ABSORPTION PULLDOWN """
+        for file in os.listdir('ConfigData'):
+            if file.startswith('Absorption ') and file.endswith('.csv'):
+                kfacsname = file.split('Absorption ')[1].split('.csv')[0]
+                self.comboArbAbsCorrection.Append(kfacsname)
+        self.comboArbAbsCorrection.Select(0)
+        # The user will have to select if he wants an absorption correction.
+        self.chkArbAbsCorrection.SetValue(False)
+
         """ POPULATE THE INPUT SOURCE """
         # Start with counts as the selected item.
         self.rdioInputType.SetSelection(0)
@@ -318,6 +339,12 @@ class MyFrame(wx.Frame):
         else:
             kfacsfile = None
 
+        # Find out if there is an absorption correction to use.
+        if self.chkArbAbsCorrection.IsChecked():
+            DetectorFile = self.comboArbAbsCorrection.StringSelection
+        else:
+            DetectorFile = None
+
         # Find out if there is an absorption correction to do.
         AbsorptionCorrection = 0
         if self.chkAbsCorr.IsChecked():
@@ -336,7 +363,9 @@ class MyFrame(wx.Frame):
             OByStoich = None
 
         # Stuff the user entered data into a black box and get out At%, Wt% results.
-        Quant = CountsToQuant.GetAbundancesFromCounts(self.Counts, kfacsfile=kfacsfile, InputType=self.rdioInputType.StringSelection, AbsorptionCorrection=0, OByStoichiometry=OByStoich)
+        Quant = CountsToQuant.GetAbundancesFromCounts(self.Counts, kfacsfile=kfacsfile,
+                                                      ArbitraryAbsorptionCorrection= DetectorFile, InputType=self.rdioInputType\
+                                                      .StringSelection, AbsorptionCorrection=0, OByStoichiometry=OByStoich)
 
         # Make it human readable.
         ReportStr = ReportResults.FormatQuantResults(Quant)
@@ -376,7 +405,7 @@ class MyFrame(wx.Frame):
         elif InputType == 'Wt%':
             self.rdioInputType.SetSelection(2)
 
-        # We use kfacs (optionally) for counts.  At% and Wt% don't, ever.
+        # We use kfacs and arbitrary absorption correction (optionally) for counts.  At% and Wt% don't, ever.
         if self.rdioInputType.GetSelection() == 0:
             self.chkKfacs.SetValue(True)  # By default we'll use kfacs.
             # For now, the chkKfacs is permanently disabled.  If we ever provide an SEM
@@ -453,13 +482,13 @@ class MyFrame(wx.Frame):
         # If the input type is valid, this will be set True.  Otherwise, we bail by default.
         InputTypeValid = False
 
-        if InputDat.dtype.names[0] in ['Counts', 'At', 'Wt']:
+        if InputDat.dtype.names[0][:2] in ['Co', 'At', 'Wt']:
             # Note that the file reader filters out the % symbol, so we have to add that in.  Kind of stupid...
             if InputDat.dtype.names[0] == 'Counts':
                 # Set the input type radio to Counts
                 self.UpdateInputType(InputDat.dtype.names[0])
             else:
-                self.UpdateInputType(InputDat.dtype.names[0] + '%')
+                self.UpdateInputType(InputDat.dtype.names[0][:2] + '%')
         else:
             HowlBadFile('Incorrect header')
             return
@@ -467,6 +496,30 @@ class MyFrame(wx.Frame):
         # Now populate it with the numbers from the input file.
         for Z in range(1, pb.MAXELEMENT + 1):
             self.ElementsListCtrl.SetStringItem(Z-1, 1, str(InputDat[Z-1][0]))
+        return
+
+    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
+        dlg = wx.FileDialog(self, 'Save inputs', '', '', 'CSV file (*.csv)|*'
+                                                         '.csv|Any file (*.*)|*.*', wx.FD_SAVE)
+
+        if dlg.ShowModal() == wx.ID_CANCEL:
+            return
+
+        if self.rdioInputType.GetSelection() == 0:
+            SavStr = 'Element,Counts\n'
+        elif self.rdioInputType.GetSelection() == 1:
+            SavStr = 'Element,At%\n'
+        elif self.rdioInputType.GetSelection() == 2:
+            SavStr = 'Element,Wt%\n'
+        else:
+            raise
+
+        for Z in range(1, pb.MAXELEMENT + 1):
+            ElName = pb.ElementalSymbols[Z]
+            SavStr += '%s,%f\n' % (ElName, float(self.ElementsListCtrl.GetItem(Z-1,1).GetText()))
+
+        with open(dlg.GetPath(), 'w') as fid:
+            fid.write(SavStr)
         return
 
     def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
@@ -485,7 +538,12 @@ class MyFrame(wx.Frame):
     def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
         print "Event handler 'OnAbout' not implemented!"
         event.Skip()
-# end of class MyFrame
+    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnDetectorSelect' not implemented!"
+        event.Skip()
+
+    # CURRENT END OF CLASS
+ # end of class MyFrame
 
 if __name__ == "__main__":
     gettext.install("app")  # replace with the appropriate catalog name

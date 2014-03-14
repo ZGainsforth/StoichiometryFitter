@@ -6,9 +6,12 @@ __email__ = 'zsg@gainsforth.com'
 
 from numpy import *
 from collections import OrderedDict
+import linecache
 
 import MyPython as mp
 import PhysicsBasics as pb
+import CharacteristicEmission as ce
+import AbsorptionCorrection as abs
 
 
 def ComputeOxygenStoichiometry(Counts, AtomCharges, ByMass=True):
@@ -50,8 +53,45 @@ def ComputeOxygenStoichiometry(Counts, AtomCharges, ByMass=True):
 
     return Counts
 
+# Used for ensuring columns read from the csv files are floats (or 0 if not).
+floatme = lambda s: float(s or 0)
 
-def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', AbsorptionCorrection=0, OByStoichiometry=None):
+def DoArbitraryAbsorptionCorrection(ArbitraryAbsorptionCorrection, Counts):
+
+    try:
+        ArbAbsFileName = 'ConfigData/Absorption ' + ArbitraryAbsorptionCorrection + '.csv'
+        ArbAbsWtPct = genfromtxt(ArbAbsFileName, dtype=None, comments='#', skip_header=3, delimiter=',',
+                                 converters={1: floatme})
+        # And we want just column 1.
+        ArbAbsWtPct = [Wt for (Name, Wt) in ArbAbsWtPct]
+        # First line is tau.
+        (s, ArbAbsTau) = linecache.getline(ArbAbsFileName, 1).strip().split('=')
+        assert (s == '#tau')
+        ArbAbsTau = float(ArbAbsTau)
+        # Second line is rho.
+        (s, ArbAbsRho) = linecache.getline(ArbAbsFileName, 2).strip().split('=')
+        assert (s == '#rho')
+        ArbAbsRho = float(ArbAbsRho)
+    except:
+        mp.ReportError('Could not read Arbitrary Absorption Correction file.')
+
+    # Get the energy of each line (actually a weighted average of the lines of that series).
+    LineEnergies = zeros(pb.MAXELEMENT)
+    for Z in range(3, 50):  # We start at 3 because H and He don't have fluor emission per se.
+        # For now, we only use K-shell.
+        LineEnergies[Z - 1] = ce.GetFluorescenceLineEnergy(pb.ElementalSymbols[Z], 'K')
+
+    # For the really heavy elements (Uuo, etc.) we get nans because those lines aren't measured.  Also,
+    # we don't care about
+    LineEnergies = nan_to_num(LineEnergies)
+    # Update counts with the new corrected (after absorption) values.
+    Counts = abs.DoAbsorption(LineEnergies, Counts, ArbAbsWtPct, ArbAbsRho, ArbAbsTau)
+    return Counts
+
+
+def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts',
+                            ArbitraryAbsorptionCorrection=None, AbsorptionCorrection=0,
+                            OByStoichiometry=None):
     """Counts (ndarray) is the input vector giving all the counts for each element in order. It is MAXELEMENTS long.
     kfacsfile=None (str) gives the k-factors for each element, or None means not to apply k-factors.
         'Titan 80 keV' loads k-factors for the Titan at 80 keV from 'kfacs Titan 80 keV.csv'.
@@ -68,13 +108,11 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', Absorpti
         if kfacsfile is not None:
 
             # Load the k-factor file.
-            # The converter ensures the second and on columns are floats.
-            floatme = lambda s: float(s or 0)
             # Skip one header line, skip comments, and be tolerant of missing entries (using the converter.)
             try:
                 kfacs = genfromtxt('ConfigData/kfacs ' + kfacsfile + '.csv', dtype=None, comments='#', skip_header=1, delimiter=',', converters={1:floatme, 2:floatme, 3:floatme})
             except:
-                ReportError('Could not read k-factor file.')
+                mp.ReportError('Could not read k-factor file.')
 
             # Now we want a single array of the k-factors for quanting each element.  For now, we only implement K-shell.
             # TODO implement L, M shells.
@@ -84,6 +122,10 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', Absorpti
 
             # Now multiply by the k-factors.
             Counts = Counts*kfactors
+
+        # If we are including an arbitrary absorption correction, then do that.
+        if ArbitraryAbsorptionCorrection is not None:
+            Counts = DoArbitraryAbsorptionCorrection(ArbitraryAbsorptionCorrection, Counts)
 
         Counts = ComputeOxygenStoichiometry(Counts, OByStoichiometry)
 
@@ -97,6 +139,15 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', Absorpti
 
     # In the case of at %, we just convert to wt %
     if InputType == 'At %':
+
+        #If we want to do an arbitrary absorption correction, then it expects to operate on something proportional to
+        #  Wt % since the CXRO scattering profiles were based on Wt %.  So in this case, first we convert to Wt% and
+        # then do our correction, and recompute At %.
+        # TODO Arbitrary absorption on At %
+        # If we are including an arbitrary absorption correction, then do that.
+        if ArbitraryAbsorptionCorrection is not None:
+            mp.ReportError('TODO: Arbitrary absorption on At %.  Correction not computed.')
+
         Counts = ComputeOxygenStoichiometry(Counts, OByStoichiometry, ByMass=False)
 
         # Normalize it for atom %
@@ -109,6 +160,11 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', Absorpti
 
     # In the case of wt %, we just convert to at %
     if InputType == 'Wt %':
+
+        # If we are including an arbitrary absorption correction, then do that.
+        if ArbitraryAbsorptionCorrection is not None:
+            Counts = DoArbitraryAbsorptionCorrection(ArbitraryAbsorptionCorrection, Counts)
+
         Counts = ComputeOxygenStoichiometry(Counts, OByStoichiometry, ByMass=True)
 
          # Make Wt % from counts.

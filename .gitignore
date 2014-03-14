@@ -43,3 +43,5 @@ nosetests.xml
 Temp/*
 Temp/
 
+# No brine in the GitHub
+*.pickle

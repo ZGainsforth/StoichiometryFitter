@@ -14,9 +14,6 @@ NAvogadro = 6.02214129e23;
 # Electron charge
 q = 1.60217646e-19;
 
-# Number of elements we cover 1=H, 101 = Lr
-NumElements = 101;
-    
 # Define symbols for easy indexing.
 H = 1;
 He = 2;
