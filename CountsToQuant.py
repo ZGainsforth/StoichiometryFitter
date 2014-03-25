@@ -57,7 +57,14 @@ def ComputeOxygenStoichiometry(Counts, AtomCharges, ByMass=True):
 floatme = lambda s: float(s or 0)
 
 def DoArbitraryAbsorptionCorrection(ArbitraryAbsorptionCorrection, Counts):
+    """DoArbitraryAbsorptionCorrection(ArbitraryAbsorptionCorrection, Counts):
 
+    :param ArbitraryAbsorptionCorrection: Name of csv file with absorption parameters including abs length, density,
+    and elements.
+    :param Counts: The counts in which we are applying absorption correction to.  These must be either raw counts or
+    wt % (since the absorption correction assumes the counts are proportional to wt %.
+    :return: A new counts vector (proportional to wt %) after absorption.
+    """
     try:
         ArbAbsFileName = 'ConfigData/Absorption ' + ArbitraryAbsorptionCorrection + '.csv'
         ArbAbsWtPct = genfromtxt(ArbAbsFileName, dtype=None, comments='#', skip_header=3, delimiter=',',
@@ -87,6 +94,83 @@ def DoArbitraryAbsorptionCorrection(ArbitraryAbsorptionCorrection, Counts):
     # Update counts with the new corrected (after absorption) values.
     Counts = abs.DoAbsorption(LineEnergies, Counts, ArbAbsWtPct, ArbAbsRho, ArbAbsTau)
     return Counts
+
+
+def WtPctToOxWtPct(OByStoichiometry, WtPct):
+    """ WtPctToOxWtPct(OByStoichiometry, WtPct): Takes a weight % vector, and produces oxide wt % using the cation
+    charges in OByStoichiometry.
+
+    :param OByStoichiometry: List of cation charge states.  Fe = 2 for example means that it is Fe2+ and would pair
+    with one oxygen (2-) as FeO.
+    :param WtPct: How much of each element as a weight %.
+    :return: OxWtPct vector of oxide weights.
+    """
+
+    # Get element masses (a vector for all elements, and the mass of O specifically.)
+    M_el = array(pb.ElementalWeights[1:])
+    M_O = pb.ElementalWeights[pb.O]
+
+    # We only make oxides with positively charged cations.  The negs are transferred directly.
+    PosCharges = OByStoichiometry.clip(min=0)
+    # 1 means that we can multiply by this vector to extract the elements that are not stoichometrically tied to O.
+    NegMask = (OByStoichiometry <= 0).astype(float)
+
+    # Oxide weight is the cation + the oxygen (where the relative amount of oxygen is computed based on the
+    # cation charge.
+    #OxygenWt = nan_to_num(PosCharges / 2 * WtPct / M_el * M_O)
+    #OxWtPct = nan_to_num(WtPct + OxygenWt) + nan_to_num(WtPct * NegMask)
+    OxWtPct = nan_to_num(WtPct * (1 + PosCharges / 2 * M_O / M_el))
+
+    # Of course this means that the weight of oxygen by itself is none.
+    OxWtPct[pb.O - 1] = 0
+
+    # Finally, renormalize.
+    OxWtPct = nan_to_num(OxWtPct / sum(OxWtPct) * 100)
+
+    return OxWtPct
+
+
+def OxWtPctToWtPct(OByStoichiometry, OxWtPct):
+    """ OxWtPctToWtPct(OByStoichiometry, WtPct): Takes an oxide weight % vector, and produces wt % using the
+    cation charges in OByStoichiometry.
+
+    :param OByStoichiometry: List of cation charge states.  Fe = 2 for example means that it is Fe2+ and would pair
+    with one oxygen (2-) as FeO.
+    :param OxWtPct: How much of each element as an oxide weight %.
+    :return: WtPct vector of elemental weights.
+    """
+
+    # Get element masses (a vector for all elements, and the mass of O specifically.)
+    M_el = array(pb.ElementalWeights[1:])
+    M_O = pb.ElementalWeights[pb.O]
+
+    # We only make oxides with positively charged cations.  The negs are transferred directly.
+    PosCharges = OByStoichiometry.clip(min=0)
+    # 1 means that we can multiply by this vector to extract the elements that are not stoichometrically tied to O.
+    # 1 means that we can multiply by this vector to extract the elements that are not stoichometrically tied to O.
+   # NegMask = (OByStoichiometry <= 0).astype(float)
+    # And specifically ignore oxygen.
+   # NegMask[pb.O-1] = 0
+
+    # Sometimes the oxygen deficit is reported in the oxide wt %'s from microprobe folks.
+    ODeficit = OxWtPct[pb.O-1]
+
+    # Oxide weight is the cation + the oxygen (where the relative amount of oxygen is computed based on the
+    # cation charge.
+    # First get the cation weight
+    WtPct = nan_to_num(OxWtPct / (1 + M_O/M_el * PosCharges/2))
+    # Now get the oxygen weight.
+    OxygenWt = nan_to_num(OxWtPct - WtPct)
+    # For the non-oxidized elements, we just copy them over.
+    #WtPct  = WtPct + nan_to_num(OxWtPct * NegMask)
+
+    # Now plug in the oxygen weight
+    WtPct[pb.O - 1] = sum(OxygenWt) + ODeficit
+
+    # Finally, renormalize.
+    WtPct = nan_to_num(WtPct / sum(WtPct) * 100)
+
+    return WtPct
 
 
 def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts',
@@ -132,8 +216,11 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts',
         # Make Wt % from counts.
         WtPct = nan_to_num(Counts/sum(Counts)*100)
 
+        # Make oxide Wt % from Wt %.
+        OxWtPct = WtPctToOxWtPct(OByStoichiometry, WtPct)
+
         # Make At % too.
-        M_el = array(pb.ElementalWeights[1:])
+        M_el = array(pb.ElementalWeights[1:])  # Vector of elemental weight
         AtPct = nan_to_num(WtPct / M_el)
         AtPct = nan_to_num(AtPct / sum(AtPct) *100)
 
@@ -158,6 +245,12 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts',
         WtPct = nan_to_num(AtPct * M_el)
         WtPct = nan_to_num(WtPct / sum(WtPct) *100)
 
+        # Make oxide Wt % from Wt % if we have stoichiometry info
+        if OByStoichiometry is not None:
+            OxWtPct = WtPctToOxWtPct(OByStoichiometry, WtPct)
+        else:
+            OxWtPct = zeros(shape(WtPct))
+
     # In the case of wt %, we just convert to at %
     if InputType == 'Wt %':
 
@@ -167,15 +260,44 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts',
 
         Counts = ComputeOxygenStoichiometry(Counts, OByStoichiometry, ByMass=True)
 
-         # Make Wt % from counts.
+        # Make Wt % from counts.
         WtPct = nan_to_num(Counts/sum(Counts)*100)
+
+        # Make oxide Wt % from Wt % if we have stoichiometry info
+        if OByStoichiometry is not None:
+            OxWtPct = WtPctToOxWtPct(OByStoichiometry, WtPct)
+        else:
+            OxWtPct = zeros(shape(WtPct))
 
         # Make At % too.
         M_el = array(pb.ElementalWeights[1:])
         AtPct = nan_to_num(WtPct / M_el)
         AtPct = nan_to_num(AtPct / sum(AtPct) *100)
 
-    # TODO Oxide Wt%
+    if InputType == 'Ox Wt %':
+        if OByStoichiometry is not None:
+            assert('Cannot do oxide wt % without doing oxygen by stoichiometry.')
 
-    Quant = OrderedDict(zip(pb.ElementalSymbols[1:], zip(AtPct, WtPct)))
+        # If we are including an arbitrary absorption correction, then do that.
+        if ArbitraryAbsorptionCorrection is not None:
+            Counts = DoArbitraryAbsorptionCorrection(ArbitraryAbsorptionCorrection, Counts)
+
+        # O by stoichiometry is already done by inputting oxides.  Nothing to do here.
+
+        # Normalize the oxide Wt %.
+        OxWtPct = nan_to_num(Counts / sum(Counts) * 100)
+
+        # Make Wt % from oxide Wt %.
+        WtPct = OxWtPctToWtPct(OByStoichiometry, OxWtPct)
+
+        # Make At % too.
+        M_el = array(pb.ElementalWeights[1:])
+        AtPct = nan_to_num(WtPct / M_el)
+        AtPct = nan_to_num(AtPct / sum(AtPct) *100)
+
+
+    Quant = OrderedDict(zip(pb.ElementalSymbols[1:], zip(AtPct, WtPct, OxWtPct)))
     return Quant
+
+if __name__ == '__main__':
+    print 'Implement ye old test harness please!'

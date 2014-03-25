@@ -17,7 +17,6 @@ def FormatQuantResults(Quant):
     :param Quant: An OrderedDict with key = element name (e.g. 'H' or 'Fe') and value = (At%, Wt %).  The first
     entry is H and the next is He, etc on up the periodic table until PhysicsBasics.MAXELEMENT
     """
-    # TODO implement output for Ox Wt %.
 
     # Start with a blank report.
     ReportStr = ''
@@ -29,14 +28,14 @@ def FormatQuantResults(Quant):
 
     # Now let's print out each element
     ReportStr += 'Quantification results:\n'.format()
-    ReportStr += '{:<8s} {:>8s} {:>8s}\n'.format('Element', 'At%', 'Wt%')
+    ReportStr += '{:<8s} {:>8s} {:>8s} {:>8s}\n'.format('Element', 'At%', 'Wt%', 'Ox Wt %')
     for El, Abund in Q.iteritems():
         if Abund[1] > 0.1:
             # Report straightforward percentages.
-            ReportStr += '{:8s} {:8.3f} {:8.3f}\n'.format(El, Abund[0], Abund[1])
+            ReportStr += '{:8s} {:8.3f} {:8.3f} {:8.3f}\n'.format(El, Abund[0], Abund[1], Abund[2])
         else:
             # For trace elements report ppm.
-            ReportStr += '{:8s} {:4.0f} ppm {:4.0f} ppm\n'.format(El, Abund[0]*1e4, Abund[1]*1e4)
+            ReportStr += '{:8s} {:4.0f} ppm {:4.0f} ppm {:4.0f} ppm\n'.format(El, Abund[0]*1e4, Abund[1]*1e4, Abund[1]*1e4)
 
     ReportStr += '\n'.format()
 
@@ -50,7 +49,6 @@ def FormatInputResults(Quant, InputType):
 
     :param InputType: Is either 'Counts', 'At %', or 'Wt %'
     """
-    # TODO implement output for Ox Wt %.
 
     # Start with a blank report.
     ReportStr = ''

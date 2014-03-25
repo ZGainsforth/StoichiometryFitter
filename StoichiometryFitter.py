@@ -25,9 +25,8 @@ import PhaseFit
 
 wx.SystemOptions.SetOption('mac.listctrl.always_use_generic', '1')
 
-ID_SAVEINPUTS = 1000
-
 # begin wxGlade: extracode
+ID_SAVEINPUTS = 1000
 from wx.lib.mixins.listctrl import TextEditMixin
 
 class EditableTextListCtrl(wx.ListCtrl, TextEditMixin):
@@ -88,7 +87,7 @@ class MyFrame(wx.Frame):
         # Menu Bar end
         self.panel_4 = wx.Panel(self, wx.ID_ANY)
         self.ElementsListCtrl = EditableTextListCtrl(self.panel_4, wx.ID_ANY, style=wx.LC_REPORT | wx.LC_EDIT_LABELS | wx.LC_SINGLE_SEL | wx.SUNKEN_BORDER | wx.FULL_REPAINT_ON_RESIZE)
-        self.rdioInputType = wx.RadioBox(self.panel_4, wx.ID_ANY, _("Input Type"), choices=[_("Counts"), _("At %"), _("Wt %")], majorDimension=0, style=wx.RA_SPECIFY_ROWS)
+        self.rdioInputType = wx.RadioBox(self.panel_4, wx.ID_ANY, _("Input Type"), choices=[_("Counts"), _("At %"), _("Wt %"), _("Ox Wt %")], majorDimension=0, style=wx.RA_SPECIFY_ROWS)
         self.btnReset = wx.Button(self.panel_4, wx.ID_ANY, _("Reset"))
         self.panel_5 = wx.Panel(self, wx.ID_ANY)
         self.PhasesListCtrl = wx.ListCtrl(self.panel_5, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER)
@@ -151,7 +150,7 @@ class MyFrame(wx.Frame):
         self.SetTitle(_("Stoichiometry Fitter"))
         self.SetSize((1118, 703))
         self.ElementsListCtrl.SetMinSize((200, 100))
-        self.rdioInputType.SetMinSize((200,100))
+        self.rdioInputType.SetMinSize((200,120))
         self.rdioInputType.SetSelection(0)
         self.btnReset.SetMinSize((200,20))
         self.panel_4.SetMinSize((200, -1))
@@ -311,6 +310,11 @@ class MyFrame(wx.Frame):
         """OnReset(self, event):
             Set all the elements back to zero so the user can type in a new sample.
         """
+
+        # Sometimes the person doesn't hit enter after editing a value in the ElementsListControl.  In this case,
+        # we need to end his edit or the value doesn't get saved.
+        self.ElementsListCtrl.CloseEditor(None)
+
         for Z in range(1, pb.MAXELEMENT + 1):
             self.ElementsListCtrl.SetStringItem(Z - 1, 1, '0')
         event.Skip()
@@ -356,7 +360,8 @@ class MyFrame(wx.Frame):
 
         # Find out if we are using oxygen by stoichiometry
         if self.chkOByStoichiometry.IsChecked():
-            # Stoich is a list of tuples.  We want an array from the 1 index of the tuples.  So unzip the list into two tuples,
+            # Stoich is a list of tuples.  We want an array of atom charges from the 1 index of the tuples.  So unzip
+            # the list into two tuples,
             # choose the tuple which corresponds to the charges not the atom names and feed it to numpy to make a vector.
             OByStoich = array(zip(*self.Stoich)[1])
         else:
@@ -400,10 +405,15 @@ class MyFrame(wx.Frame):
         # If it is 'Counts', 'At%' or 'Wt%' then we are being asked to update the type ourselves.
         if InputType == 'Counts':
             self.rdioInputType.SetSelection(0)
+            self.chkOByStoichiometry.Enable()
         elif InputType == 'At%':
             self.rdioInputType.SetSelection(1)
+            self.chkOByStoichiometry.Enable()
         elif InputType == 'Wt%':
             self.rdioInputType.SetSelection(2)
+            self.chkOByStoichiometry.Enable()
+        elif InputType == 'OxWt%':
+            self.rdioInputType.SetSelection(3)
 
         # We use kfacs and arbitrary absorption correction (optionally) for counts.  At% and Wt% don't, ever.
         if self.rdioInputType.GetSelection() == 0:
@@ -422,10 +432,20 @@ class MyFrame(wx.Frame):
         # Depending on which radio is checked, choose the right text.
         if self.rdioInputType.GetSelection() == 0:
             col.SetText('Counts')
+            self.chkOByStoichiometry.Enable()
         elif self.rdioInputType.GetSelection() == 1:
             col.SetText('At %')
-        else:
+            self.chkOByStoichiometry.Enable()
+        elif self.rdioInputType.GetSelection() == 2:
             col.SetText('Wt %')
+            self.chkOByStoichiometry.Enable()
+        else:
+            col.SetText('Ox Wt %')
+            # For oxide wt % the user must use stoichiometry.
+            self.chkOByStoichiometry.Disable()
+            self.chkOByStoichiometry.SetValue(True)
+            self.OnStoichSelect(None) # And update the list box.
+
         # And stuff that modified column back into the ListBox.
         self.ElementsListCtrl.SetColumn(1, col)
 
@@ -469,7 +489,7 @@ class MyFrame(wx.Frame):
         HowlBadFile = lambda s: wx.MessageBox("Input file does not match the expected format.\n"
                                               "It should be a CSV with the header:\n"
                                               "Element,Counts\n"
-                                              "Where Counts can be replaced by At% or Wt%.\n"
+                                              "Where Counts can be replaced by At%, Wt% or OxWt%.\n"
                                               "It should have a line for each element from H to Uuo.""",
                                               "Invalid file format: "+s,
                                               style=wx.OK)
@@ -482,11 +502,13 @@ class MyFrame(wx.Frame):
         # If the input type is valid, this will be set True.  Otherwise, we bail by default.
         InputTypeValid = False
 
-        if InputDat.dtype.names[0][:2] in ['Co', 'At', 'Wt']:
+        if InputDat.dtype.names[0][:2] in ['Co', 'At', 'Wt', 'Ox']:
             # Note that the file reader filters out the % symbol, so we have to add that in.  Kind of stupid...
             if InputDat.dtype.names[0] == 'Counts':
                 # Set the input type radio to Counts
                 self.UpdateInputType(InputDat.dtype.names[0])
+            if InputDat.dtype.names[0] == 'OxWt':
+                self.UpdateInputType('OxWt%')
             else:
                 self.UpdateInputType(InputDat.dtype.names[0][:2] + '%')
         else:
@@ -511,6 +533,8 @@ class MyFrame(wx.Frame):
             SavStr = 'Element,At%\n'
         elif self.rdioInputType.GetSelection() == 2:
             SavStr = 'Element,Wt%\n'
+        elif self.rdioInputType.GetSelection() == 3:
+            SavStr = 'Element,OxWt%\n'
         else:
             raise
 
