@@ -13,6 +13,7 @@ from numpy import *
 import os
 import ReportResults
 from collections import OrderedDict
+import MyPython
 
 # begin wxGlade: dependencies
 import gettext
@@ -125,6 +126,14 @@ class MyFrame(wx.Frame):
         self.Bind(wx.EVT_COMBOBOX, self.OnStoichSelect, self.comboStoich)
         self.Bind(wx.EVT_BUTTON, self.OnGo, self.btnGo)
         # end wxGlade
+
+        # First verify that we are running in the home directory (i.e. we should be in the directory containing
+        # StoichiometryFitter.py
+        #import pdb
+        #pdb.set_trace()
+        if not os.path.isfile(os.path.join(os.getcwd(), 'StoichiometryFitter.py')):
+            MyPython.ReportError('Please ensure the running directory is the directory containing StoichiometryFitter'
+                                 '.py')
 
         self.Bind(wx.EVT_MENU, self.OnAbout, id=wx.ID_ABOUT)
 
