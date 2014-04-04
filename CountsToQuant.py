@@ -256,12 +256,13 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts',
     # In the case of wt %, we just convert to at %
     if InputType == 'Wt %':
         # This is the simple case, right?
-        pass
+        WtPct = Counts
 
     if InputType == 'Ox Wt %':
         # O by stoichiometry is already done by inputting oxides.  Nothing to do here.
-        if OByStoichiometry is not None:
-            assert('Cannot do oxide wt % without doing oxygen by stoichiometry.')
+        if OByStoichiometry is None:
+            print 'Cannot do oxide wt % without doing oxygen by stoichiometry.'
+            return
 
         # Normalize the oxide Wt %.
         OxWtPct = nan_to_num(Counts / sum(Counts) * 100)
