@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Qt4Agg')
 from matplotlib.pyplot import *
 from numpy import *
 import PhysicsBasics as pb
@@ -15,10 +17,10 @@ def GetAbsorptionCurve(E, WtPct, rho):
 
     # mu is the cross-section.  We don't know it yet, so we start out with a matrix.  One row for each element,
     # and thus one measurement of mu for each.  We'll sum them later because they add linearly.
-    mu = zeros((pb.MAXELEMENT, len(E)));
+    mu = zeros((pb.MAXELEMENT, len(E)))
 
     # Get mu for each element.
-    for ElementIndex in arange(1, pb.MAXELEMENT, 1):
+    for ElementIndex in arange(0, pb.MAXELEMENT, 1):
     
         # We only add a MAC term for those elements that have a non-zero abundance.
         if WtPct[ElementIndex] == 0:
@@ -26,7 +28,7 @@ def GetAbsorptionCurve(E, WtPct, rho):
 
         # Load the scattering data for this element
         try:
-            ScatteringData = loadtxtcaching('CXRO Scattering Files/' + pb.ElementalSymbols[ElementIndex].lower() + '.nff', skiprows=1)
+            ScatteringData = loadtxtcaching('CXRO Scattering Files/' + pb.ElementalSymbols[ElementIndex+1].lower() + '.nff', skiprows=1)
         except:
             # In case this an element for which we dont have attenuation data then the attenuation function "no
             # attenuation".
@@ -38,7 +40,7 @@ def GetAbsorptionCurve(E, WtPct, rho):
         f2 = interp(E, ScatteringData[:,0], ScatteringData[:, 2])
 
         # mua, (f2 is implicitly measured in grams, so I have to unfold that...)
-        mua = 2 * pb.r0 * pb.h*pb.c/E * f2/pb.ElementalWeights[ElementIndex]
+        mua = 2 * pb.r0 * pb.h*pb.c/E * f2/pb.ElementalWeights[ElementIndex+1]
     
         # Density in atoms/m3 
         n = 1000*pb.NAvogadro*(WtPct[ElementIndex]/100)
@@ -73,7 +75,7 @@ def DoAbsorption(E, Iin, WtPct, rho, AbsorptionLength):
     AbsorptionCurve = GetAbsorptionCurve(E, WtPct, rho)
 
     # Beer's law.
-    I = Iin*exp(-1.*AbsorptionLength/AbsorptionCurve)
+    I = nan_to_num(Iin*exp(-1.*AbsorptionLength/AbsorptionCurve))
 
     # Return the modified intensity after absorption.
     return I
