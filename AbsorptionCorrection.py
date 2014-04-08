@@ -59,7 +59,7 @@ def GetAbsorptionCurve(E, WtPct, rho):
 #    title(['Absorption curve, rho = ' num2str(rho) ' '])
 #    axis([30, E(length(E)), min(A), max(A)*2]);
 
-def DoAbsorption(E, Iin, WtPct, rho, AbsorptionLength):
+def DoAbsorption(E, Iin, WtPct, rho, AbsorptionLength, Takeoff=90):
     # Get the vector describing the attenuation length as a function of energy.
     """DoAbsorption(E0, E, Iin, WtPct, rho, AbsorptionLength):
 
@@ -73,9 +73,21 @@ def DoAbsorption(E, Iin, WtPct, rho, AbsorptionLength):
     """
 
     AbsorptionCurve = GetAbsorptionCurve(E, WtPct, rho)
+    murho = 1/AbsorptionCurve
+
+    # Takeoff coefficient
+    TakeoffCoeff = sin(Takeoff*pi/180)
 
     # Beer's law.
-    I = nan_to_num(Iin*exp(-1.*AbsorptionLength/AbsorptionCurve))
+#    I = nan_to_num(Iin*exp(-1.*AbsorptionLength/AbsorptionCurve))
+#    I = nan_to_num(Iin*exp(-1.*AbsorptionLength*TakeoffCoeff/AbsorptionCurve))
+#    TakeoffCoeff = 1/sin(Takeoff*pi/180); I = nan_to_num(Iin*(1-exp(-AbsorptionLength*TakeoffCoeff/AbsorptionCurve))/(TakeoffCoeff/AbsorptionCurve))
+    I = nan_to_num((Iin*TakeoffCoeff/murho)*(1-exp(-AbsorptionLength/TakeoffCoeff)))
+
+
+
+
+#I = I0*(exp(-u*r*Z/sin(phi)))/(u*r/sin(phi))
 
     # Return the modified intensity after absorption.
     return I
@@ -139,5 +151,23 @@ def loadtxtcaching(FileName, skiprows=1):
 
     # Return the (previously or newly) cached file.
     return ListOfLoadedFiles[FileName]
-    
 
+if __name__ == '__main__':
+    ### DEBUG! ###
+    Ev = arange(500,7000,10)
+    Iv = ones(shape(Ev))
+    WtPct = zeros(pb.MAXELEMENT)
+    WtPct[pb.O-1]=37.158
+    WtPct[pb.Mg-1]=14.112
+    WtPct[pb.Fe-1]=32.424
+    WtPct[pb.Si-1]=16.307
+    AbsorptionCurve = GetAbsorptionCurve(Ev, WtPct, 1)
+    TakeoffCoeff = sin(0.1*pi/180)
+    AbsorptionCurve90 = AbsorptionCurve * sin(90*pi/180)
+    AbsorptionCurve30 = AbsorptionCurve * sin(30*pi/180)
+    AbsorptionCurve05 = AbsorptionCurve * sin(0.1*pi/180)
+    Iv = nan_to_num(Iv*exp(-1/(AbsorptionCurve*TakeoffCoeff))*(AbsorptionCurve*TakeoffCoeff))
+    loglog(Ev,AbsorptionCurve90, Ev,AbsorptionCurve30, Ev,AbsorptionCurve05, Ev, Iv)
+    legend(['90$^{\circ}$', '30$^{\circ}$', '0.1$^{\circ}$', '$I_v$'], loc='best')
+    show()
+    #DoAbsorption(E, Iin, WtPct, rho, AbsorptionLength, Takeoff=90)

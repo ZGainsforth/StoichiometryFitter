@@ -16,6 +16,7 @@ import os
 import ReportResults
 from collections import OrderedDict
 import MyPython
+import imp
 
 # begin wxGlade: dependencies
 import gettext
@@ -95,12 +96,17 @@ class MyFrame(wx.Frame):
         self.PhasesListCtrl = wx.ListCtrl(self.panel_5, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER)
         self.panel_1 = wx.Panel(self, wx.ID_ANY)
         self.panel_2 = wx.Panel(self.panel_1, wx.ID_ANY)
+        self.chkPhaseAnalysis = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
+        self.cmbPhaseAnalysis = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        self.sizer_14_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("Phase Analysis"))
         self.chkArbAbsCorrection = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
         self.comboArbAbsCorrection = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_DROPDOWN | wx.CB_READONLY)
         self.sizer_5_copy_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("Arbitrary absorption"))
         self.chkAbsCorr = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
         self.txtAbsCorr = wx.TextCtrl(self.panel_1, wx.ID_ANY, "")
-        self.label_1 = wx.StaticText(self.panel_1, wx.ID_ANY, _("g/cm3 * nm"))
+        self.txtTakeoff = wx.TextCtrl(self.panel_1, wx.ID_ANY, _("90"))
+        self.label_1 = wx.StaticText(self.panel_1, wx.ID_ANY, _("g/cm3 * nm"), style=wx.ALIGN_CENTRE)
+        self.label_1_copy = wx.StaticText(self.panel_1, wx.ID_ANY, _("takeoff in deg"), style=wx.ALIGN_CENTRE)
         self.sizer_3_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("TEM Thickness Correction"))
         self.chkKfacs = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
         self.comboKfacs = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_DROPDOWN | wx.CB_READONLY)
@@ -121,6 +127,8 @@ class MyFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnAbout, id=wx.ID_ABOUT)
         self.Bind(wx.EVT_RADIOBOX, self.OnInputType, self.rdioInputType)
         self.Bind(wx.EVT_BUTTON, self.OnReset, self.btnReset)
+        self.Bind(wx.EVT_CHECKBOX, self.OnStoichSelect, self.chkPhaseAnalysis)
+        self.Bind(wx.EVT_COMBOBOX, self.OnDetectorSelect, self.cmbPhaseAnalysis)
         self.Bind(wx.EVT_CHECKBOX, self.OnStoichSelect, self.chkArbAbsCorrection)
         self.Bind(wx.EVT_COMBOBOX, self.OnDetectorSelect, self.comboArbAbsCorrection)
         self.Bind(wx.EVT_CHECKBOX, self.OnStoichSelect, self.chkOByStoichiometry)
@@ -166,7 +174,10 @@ class MyFrame(wx.Frame):
         self.panel_4.SetMinSize((200, -1))
         self.PhasesListCtrl.SetMinSize((300, 300))
         self.panel_5.SetMinSize((305,300))
+        self.chkPhaseAnalysis.SetValue(1)
         self.chkArbAbsCorrection.SetValue(1)
+        self.label_1.SetMinSize((77, 22))
+        self.label_1_copy.SetMinSize((100, 22))
         self.chkKfacs.Enable(False)
         self.chkOByStoichiometry.SetValue(1)
         self.panel_1.SetMinSize((300, -1))
@@ -185,8 +196,12 @@ class MyFrame(wx.Frame):
         sizer_4 = wx.StaticBoxSizer(self.sizer_4_staticbox, wx.HORIZONTAL)
         self.sizer_3_staticbox.Lower()
         sizer_3 = wx.StaticBoxSizer(self.sizer_3_staticbox, wx.HORIZONTAL)
+        sizer_13 = wx.BoxSizer(wx.VERTICAL)
+        sizer_12 = wx.BoxSizer(wx.VERTICAL)
         self.sizer_5_copy_staticbox.Lower()
         sizer_5_copy = wx.StaticBoxSizer(self.sizer_5_copy_staticbox, wx.HORIZONTAL)
+        self.sizer_14_staticbox.Lower()
+        sizer_14 = wx.StaticBoxSizer(self.sizer_14_staticbox, wx.HORIZONTAL)
         sizer_11 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_6 = wx.FlexGridSizer(2, 1, 0, 0)
         sizer_8 = wx.BoxSizer(wx.HORIZONTAL)
@@ -205,12 +220,19 @@ class MyFrame(wx.Frame):
         self.panel_5.SetSizer(sizer_11)
         sizer_2.Add(self.panel_5, 0, wx.EXPAND, 0)
         grid_sizer_1.Add(self.panel_2, 1, wx.EXPAND, 0)
+        sizer_14.Add(self.chkPhaseAnalysis, 0, 0, 0)
+        sizer_14.Add(self.cmbPhaseAnalysis, 1, wx.ALL | wx.EXPAND, 2)
+        grid_sizer_1.Add(sizer_14, 1, wx.EXPAND, 0)
         sizer_5_copy.Add(self.chkArbAbsCorrection, 0, 0, 0)
         sizer_5_copy.Add(self.comboArbAbsCorrection, 1, wx.ALL | wx.EXPAND, 2)
         grid_sizer_1.Add(sizer_5_copy, 1, wx.EXPAND, 0)
         sizer_3.Add(self.chkAbsCorr, 0, 0, 0)
-        sizer_3.Add(self.txtAbsCorr, 1, wx.EXPAND, 0)
-        sizer_3.Add(self.label_1, 0, 0, 0)
+        sizer_12.Add(self.txtAbsCorr, 1, wx.EXPAND, 0)
+        sizer_12.Add(self.txtTakeoff, 0, wx.EXPAND, 0)
+        sizer_3.Add(sizer_12, 1, wx.EXPAND, 0)
+        sizer_13.Add(self.label_1, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0)
+        sizer_13.Add(self.label_1_copy, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0)
+        sizer_3.Add(sizer_13, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0)
         grid_sizer_1.Add(sizer_3, 1, wx.EXPAND, 0)
         sizer_4.Add(self.chkKfacs, 0, 0, 0)
         sizer_4.Add(self.comboKfacs, 1, wx.ALL | wx.EXPAND, 2)
@@ -276,6 +298,14 @@ class MyFrame(wx.Frame):
         self.comboKfacs.Select(0)
         # For counts we will want the kfactors.
         self.chkKfacs.SetValue(True)
+
+        """ POPULATE PHASE ANALYSIS PULLDOWN """
+        for file in os.listdir('ConfigData'):
+            if file.startswith('phase') and file.endswith('.py'):
+                phasename = file.split('phase ')[1].split('.py')[0]
+                self.cmbPhaseAnalysis.Append(phasename)
+        self.cmbPhaseAnalysis.Select(0)
+        self.chkPhaseAnalysis.SetValue(False)
 
         """ POPULATE ARBITRARY ABSORPTION PULLDOWN """
         for file in os.listdir('ConfigData'):
@@ -365,11 +395,13 @@ class MyFrame(wx.Frame):
             try:
                 # The text box uses nm.  Absorption path lengths are in microns, convert.
                 AbsorptionCorrection = float(self.txtAbsCorr.GetString(0,-1))/1000
+                Takeoff = clip(float(self.txtTakeoff.GetString(0,-1)), 0.1, 90) # Allow angles between 0.1 and 90 degrees.
             except:
                 wx.MessageBox('Absorption Correction is not a valid number.', 'Please correct input:')
                 return
         else:
             AbsorptionCorrection = 0
+            Takeoff=90
 
         # Find out if we are using oxygen by stoichiometry
         if self.chkOByStoichiometry.IsChecked():
@@ -381,12 +413,20 @@ class MyFrame(wx.Frame):
             OByStoich = None
 
         # Stuff the user entered data into a black box and get out At%, Wt% results.
-        Quant = CountsToQuant.GetAbundancesFromCounts(self.Counts, kfacsfile=kfacsfile,
-                                                      ArbitraryAbsorptionCorrection= DetectorFile, InputType=self.rdioInputType\
-                                                      .StringSelection, AbsorptionCorrection=AbsorptionCorrection, OByStoichiometry=OByStoich)
+        Quant = CountsToQuant.GetAbundancesFromCounts(self.Counts, kfacsfile=kfacsfile, InputType=self.rdioInputType \
+                                                      .StringSelection, ArbitraryAbsorptionCorrection=DetectorFile,
+                                                      AbsorptionCorrection=AbsorptionCorrection,
+                                                      Takeoff=Takeoff,
+                                                      OByStoichiometry=OByStoich)
+
+        QuantNumbers = [a[1] for a in Quant.items()]
+        AtPct, WtPct, OxWtPct, kfactors = zip(*QuantNumbers)
 
         # Make it human readable.
-        ReportStr = ReportResults.FormatQuantResults(Quant)
+        ReportStr = ReportResults.FormatQuantResults(Quant, ArbitraryAbsorptionCorrection=DetectorFile,
+                                                     AbsorptionCorrection=AbsorptionCorrection,
+                                                     Takeoff=Takeoff,
+                                                     OByStoichiometry=OByStoich)
 
         # Report it by printing to console and put it in the output text box.
         print ReportStr
@@ -396,9 +436,10 @@ class MyFrame(wx.Frame):
         SelectedPhases = GetSelectedItemsFromListCtrl(self.PhasesListCtrl)
 
         if SelectedPhases == None:
-            NoFitStr = '\n\nCould not fit phases since none were selected for the fit.'.format()
-            print NoFitStr
-            self.txtOutput.AppendText(NoFitStr)
+            # NoFitStr = '\n\nNo phases selected for linear fitting.'.format()
+            # print NoFitStr
+            # self.txtOutput.AppendText(NoFitStr)
+            pass
         else:
             # Generate a list of phases with just the ones the user selected to fit.
             PhasesToFit = [PhasesToFit for PhasesToFit in self.Phases if PhasesToFit[0] in SelectedPhases]
@@ -411,7 +452,22 @@ class MyFrame(wx.Frame):
             print ReportStr
             self.txtOutput.AppendText(ReportStr)
 
-        event.Skip()
+        """ DO CUSTOM PHASE ANALYSES """
+        if self.chkPhaseAnalysis.IsChecked():
+            # Construct the name of the py file containing the analysis function.
+            PhaseFile = self.cmbPhaseAnalysis.StringSelection
+            PhaseFile = 'ConfigData/phase ' + PhaseFile + '.py'
+
+            # import it and run it.
+            a = imp.load_source('AnalyzePhase', PhaseFile)
+            ReportStr = a.AnalyzePhase(AtPct, WtPct, OxWtPct)
+
+            # Report it by printing to console and put it in the output text box.
+            print ReportStr
+            self.txtOutput.AppendText(ReportStr)
+
+
+            event.Skip()
 
     def UpdateInputType(self, InputType=None):
         # If InputType=None, then this is being called because the user changed the input type.
@@ -465,7 +521,7 @@ class MyFrame(wx.Frame):
     def OnInputType(self, event):  # wxGlade: MyFrame.<event_handler>
         self.UpdateInputType()
         event.Skip()
-        
+
     def OnStoichSelect(self, event):  # wxGlade: MyFrame.<event_handler>
         # It doesn't matter what the user did.  If they changed any stoichometry settings, we do it all from scratch.
         self.LoadStoichiometryFile()
@@ -504,8 +560,8 @@ class MyFrame(wx.Frame):
                                               "Element,Counts\n"
                                               "Where Counts can be replaced by At%, Wt% or OxWt%.\n"
                                               "It should have a line for each element from H to Uuo.""",
-                                              "Invalid file format: "+s,
-                                              style=wx.OK)
+                                          "Invalid file format: "+s,
+                                          style=wx.OK)
 
         # Verify the quality of the input data.  It should have as many rows as we have rows in the input listbox.
         if len(InputDat) != self.ElementsListCtrl.GetItemCount():
@@ -580,7 +636,7 @@ class MyFrame(wx.Frame):
         event.Skip()
 
     # CURRENT END OF CLASS
- # end of class MyFrame
+# end of class MyFrame
 
 if __name__ == "__main__":
     gettext.install("app")  # replace with the appropriate catalog name

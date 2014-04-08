@@ -57,7 +57,7 @@ def ComputeOxygenStoichiometry(Counts, AtomCharges, ByMass=True):
 floatme = lambda s: float(s or 0)
 
 
-def AbsorptionUsingWtPct(AbsRho, AbsTau, AbsWtPct, Counts):
+def AbsorptionUsingWtPct(AbsRho, AbsTau, AbsWtPct, Counts, Takeoff=90):
     # Get the energy of each line (actually a weighted average of the lines of that series).
     LineEnergies = zeros(pb.MAXELEMENT)
     for Z in range(3, 50):  # We start at 3 because H and He don't have fluor emission per se.
@@ -68,7 +68,7 @@ def AbsorptionUsingWtPct(AbsRho, AbsTau, AbsWtPct, Counts):
     # we don't care about
     LineEnergies = nan_to_num(LineEnergies)
     # Update counts with the new corrected (after absorption) values.
-    Counts = abs.DoAbsorption(LineEnergies, Counts, AbsWtPct, AbsRho, AbsTau)
+    Counts = abs.DoAbsorption(LineEnergies, Counts, AbsWtPct, AbsRho, AbsTau, Takeoff)
     return Counts
 
 
@@ -201,9 +201,8 @@ def WtPctToEverything(WtPct, OByStoichiometry=None):
     return AtPct, WtPct, OxWtPct
 
 
-def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts',
-                            ArbitraryAbsorptionCorrection=None, AbsorptionCorrection=0,
-                            OByStoichiometry=None):
+def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', ArbitraryAbsorptionCorrection=None,
+                            AbsorptionCorrection=0, Takeoff=0, OByStoichiometry=None):
     """Counts (ndarray) is the input vector giving all the counts for each element in order. It is MAXELEMENTS long.
     kfacsfile=None (str) gives the k-factors for each element, or None means not to apply k-factors.
         'Titan 80 keV' loads k-factors for the Titan at 80 keV from 'kfacs Titan 80 keV.csv'.
@@ -212,7 +211,11 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts',
         if AtPct or WtPct, the output will produce the other, and can still apply absorption correction.
     AbsorptionCorrection=0 (float) is the thin film thickness to apply an absorption correction for.
     OByStoichiometry=None if we are not computing oxygen by stoichiometry.  Vector of element charge if we are.
+    :param Takeoff:
     """
+
+    # Start with default k-factors.  Ones means that if this is multiplied, it doesn't change anything.
+    kfactors = ones(pb.MAXELEMENT)
 
     # The if else here basically takes the data in from whatever form it is, and outputs wt %.  From there we can do
     # the absorption corrections and convert to all the requested formats.
@@ -238,8 +241,9 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts',
             # Now multiply by the k-factors.
             WtPct = Counts*kfactors
         else:
-            # If we have counts input, but no k-factors, counts are expected to be propotional to wt %
+            # If we have counts input, but no k-factors, counts are expected to be proportional to wt %
             WtPct = Counts
+
         # Normalize WtPct
         WtPct = nan_to_num(WtPct / sum(WtPct) * 100)
 
@@ -280,7 +284,7 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts',
         # Note that absorption correction is already the product of rho and tau.  So: 1, AbsorptionCorrection
         # Since we're self-absorbing, the absorption cross-sections are computed from WtPct, and the "counts" are from WtPct.
         # Also, we're trying to figure out what intensity the spectrum would have had BEFORE it was absorbed, not see what absorbing our spectrum would create.  So the AbsorptionCorrection should be *negative*.
-        WtPct = AbsorptionUsingWtPct(1, -AbsorptionCorrection, WtPct, WtPct)
+        WtPct = AbsorptionUsingWtPct(1, -AbsorptionCorrection, WtPct, WtPct, Takeoff=Takeoff)
 
     # Do the arbitrary absorption correction if requested.
     if ArbitraryAbsorptionCorrection is not None:
@@ -292,7 +296,7 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts',
     # And now we have a stoichiometry and absorption corrected wt %, get all the rest.
     AtPct, WtPct, OxWtPct = WtPctToEverything(WtPct, OByStoichiometry)
 
-    Quant = OrderedDict(zip(pb.ElementalSymbols[1:], zip(AtPct, WtPct, OxWtPct)))
+    Quant = OrderedDict(zip(pb.ElementalSymbols[1:], zip(AtPct, WtPct, OxWtPct, kfactors)))
     return Quant
 
 if __name__ == '__main__':
@@ -333,10 +337,9 @@ if __name__ == '__main__':
     ArbitraryCorr = None #'Titan Detector Experiment'
 
     # Quant it.
-    Quant = GetAbundancesFromCounts(counts, kfacsfile=kfacsfile,
-                                                  ArbitraryAbsorptionCorrection=ArbitraryCorr,
-                                                  InputType=InputType, AbsorptionCorrection=0,
-                                                  OByStoichiometry=OByStoichiometry)
+    Quant = GetAbundancesFromCounts(counts, kfacsfile=kfacsfile, InputType=InputType,
+                                    ArbitraryAbsorptionCorrection=ArbitraryCorr, AbsorptionCorrection=0,
+                                    OByStoichiometry=OByStoichiometry)
     print Quant
 
     if Quant == OrderedDict([('H', (0.0, 0.0, 0.0)), ('He', (0.0, 0.0, 0.0)), ('Li', (0.0, 0.0, 0.0)), ('Be', (0.0, 0.0, 0.0)), ('B', (0.0, 0.0, 0.0)), ('C', (0.0, 0.0, 0.0)), ('N', (0.0, 0.0, 0.0)), ('O', (57.387880689327353, 42.52227907194424, 0.0)), ('F', (0.0, 0.0, 0.0)), ('Ne', (0.0, 0.0, 0.0)), ('Na', (0.0, 0.0, 0.0)), ('Mg', (22.770862592362683, 25.631130297848344, 42.503490145097665)), ('Al', (0.36418624074129041, 0.45507491376739712, 0.85984754459858115)), ('Si', (14.6440752260316, 19.047446458946819, 40.748873520973397)), ('P', (0.0, 0.0, 0.0)), ('S', (0.061361233043780619, 0.091120894150348644, 0.091120894150348644)), ('Cl', (0.0, 0.0, 0.0)), ('Ar', (0.0, 0.0, 0.0)), ('K', (0.0, 0.0, 0.0)), ('Ca', (0.12773278755077558, 0.2370833642571108, 0.33172859550855094)), ('Sc', (0.0, 0.0, 0.0)), ('Ti', (0.0, 0.0, 0.0)), ('V', (0.0, 0.0, 0.0)), ('Cr', (0.021908530592510082, 0.052756584478407038, 0.077106690477813503)), ('Mn', (0.060522615336063783, 0.15398681555037758, 0.19883181607263334)), ('Fe', (4.4716803207256399, 11.565054774955751, 14.878403102763556)), ('Co', (0.0, 0.0, 0.0)), ('Ni', (0.089789764288306456, 0.24406682410120242, 0.31059769035745571)), ('Cu', (0.0, 0.0, 0.0)), ('Zn', (0.0, 0.0, 0.0)), ('Ga', (0.0, 0.0, 0.0)), ('Ge', (0.0, 0.0, 0.0)), ('As', (0.0, 0.0, 0.0)), ('Se', (0.0, 0.0, 0.0)), ('Br', (0.0, 0.0, 0.0)), ('Kr', (0.0, 0.0, 0.0)), ('Rb', (0.0, 0.0, 0.0)), ('Sr', (0.0, 0.0, 0.0)), ('Y', (0.0, 0.0, 0.0)), ('Zr', (0.0, 0.0, 0.0)), ('Nb', (0.0, 0.0, 0.0)), ('Mo', (0.0, 0.0, 0.0)), ('Tc', (0.0, 0.0, 0.0)), ('Ru', (0.0, 0.0, 0.0)), ('Rh', (0.0, 0.0, 0.0)), ('Pd', (0.0, 0.0, 0.0)), ('Ag', (0.0, 0.0, 0.0)), ('Cd', (0.0, 0.0, 0.0)), ('In', (0.0, 0.0, 0.0)), ('Sn', (0.0, 0.0, 0.0)), ('Sb', (0.0, 0.0, 0.0)), ('Te', (0.0, 0.0, 0.0)), ('I', (0.0, 0.0, 0.0)), ('Xe', (0.0, 0.0, 0.0)), ('Cs', (0.0, 0.0, 0.0)), ('Ba', (0.0, 0.0, 0.0)), ('La', (0.0, 0.0, 0.0)), ('Ce', (0.0, 0.0, 0.0)), ('Pr', (0.0, 0.0, 0.0)), ('Nd', (0.0, 0.0, 0.0)), ('Pm', (0.0, 0.0, 0.0)), ('Sm', (0.0, 0.0, 0.0)), ('Eu', (0.0, 0.0, 0.0)), ('Gd', (0.0, 0.0, 0.0)), ('Tb', (0.0, 0.0, 0.0)), ('Dy', (0.0, 0.0, 0.0)), ('Ho', (0.0, 0.0, 0.0)), ('Er', (0.0, 0.0, 0.0)), ('Tm', (0.0, 0.0, 0.0)), ('Yb', (0.0, 0.0, 0.0)), ('Lu', (0.0, 0.0, 0.0)), ('Hf', (0.0, 0.0, 0.0)), ('Ta', (0.0, 0.0, 0.0)), ('W', (0.0, 0.0, 0.0)), ('Re', (0.0, 0.0, 0.0)), ('Os', (0.0, 0.0, 0.0)), ('Ir', (0.0, 0.0, 0.0)), ('Pt', (0.0, 0.0, 0.0)), ('Au', (0.0, 0.0, 0.0)), ('Hg', (0.0, 0.0, 0.0)), ('Tl', (0.0, 0.0, 0.0)), ('Pb', (0.0, 0.0, 0.0)), ('Bi', (0.0, 0.0, 0.0)), ('Po', (0.0, 0.0, 0.0)), ('At', (0.0, 0.0, 0.0)), ('Rn', (0.0, 0.0, 0.0)), ('Fr', (0.0, 0.0, 0.0)), ('Ra', (0.0, 0.0, 0.0)), ('Ac', (0.0, 0.0, 0.0)), ('Th', (0.0, 0.0, 0.0)), ('Pa', (0.0, 0.0, 0.0)), ('U', (0.0, 0.0, 0.0)), ('Np', (0.0, 0.0, 0.0)), ('Pu', (0.0, 0.0, 0.0)), ('Am', (0.0, 0.0, 0.0)), ('Cm', (0.0, 0.0, 0.0)), ('Bk', (0.0, 0.0, 0.0)), ('Cf', (0.0, 0.0, 0.0)), ('Es', (0.0, 0.0, 0.0)), ('Fm', (0.0, 0.0, 0.0)), ('Md', (0.0, 0.0, 0.0)), ('No', (0.0, 0.0, 0.0)), ('Lr', (0.0, 0.0, 0.0)), ('Rf', (0.0, 0.0, 0.0)), ('Db', (0.0, 0.0, 0.0)), ('Sg', (0.0, 0.0, 0.0)), ('Bh', (0.0, 0.0, 0.0)), ('Hs', (0.0, 0.0, 0.0)), ('Mt', (0.0, 0.0, 0.0)), ('Ds', (0.0, 0.0, 0.0)), ('Rg', (0.0, 0.0, 0.0)), ('Cn', (0.0, 0.0, 0.0)), ('Uut', (0.0, 0.0, 0.0)), ('Fl', (0.0, 0.0, 0.0)), ('Uup', (0.0, 0.0, 0.0)), ('Lv', (0.0, 0.0, 0.0)), ('Uus', (0.0, 0.0, 0.0)), ('Uuo', (0.0, 0.0, 0.0))]):

@@ -11,7 +11,10 @@ from collections import OrderedDict
 import MyPython as mp
 import PhysicsBasics as pb
 
-def FormatQuantResults(Quant):
+def FormatQuantResults(Quant, ArbitraryAbsorptionCorrection=None,
+                       AbsorptionCorrection=None,
+                       Takeoff=90,
+                       OByStoichiometry=None):
     """ReportQuantResults(Quant): Generates human readable report strings for the At% and Wt% results from the quant.
 
     :param Quant: An OrderedDict with key = element name (e.g. 'H' or 'Fe') and value = (At%, Wt %).  The first
@@ -21,21 +24,40 @@ def FormatQuantResults(Quant):
     # Start with a blank report.
     ReportStr = ''
 
-    # For every element that is in the sample (non-zero abundance), we are going to include it in the result.
+    # Report on the parameters used in the fit.
+    if ArbitraryAbsorptionCorrection is not None:
+        ReportStr += 'Arbitrary Absorption Correction used: %s\n' % (ArbitraryAbsorptionCorrection)
+        print ArbitraryAbsorptionCorrection
+
+    if AbsorptionCorrection is not None and AbsorptionCorrection != 0:
+        ReportStr += 'Absorption Correction: %f nm*g/cm\n' % (AbsorptionCorrection*1000)
+        ReportStr += 'Takeoff angle: %0.2f degrees\n' % (Takeoff)
+
+    if OByStoichiometry is not None:
+        ReportStr += 'Oxygen determined by stoichiometry\n'
+        print OByStoichiometry
+        OStoich = map('{:8.3f}'.format, OByStoichiometry)
+    else:
+        OStoich =  ['{:>8s}'.format('n/a')]*len(Quant)
+
+    ReportStr += '\n'
+
+# For every element that is in the sample (non-zero abundance), we are going to include it in the result.
 
     # Comprehend all the zero-abundance elements out.
     Q = OrderedDict([(El, Abund) for (El, Abund) in Quant.iteritems() if Abund[0] > 0])
 
     # Now let's print out each element
     ReportStr += 'Quantification results:\n'.format()
-    ReportStr += '{:<8s} {:>8s} {:>8s} {:>8s}\n'.format('Element', 'At%', 'Wt%', 'Ox Wt %')
+    ReportStr += '{:<8s} {:>8s} {:>8s} {:>8s} {:>8s} {:>8s}\n'.format('Element', 'At%', 'Wt%', 'Ox Wt %', 'Valence', 'k-factor')
     for El, Abund in Q.iteritems():
+        ElIndex = pb.ElementDict.keys().index(El)-1
         if Abund[1] > 0.1:
             # Report straightforward percentages.
-            ReportStr += '{:8s} {:8.3f} {:8.3f} {:8.3f}\n'.format(El, Abund[0], Abund[1], Abund[2])
+            ReportStr += '{:8s} {:8.3f} {:8.3f} {:8.3f} {:8s} {:8.3f}\n'.format(El, Abund[0], Abund[1], Abund[2], OStoich[ElIndex], Abund[3])
         else:
             # For trace elements report ppm.
-            ReportStr += '{:8s} {:4.0f} ppm {:4.0f} ppm {:4.0f} ppm\n'.format(El, Abund[0]*1e4, Abund[1]*1e4, Abund[1]*1e4)
+            ReportStr += '{:8s} {:4.0f} ppm {:4.0f} ppm {:4.0f} ppm {:8s} {:8.3f}\n'.format(El, Abund[0]*1e4, Abund[1]*1e4, Abund[1]*1e4, OStoich[ElIndex], Abund[3])
 
     ReportStr += '\n'.format()
 
