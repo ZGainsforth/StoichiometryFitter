@@ -53,7 +53,7 @@ for i in range(1, pb.MAXELEMENT+1):
     ElName = pb.ElementalSymbols[i]
     SavStr += '%s,%f\n' %(ElName, ElDict[ElName])
 
-with open('ConfigData/Absorption Titan Detector Experiment.csv', 'w') as f:
+with open('ConfigData/Absorption Titan Detector Window.csv', 'w') as f:
     f.write(SavStr)
 
 # ConfigParser.add_section('THIN FILM')

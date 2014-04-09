@@ -104,7 +104,7 @@ class MyFrame(wx.Frame):
         self.sizer_5_copy_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("Arbitrary absorption"))
         self.chkAbsCorr = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
         self.txtAbsCorr = wx.TextCtrl(self.panel_1, wx.ID_ANY, "")
-        self.txtTakeoff = wx.TextCtrl(self.panel_1, wx.ID_ANY, _("90"))
+        self.txtTakeoff = wx.TextCtrl(self.panel_1, wx.ID_ANY, _("18"))
         self.label_1 = wx.StaticText(self.panel_1, wx.ID_ANY, _("g/cm3 * nm"), style=wx.ALIGN_CENTRE)
         self.label_1_copy = wx.StaticText(self.panel_1, wx.ID_ANY, _("takeoff in deg"), style=wx.ALIGN_CENTRE)
         self.sizer_3_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("TEM Thickness Correction"))
@@ -401,7 +401,7 @@ class MyFrame(wx.Frame):
                 return
         else:
             AbsorptionCorrection = 0
-            Takeoff=90
+            Takeoff=18
 
         # Find out if we are using oxygen by stoichiometry
         if self.chkOByStoichiometry.IsChecked():

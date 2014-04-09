@@ -82,12 +82,17 @@ def DoAbsorption(E, Iin, WtPct, rho, AbsorptionLength, Takeoff=90):
 #    I = nan_to_num(Iin*exp(-1.*AbsorptionLength/AbsorptionCurve))
 #    I = nan_to_num(Iin*exp(-1.*AbsorptionLength*TakeoffCoeff/AbsorptionCurve))
 #    TakeoffCoeff = 1/sin(Takeoff*pi/180); I = nan_to_num(Iin*(1-exp(-AbsorptionLength*TakeoffCoeff/AbsorptionCurve))/(TakeoffCoeff/AbsorptionCurve))
-    I = nan_to_num((Iin*TakeoffCoeff/murho)*(1-exp(-AbsorptionLength/TakeoffCoeff)))
+    if AbsorptionLength >= 0:
+        # If AbsorptionLength is positive, then it means we start with I0 and compute I after being absorbed by AbsorptionLength.
+        I = nan_to_num(Iin*TakeoffCoeff/(murho*AbsorptionLength)*(1-exp(-murho*AbsorptionLength/TakeoffCoeff)))
+    else:
+        # If negative, it means we have I and want to figure out what I0 was before being absorbed.
+        # Notice we minus AbsorptionLength since it was input as a negative value, but beers law want's positive values.
+        I = nan_to_num((Iin*murho*(-AbsorptionLength)/TakeoffCoeff)/(1-exp(murho*AbsorptionLength/TakeoffCoeff)))
 
-
-
-
-#I = I0*(exp(-u*r*Z/sin(phi)))/(u*r/sin(phi))
+    """ These come from solving the integral:
+    I = I0 * int(exp(-murho*t/sin(Takeoff)), dt for t=0 to AbsorptionLength)
+    """
 
     # Return the modified intensity after absorption.
     return I
