@@ -108,3 +108,21 @@ def GetSelectedItemsFromListCtrl(ListCtrl):
 
     # Return the list.
     return Strings
+
+def PickleVar(VarName, VarValue=None, DefaultValue=None):
+    """ If a user supplies a VarValue, then he is writing it.  Otherwise, he is reading it.
+    """
+
+    # If VarValue exists, that means the user wants to write the value.
+    if VarValue is not None:
+        pickle.dump(VarValue, open(VarName.lower() + '.pickle', 'wb'))
+        return
+
+    # No VarValue means the user wants to read it.
+    try:
+        # Check for a pickle file.
+        VarOut = pickle.load(open(VarName.lower() + '.pickle', 'rb'))
+        return VarOut
+    except:
+        # It wasn't pickled.  Return the default.
+        return DefaultValue
