@@ -545,18 +545,12 @@ class MyFrame(wx.Frame):
             event.Skip()
 
     def OnOpen(self, event):  # wxGlade: MyFrame.<event_handler>
-        # Use the user's last save dir if this is the second time we're calling this.
-        LastOnOpenDir = MyPython.PickleVar('LastOnOpenDir', DefaultValue='')
-
-        dlg = wx.FileDialog(self, 'Open counts/At%/Wt% input file', LastOnOpenDir,'','Comma space delimited (*.csv)|*'
+        dlg = wx.FileDialog(self, 'Open counts/At%/Wt% input file', '','','Comma space delimited (*.csv)|*'
                                                                           '.csv|Any file (*.*)|*.*', wx.FD_OPEN |
                                                                           wx.FD_FILE_MUST_EXIST)
 
         if dlg.ShowModal() == wx.ID_CANCEL:
             return
-
-        # Store the directory
-        MyPython.PickleVar('LastOnOpenDir', VarValue=dlg.GetDirectory())
 
         InputDat = genfromtxt(dlg.GetPath(), dtype=float, delimiter=',', usecols=(1), autostrip=True, comments='#',
                               names=True)
@@ -596,17 +590,11 @@ class MyFrame(wx.Frame):
         return
 
     def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
-        # Use the user's last save dir if this is the second time we're calling this.
-        LastOnSaveInputsDir = MyPython.PickleVar('LastOnSaveInputsDir', DefaultValue='')
-
-        dlg = wx.FileDialog(self, 'Save inputs', LastOnSaveInputsDir, '', 'CSV file (*.csv)|*'
+        dlg = wx.FileDialog(self, '', '', '', 'CSV file (*.csv)|*'
                                                          '.csv|Any file (*.*)|*.*', wx.FD_SAVE)
 
         if dlg.ShowModal() == wx.ID_CANCEL:
             return
-
-        # Store the directory
-        MyPython.PickleVar('LastOnSaveInputsDir', VarValue=dlg.GetDirectory())
 
         if self.rdioInputType.GetSelection() == 0:
             SavStr = 'Element,Counts\n'
@@ -628,16 +616,10 @@ class MyFrame(wx.Frame):
         return
 
     def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
-        # Use the user's last save dir if this is the second time we're calling this.
-        LastOnSaveDir = MyPython.PickleVar('LastOnSaveDir', DefaultValue='')
-
-        dlg = wx.FileDialog(self, 'Save report', LastOnSaveDir, '', 'Text file (*.txt)|*.txt|Any file (*.*)|*.*', wx.FD_SAVE)
+        dlg = wx.FileDialog(self, 'Save report', '', '', 'Text file (*.txt)|*.txt|Any file (*.*)|*.*', wx.FD_SAVE)
 
         if dlg.ShowModal() == wx.ID_CANCEL:
             return
-
-        # Store the directory
-        MyPython.PickleVar('LastOnSaveDir', VarValue=dlg.GetDirectory())
 
         fid = open(dlg.GetPath(), 'w')
         fid.write(self.txtOutput.GetString(0, -1))
