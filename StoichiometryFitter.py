@@ -370,6 +370,13 @@ class MyFrame(wx.Frame):
         for Z in range(1, pb.MAXELEMENT + 1):
             self.Counts[Z-1] = float(self.ElementsListCtrl.GetItem(Z - 1,1).GetText())
 
+        # Extract the stoichiometry vector out of the ElementsListControl.
+        # Z-1 since H=1 is the first atom, and the list is zero based.
+        for Z in range(1, pb.MAXELEMENT + 1):
+            if self.ElementsListCtrl.GetItem(Z - 1,2).GetText() == 'n/a':
+                break
+            self.Stoich[Z-1][1] = float(self.ElementsListCtrl.GetItem(Z - 1,2).GetText())
+
         # Make the input human readable and output it for reference.
         InputDat = OrderedDict(zip(pb.ElementalSymbols[1:], self.Counts))
         ReportStr = ReportResults.FormatInputResults(InputDat, self.rdioInputType.StringSelection)
