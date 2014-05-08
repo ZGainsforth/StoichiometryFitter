@@ -49,85 +49,20 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     for i in ['Si','Ti','Al','Mn','Mg','Ca','Ni','Zn','Cr','V','Fe']:
         E[i] *= 3/OriginalTotalCations
 
+    # Calculate Fe3+/sum(Fe) by stoichiometry.  Assume nominal oxidation states for all the other elements, and only allow the oxidation state of Fe to change.
+    Charge = E['Si']*4 + E['Ti']*4 + E['Al']*3 + E['Mn']*2 + E['Mg']*2 + E['Ca']*2 + E['Ni']*2 + E['Zn']*2 + E['Cr']*3 + E['V']*3
 
-    # A is the octahedral site, usually 2+. (But also takes Ti4+)
-    # B is the tetrahedral site, usually 3+.
+    # We should have 3 cations.  In this case, we expect a total charge of 8 (2*3+ + 2+)  Figure how much charge we need from the Fe.
+    ChargeDeficit = 8-Charge
+    # x is the Fe2+ fraction.  Gotten by solving ChargeDeficit = x*Fe*2 + (1-x)*Fe+3
+    x = 3 - ChargeDeficit/E['Fe']
 
-    # Mg, Mn, Ni, Zn always go in A.
-    A = E['Mg'] + E['Mn']+ E['Ni']+ E['Zn']
-    ACharge = A*2
+    TotalCations = E['Si'] + E['Ti'] + E['Al'] + E['Mn'] + E['Mg'] + E['Ca'] + E['Ni'] + E['Zn'] + E['Cr'] + E['V'] + E['Fe']
+    TotalCharge = Charge + x*E['Fe']*2 + (1-x)*E['Fe']*3
 
-    # Al, Cr, and V, always go in B
-    B = E['Al'] + E['Cr'] + E['V']
-    BCharge = B*3
-
-    # Ti goes in octahedral, and leaves a charge surplus.
-    A += E['Ti']
-    ACharge += E['Ti']*4
-
-    # Fe splits the difference, filling up 3+ in B and 2+ in A.
-    # So first we fill up A:
-
-    Fe = E['Fe']
-    FeA = (1 - A) # How many atoms to fill up A.
-    FeB = Fe-FeA # The rest of the atoms are going into B.
-    if FeA<=Fe:
-        A += FeA
-        ACharge += FeA*2
-        Fe-=FeA
-
-    # The remaining Fe goes in B as whatever oxidation state balances the total charge.
-    ChargeDeficit = 8-(ACharge+BCharge)
-    #AtomDeficit = 3-(A+B)
-
-    # If there is not enough iron to make up the difference, it all goes 3+
-    if ChargeDeficit > 3*FeB:
-        Fe2 = 0
-        Fe3 = FeB
-        B += FeB
-        BCharge += 3*FeB
-    # Or if there is too much iron for the charge deficit, it all goes 2+
-    elif ChargeDeficit <= 2*FeB:
-        Fe2 = FeB
-        Fe3 = 0
-        B += FeB
-        BCharge += 2*FeB
-    else:
-        # In between:
-        # x is Fe2+ in B.  y is Fe3+ in B.  FeB is the total number of Fe atoms in B.
-        # ChargeDeficit is the total charge supplied by the Fe.
-        # 2x+3y = ChargeDeficit
-        # x+y = FeB
-        # Solve for x (Fe2+) and y (Fe3+)
-        Fe2 = (3*FeB-ChargeDeficit)
-        Fe3 = (ChargeDeficit-2*FeB)
-        B += Fe2+Fe3
-        BCharge += 2*Fe2 + 3*Fe3
-
-    OutStr += 'Site A (octahedral):\n'
-    OutStr += '{:>11s}:    {:<10s}\n'.format('Element', 'Occupancy')
-    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Mg2+', E['Mg'])
-    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Mn2+', E['Mn'])
-    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Ni2+', E['Ni'])
-    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Zn2+', E['Zn'])
-    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Fe2+', FeA)
-    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Ti4+', E['Ti'])
-    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Total occ', A)
-    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Charge', ACharge)
-    OutStr += '\n'
-    OutStr += 'Site B (Tetrahedral):\n'
-    OutStr += '{:>11s}:    {:<10s}\n'.format('Element', 'Occupancy')
-    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Al3+', E['Al'])
-    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Cr3+', E['Cr'])
-    OutStr += '{:>11s}:    {:<1.3f}\n'.format('V3+', E['V'])
-    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Fe2+', Fe2)
-    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Fe3+', Fe3)
-    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Total occ', B)
-    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Charge', BCharge)
-    OutStr += '\n'
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Sum Cations', OriginalTotalCations)
-    OutStr += 'Fe3+/sum(Fe) =  {:.3f}\n'.format(Fe3/(FeA+Fe2+Fe3))
-    OutStr += 'Note, the cations have been set to 3 so the occupancy should be perfect.  Sum cations is the original sum for evaluating the quality of the fit.\n'
+    #OutStr += '{:>11s}:    {:<1.3f}\n'.format('Total Charge', TotalCharge) # This one's not so useful.  It will always produce 8...
+    OutStr += 'Fe3+/sum(Fe) =  {:.3f}\n'.format(1-x)
 
     return OutStr
     

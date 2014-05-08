@@ -81,15 +81,19 @@ def FormatInputResults(Quant, InputType):
     Q = OrderedDict([(El, Abund) for (El, Abund) in Quant.iteritems() if Abund > 0])
 
     # Now let's print out each element
+    SumAbundance = 0
     ReportStr += 'Input data:\n'.format()
     ReportStr += '{:<8s} {:>15s}\n'.format('Element', InputType)
     for El, Abund in Q.iteritems():
+        SumAbundance += Abund
         if Abund > 0.1:
             # Report straightforward percentages.
             ReportStr += '{:8s} {:15.3f}\n'.format(El, Abund)
         else:
             # For trace elements report ppm.
-            ReportStr += '{:8s} {:11.0f} ppm\n'.format(El, Abund)
+            ReportStr += '{:8s} {:11.0f} ppm\n'.format(El, Abund*1e4)
+    # Report the sum.
+    ReportStr += '{:8s} {:15.3f}\n'.format('Total:', SumAbundance)
 
     ReportStr += '\n'.format()
 
