@@ -19,7 +19,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr = '--- Spinel Analysis ---\n\n'
 
     # This analysis only knows about these elements:
-    KnownElements = ['Si', 'Ca', 'O', 'Mg', 'Al', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Ni', 'Zn']
+    KnownElements = ['O', 'Mg', 'Al', 'Si', 'Ca', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Ni', 'Zn']
 
     # If anything else accounts for more than 2 At % then this analysis is garbage
     OtherCations = 0
@@ -45,6 +45,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
         E[Element] = eval('AtPct[pb.%s-1]/100*7'%Element)
 
     OriginalTotalCations = E['Si'] + E['Ti'] + E['Al'] + E['Mn'] + E['Mg'] + E['Ca'] + E['Ni'] + E['Zn'] + E['Cr'] + E['V'] + E['Fe']
+    OriginalE = E.copy()
     # For the stoichiometry calculation to work, we have to have EXACTLY 3 cations.  So make it so, but we will keep the original number for reporting.
     for i in ['Si','Ti','Al','Mn','Mg','Ca','Ni','Zn','Cr','V','Fe']:
         E[i] *= 3/OriginalTotalCations
@@ -125,9 +126,18 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Total occ', B)
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Charge', BCharge)
     OutStr += '\n'
+    OutStr += 'Cations per 4 oxygens:\n'
+    OutStr += '{:>11s}:    {:<10s}\n'.format('Element', '#')
+    for ElName in KnownElements:
+        if ElName != 'O' and OriginalE[ElName] != 0:
+            OutStr += '{:>11s}:    {:<1.3f}\n'.format(ElName, OriginalE[ElName])
+    OutStr += '\n'
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Sum Cations', OriginalTotalCations)
     OutStr += 'Fe3+/sum(Fe) =  {:.3f}\n'.format(Fe3/(FeA+Fe2+Fe3))
     OutStr += 'Note, the cations have been set to 3 so the occupancy should be perfect.  Sum cations is the original sum for evaluating the quality of the fit.\n'
+    OutStr += '\n'
+
+
 
     return OutStr
     
