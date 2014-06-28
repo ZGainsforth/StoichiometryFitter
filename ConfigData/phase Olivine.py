@@ -19,7 +19,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr = '--- Olivine Analysis ---\n\n'
 
     # This analysis only knows about these elements:
-    KnownElements = ['O', 'Na', 'Mg', 'Si', 'Ca', 'Cr', 'Mn', 'Fe', 'Ni']
+    KnownElements = ['O', 'Na', 'Mg', 'Al', 'Si', 'Ca', 'Ti', 'Cr', 'Mn', 'Fe', 'Ni']
 
     # If anything else accounts for more than 2 At % then this analysis is garbage
     OtherCations = 0
@@ -41,8 +41,16 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     E = dict()
 
+    # This is supposed to be cations/4oxy.  But this is actually cation/7atoms.
+    # for Element in KnownElements:
+    #     E[Element] = eval('AtPct[pb.%s-1]/100*7'%Element)
+
+    # We already did stoichiometry so cations/4 oxy can be ratioed against the O exactly.
     for Element in KnownElements:
-        E[Element] = eval('AtPct[pb.%s-1]/100*7'%Element)
+        E[Element] = eval('AtPct[pb.%s-1]/AtPct[pb.O-1]*4'%Element)
+
+    # OriginalE is the unnormalized vector of elements so we can do cation sums.
+    OriginalE = E.copy()
 
     # Compute how many cations in the M2 + M2 sites.
     M1M2 = sum(array([e for e in E.values()])) - E['O'] - E['Si']
@@ -54,6 +62,22 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
             continue
         if E[e] != 0:
             OutStr += e + '/(M1+M2) = %0.3f\n' % (E[e]/M1M2)
+
+    OutStr += '\n'
+    OutStr += 'Cations per 4 oxygens:\n'
+    OutStr += '{:>11s}:    {:<10s}\n'.format('Element', '#')
+    CationSum = 0
+    for ElName in KnownElements:
+        if ElName != 'O' and OriginalE[ElName] != 0:
+            CationSum += OriginalE[ElName]
+            if OriginalE[ElName] < 0.01:
+                # Handle ppm levels gracefully.
+                OutStr += '{:>11s}:    {:<1.3f}'.format(ElName, OriginalE[ElName])
+                OutStr += ', {:>11s}:    {:<4.0f} * 10^-6\n'.format(ElName, OriginalE[ElName]*1e6)
+            else:
+                OutStr += '{:>11s}:    {:<1.3f}\n'.format(ElName, OriginalE[ElName])
+    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Total Cats', CationSum)
+
 
     return OutStr
     

@@ -18,7 +18,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr = '--- Pyroxene Analysis ---\n\n'
 
     # This analysis only knows about these elements:
-    KnownElements = ['Si', 'Al', 'Fe', 'Ti', 'Cr', 'V', 'Zr', 'Sc', 'Zn', 'Mg', 'Mn', 'Li', 'Ca', 'Na', 'O']
+    KnownElements = ['O', 'Na', 'Si', 'Al', 'Fe', 'Ti', 'Cr', 'V', 'Zr', 'Sc', 'Zn', 'Mg', 'Mn', 'Li', 'Ca']
 
     # If anything else accounts for more than 2 At % then note this
     OtherCations = 0
@@ -33,9 +33,12 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     E = dict()
 
-    # Convert from At% to atoms assuming 10 atoms basis.
+    # # Convert from At% to atoms assuming 10 atoms basis.
+    # for Element in KnownElements:
+    #     E[Element] = eval('AtPct[pb.%s-1]/100*10'%Element)
+    # Convert from At% to cations assuming 6 oxygens.
     for Element in KnownElements:
-        E[Element] = eval('AtPct[pb.%s-1]/100*10'%Element)
+        E[Element] = eval('AtPct[pb.%s-1]/AtPct[pb.O-1]*6'%Element)
 
     Cations = sum(E.values()) - E['O']
     Anions = E['O']
@@ -198,6 +201,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     PrintIfNonzero = lambda k, v: '{:>11s}:    {:<1.3f}\n'.format(k, v) if v != 0 else ''
 
+    OutStr += 'Assume exactly 4 cations and compute to fill sites and balance charge:\n'
     OutStr += 'Site T (tetrahedral):\n'
     OutStr += '{:>11s}:    {:<10s}\n'.format('Element', 'Occupancy')
     for k, v in OrderedDict((('Si4+', SiT),
@@ -242,6 +246,11 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr += '\n'
     OutStr += 'Ideal sum cations = 4, Ideal sum charge = 12\n'
     OutStr += 'Raw sum cat is the unnormalized sum of the cations.\n'
+    OutStr += '\n'
+    # OutStr += 'Cations per for oxygens:\n'
+    # OutStr += '{:>11s}:    {:<10s}\n'.format('Element', '#')
+    # for k,v in KnownElements
+    #
     OutStr += '\n'
     OutStr += 'Ref: Morimoto, N., Fabries, J., Ferguson, A. K., Ginzburg, I. V., Ross, M., Seifert, F. A., et al. (1988). Nomenclature of pyroxenes. American Mineralogist, 73, 1123-1133.\n'
     OutStr += 'We assume oxidation priority: Ti3+ - Ti4+ - Fe2+ - Fe3+ (i.e. Ti3+ is only possible if all Fe is 2+, and Fe3+ is possible only with Ti4+).\n'

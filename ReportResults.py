@@ -57,7 +57,7 @@ def FormatQuantResults(Quant, ArbitraryAbsorptionCorrection=None,
             ReportStr += '{:8s} {:8.3f} {:8.3f} {:8.3f} {:8s} {:8.3f}\n'.format(El, Abund[0], Abund[1], Abund[2], OStoich[ElIndex], Abund[3])
         else:
             # For trace elements report ppm.
-            ReportStr += '{:8s} {:4.0f} ppm {:4.0f} ppm {:4.0f} ppm {:8s} {:8.3f}\n'.format(El, Abund[0]*1e4, Abund[1]*1e4, Abund[1]*1e4, OStoich[ElIndex], Abund[3])
+            ReportStr += '{:8s} {:4.0f} ppm {:4.0f} ppm {:4.0f} ppm {:8s} {:8.3f}\n'.format(El, Abund[0]*1e4, Abund[1]*1e4, Abund[2]*1e4, OStoich[ElIndex], Abund[3])
 
     ReportStr += '\n'.format()
 

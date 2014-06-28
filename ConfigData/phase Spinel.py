@@ -41,8 +41,14 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     E = dict()
 
+    # # Cations per 7 atoms.
+    # for Element in KnownElements:
+    #     E[Element] = eval('AtPct[pb.%s-1]/100*7'%Element)
+
+    # TODO test spinel cations per four oxygens.
+    # Cations per four oxygens.
     for Element in KnownElements:
-        E[Element] = eval('AtPct[pb.%s-1]/100*7'%Element)
+        E[Element] = eval('AtPct[pb.%s-1]/AtPct[pb.O-1]*4'%Element)
 
     OriginalTotalCations = E['Si'] + E['Ti'] + E['Al'] + E['Mn'] + E['Mg'] + E['Ca'] + E['Ni'] + E['Zn'] + E['Cr'] + E['V'] + E['Fe']
     OriginalE = E.copy()

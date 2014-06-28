@@ -32,8 +32,8 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     E = dict()
 
-    for Element in KnownElements:
-        E[Element] = eval('AtPct[pb.%s-1]/100*7'%Element)
+    # for Element in KnownElements:
+    #     E[Element] = eval('AtPct[pb.%s-1]/100*7'%Element)
 
     Cations = (E['Fe']+E['Ni']+E['Cr']+E['Mn']+E['Cu']+E['Zn'])
     Anions = (E['S']+E['Se'])
