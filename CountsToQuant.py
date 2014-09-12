@@ -60,7 +60,7 @@ floatme = lambda s: float(s or 0)
 def AbsorptionUsingWtPct(AbsRho, AbsTau, AbsWtPct, Counts, Takeoff=90):
     # Get the energy of each line (actually a weighted average of the lines of that series).
     LineEnergies = zeros(pb.MAXELEMENT)
-    for Z in range(3, 50):  # We start at 3 because H and He don't have fluor emission per se.
+    for Z in range(3, 92):  # We start at 3 because H and He don't have fluor emission per se.
         # For now, we only use K-shell.
         LineEnergies[Z - 1] = ce.GetFluorescenceLineEnergy(pb.ElementalSymbols[Z], 'K')
 

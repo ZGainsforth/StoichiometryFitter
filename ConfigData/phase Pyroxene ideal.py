@@ -47,15 +47,29 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     # If the cation/O ratio is off by more than 2%, then warn the user.
     if Cations/Anions > 2./3*1.02:
-        OutStr += '(Too many cations, non-stoichiometric)'
+        OutStr += '(Too many cations, non-stoichiometric)\n'
     elif Cations/Anions < 2./3*0.98:
-        OutStr += '(Too few cations, non-stoichiometric)'
+        OutStr += '(Too few cations, non-stoichiometric)\n'
 
     #OriginalTotalCations = E['Si'] + E['Ti'] + E['Al'] + E['Mn'] + E['Mg'] + E['Ca'] + E['Ni'] + E['Zn'] + E['Cr'] + E['V'] + E['Fe']
     OriginalTotalCations = sum([e for (k, e) in E.items() if k in KnownElements if k != 'O'])
     # For the stoichiometry calculation to work, we have to have EXACTLY 4 cations (10 atom basis).  So make it so, but we will keep the original number for reporting.
     for i in KnownElements:
         E[i] *= 4/OriginalTotalCations
+
+    # Report the En type stuff.
+    # First, assume M1+M2 = everything except O, Si and Al.
+    M1M2sum = sum([e for (k, e) in E.items() if k in KnownElements]) - E['O'] - E['Al'] - E['Si']
+    OutStr += 'Mg/(Mg+Fe) = %0.3f\n' % (E['Mg']/(E['Mg']+E['Fe']))
+    Cationtally = 0
+    for e in KnownElements:
+        if e in ['O', 'Si', 'Al']:
+            continue
+        if E[e] != 0:
+            OutStr += e + '/(M1+M2) = %0.3f\n' % (E[e]/M1M2sum)
+            Cationtally += E[e]/M1M2sum
+
+    OutStr += 'Assumed M1+M2 = %0.3f which is everything except O, Si and Al\n\n' % Cationtally
 
 
     # Build the site occupancies.
