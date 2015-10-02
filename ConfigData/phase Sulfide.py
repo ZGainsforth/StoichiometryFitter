@@ -17,7 +17,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr = '--- Sulfide Analysis ---\n\n'
 
     # This analysis only knows about these elements:
-    KnownElements = ['Fe', 'Ni', 'S', 'Se', 'Cr', 'Mn', 'Cu', 'Zn']
+    KnownElements = ['Fe', 'Ni', 'S', 'Se', 'Cr', 'Mn', 'Cu', 'Zn', 'Co']
 
     # If anything else accounts for more than 2 At % then note this
     OtherCations = 0
@@ -35,7 +35,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     for Element in KnownElements:
         E[Element] = eval('AtPct[pb.%s-1]'%Element)
 
-    Cations = (E['Fe']+E['Ni']+E['Cr']+E['Mn']+E['Cu']+E['Zn'])
+    Cations = (E['Fe']+E['Ni']+E['Cr']+E['Mn']+E['Cu']+E['Zn']+E['Co'])
     Anions = (E['S']+E['Se'])
 
     # Based on: Nakazawa, H., & Morimoto, N. (1971). Phase relations and superstructures of pyrrhotite, Fe1-xS. Materials Research Bulletin, 6(5), 345-357.
@@ -84,7 +84,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
         OutStr += 'Cu/Fe = %0.3f, %0.3f X chondritic\n' % (E['Cu']/E['Fe'], (E['Cu']/E['Fe'])/float('6.036E-4'))
     if E['Zn'] > 0:
         OutStr += 'Zn/Fe = %0.3f, %0.3f X chondritic\n' % (E['Zn']/E['Fe'], (E['Zn']/E['Fe'])/float('1.478E-3'))
-    OutStr += '(Fe+Ni+Cr+Mn+Cu+Zn)/(S+Se) = %0.3f\n' % (Cations/Anions)
+    OutStr += '(Fe+Ni+Cr+Mn+Cu+Zn+Co)/(S+Se) = %0.3f\n' % (Cations/Anions)
     OutStr += 'Probable superlattice at room temperature: %s\n' % (NakazawaPhase)
     OutStr += 'Ref: Nakazawa, H., & Morimoto, N. (1971). Phase relations and superstructures of pyrrhotite, Fe1-xS. Materials Research Bulletin, 6(5), 345-357.\n'
 

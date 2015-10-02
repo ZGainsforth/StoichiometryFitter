@@ -89,30 +89,30 @@ class MyFrame(wx.Frame):
         self.SetMenuBar(self.MainMenu)
         # Menu Bar end
         self.panel_4 = wx.Panel(self, wx.ID_ANY)
-        self.ElementsListCtrl = EditableTextListCtrl(self.panel_4, wx.ID_ANY, style=wx.LC_REPORT | wx.LC_EDIT_LABELS | wx.LC_SINGLE_SEL | wx.SUNKEN_BORDER | wx.FULL_REPAINT_ON_RESIZE)
+        self.ElementsListCtrl = EditableTextListCtrl(self.panel_4, wx.ID_ANY, style=wx.BORDER_SUNKEN | wx.FULL_REPAINT_ON_RESIZE | wx.LC_EDIT_LABELS | wx.LC_REPORT | wx.LC_SINGLE_SEL)
         self.rdioInputType = wx.RadioBox(self.panel_4, wx.ID_ANY, _("Input Type"), choices=[_("Counts"), _("At %"), _("Wt %"), _("Ox Wt %")], majorDimension=0, style=wx.RA_SPECIFY_ROWS)
         self.btnReset = wx.Button(self.panel_4, wx.ID_ANY, _("Reset"))
         self.panel_5 = wx.Panel(self, wx.ID_ANY)
-        self.PhasesListCtrl = wx.ListCtrl(self.panel_5, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER)
+        self.PhasesListCtrl = wx.ListCtrl(self.panel_5, wx.ID_ANY, style=wx.BORDER_SUNKEN | wx.LC_REPORT)
         self.panel_1 = wx.Panel(self, wx.ID_ANY)
         self.panel_2 = wx.Panel(self.panel_1, wx.ID_ANY)
         self.chkPhaseAnalysis = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
-        self.cmbPhaseAnalysis = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        self.cmbPhaseAnalysis = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_READONLY)
         self.sizer_14_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("Phase Analysis"))
         self.chkArbAbsCorrection = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
-        self.comboArbAbsCorrection = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        self.comboArbAbsCorrection = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_READONLY)
         self.sizer_5_copy_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("Arbitrary absorption"))
         self.chkAbsCorr = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
         self.txtAbsCorr = wx.TextCtrl(self.panel_1, wx.ID_ANY, "")
-        self.txtTakeoff = wx.TextCtrl(self.panel_1, wx.ID_ANY, _("18"))
-        self.label_1 = wx.StaticText(self.panel_1, wx.ID_ANY, _("g/cm3 * nm"), style=wx.ALIGN_CENTRE)
-        self.label_1_copy = wx.StaticText(self.panel_1, wx.ID_ANY, _("takeoff in deg"), style=wx.ALIGN_CENTRE)
+        self.txtTakeoff = wx.TextCtrl(self.panel_1, wx.ID_ANY, _("90"))
+        self.label_1 = wx.StaticText(self.panel_1, wx.ID_ANY, _("g/cm3 * nm"), style=wx.ALIGN_CENTER)
+        self.label_1_copy = wx.StaticText(self.panel_1, wx.ID_ANY, _("takeoff in deg"), style=wx.ALIGN_CENTER)
         self.sizer_3_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("TEM Thickness Correction"))
         self.chkKfacs = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
-        self.comboKfacs = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        self.comboKfacs = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_READONLY)
         self.sizer_4_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("Apply k-factors for:"))
         self.chkOByStoichiometry = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
-        self.comboStoich = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_DROPDOWN | wx.CB_READONLY)
+        self.comboStoich = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_READONLY)
         self.sizer_5_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("Oxygen by stoichiometry?"))
         self.btnGo = wx.Button(self.panel_1, wx.ID_ANY, _("Go!"))
         self.panel_3 = wx.Panel(self.panel_1, wx.ID_ANY)
@@ -166,7 +166,7 @@ class MyFrame(wx.Frame):
     def __set_properties(self):
         # begin wxGlade: MyFrame.__set_properties
         self.SetTitle(_("Stoichiometry Fitter"))
-        self.SetSize((1118, 703))
+        self.SetSize((1300, 703))
         self.ElementsListCtrl.SetMinSize((200, 100))
         self.rdioInputType.SetMinSize((200,120))
         self.rdioInputType.SetSelection(0)
@@ -188,7 +188,7 @@ class MyFrame(wx.Frame):
         # begin wxGlade: MyFrame.__do_layout
         sizer_1 = wx.FlexGridSizer(1, 1, 0, 0)
         sizer_2 = wx.FlexGridSizer(1, 4, 0, 0)
-        grid_sizer_1 = wx.FlexGridSizer(6, 1, 0, 0)
+        grid_sizer_1 = wx.FlexGridSizer(8, 1, 0, 0)
         sizer_7 = wx.BoxSizer(wx.VERTICAL)
         self.sizer_5_staticbox.Lower()
         sizer_5 = wx.StaticBoxSizer(self.sizer_5_staticbox, wx.HORIZONTAL)
@@ -203,7 +203,7 @@ class MyFrame(wx.Frame):
         self.sizer_14_staticbox.Lower()
         sizer_14 = wx.StaticBoxSizer(self.sizer_14_staticbox, wx.HORIZONTAL)
         sizer_11 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer_6 = wx.FlexGridSizer(2, 1, 0, 0)
+        sizer_6 = wx.FlexGridSizer(3, 1, 0, 0)
         sizer_8 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_10 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_9 = wx.BoxSizer(wx.HORIZONTAL)
@@ -211,7 +211,7 @@ class MyFrame(wx.Frame):
         sizer_6.Add(sizer_9, 0, wx.EXPAND, 0)
         sizer_10.Add(self.rdioInputType, 0, wx.EXPAND, 0)
         sizer_6.Add(sizer_10, 0, wx.EXPAND, 0)
-        sizer_8.Add(self.btnReset, 0, wx.ALL | wx.EXPAND | wx.ALIGN_CENTER_HORIZONTAL, 2)
+        sizer_8.Add(self.btnReset, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.EXPAND, 2)
         sizer_6.Add(sizer_8, 0, wx.EXPAND, 0)
         self.panel_4.SetSizer(sizer_6)
         sizer_6.AddGrowableRow(0)
@@ -230,9 +230,9 @@ class MyFrame(wx.Frame):
         sizer_12.Add(self.txtAbsCorr, 1, wx.EXPAND, 0)
         sizer_12.Add(self.txtTakeoff, 0, wx.EXPAND, 0)
         sizer_3.Add(sizer_12, 1, wx.EXPAND, 0)
-        sizer_13.Add(self.label_1, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0)
-        sizer_13.Add(self.label_1_copy, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0)
-        sizer_3.Add(sizer_13, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0)
+        sizer_13.Add(self.label_1, 0, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
+        sizer_13.Add(self.label_1_copy, 0, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
+        sizer_3.Add(sizer_13, 1, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
         grid_sizer_1.Add(sizer_3, 1, wx.EXPAND, 0)
         sizer_4.Add(self.chkKfacs, 0, 0, 0)
         sizer_4.Add(self.comboKfacs, 1, wx.ALL | wx.EXPAND, 2)
@@ -240,12 +240,12 @@ class MyFrame(wx.Frame):
         sizer_5.Add(self.chkOByStoichiometry, 0, 0, 0)
         sizer_5.Add(self.comboStoich, 1, wx.ALL | wx.EXPAND, 2)
         grid_sizer_1.Add(sizer_5, 1, wx.EXPAND, 0)
-        sizer_7.Add(self.btnGo, 0, wx.ALL | wx.EXPAND | wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 2)
-        grid_sizer_1.Add(sizer_7, 1, wx.EXPAND | wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
+        sizer_7.Add(self.btnGo, 0, wx.ALIGN_CENTER | wx.ALL | wx.EXPAND, 2)
+        grid_sizer_1.Add(sizer_7, 1, wx.ALIGN_CENTER | wx.EXPAND, 0)
         grid_sizer_1.Add(self.panel_3, 1, wx.EXPAND, 0)
         self.panel_1.SetSizer(grid_sizer_1)
         grid_sizer_1.AddGrowableRow(0)
-        grid_sizer_1.AddGrowableRow(5)
+        grid_sizer_1.AddGrowableRow(7)
         grid_sizer_1.AddGrowableCol(0)
         sizer_2.Add(self.panel_1, 0, wx.EXPAND, 0)
         sizer_2.Add(self.txtOutput, 1, wx.ALL | wx.EXPAND, 2)
@@ -642,6 +642,90 @@ class MyFrame(wx.Frame):
         event.Skip()
 
     # CURRENT END OF CLASS
+    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSaveInputs' not implemented!"
+        event.Skip()
+    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSave' not implemented!"
+        event.Skip()
+    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnAbout' not implemented!"
+        event.Skip()
+    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnDetectorSelect' not implemented!"
+        event.Skip()
+    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSaveInputs' not implemented!"
+        event.Skip()
+    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSave' not implemented!"
+        event.Skip()
+    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnAbout' not implemented!"
+        event.Skip()
+    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnDetectorSelect' not implemented!"
+        event.Skip()
+    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSaveInputs' not implemented!"
+        event.Skip()
+    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSave' not implemented!"
+        event.Skip()
+    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnAbout' not implemented!"
+        event.Skip()
+    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnDetectorSelect' not implemented!"
+        event.Skip()
+    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSaveInputs' not implemented!"
+        event.Skip()
+    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSave' not implemented!"
+        event.Skip()
+    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnAbout' not implemented!"
+        event.Skip()
+    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnDetectorSelect' not implemented!"
+        event.Skip()
+    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSaveInputs' not implemented!"
+        event.Skip()
+    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSave' not implemented!"
+        event.Skip()
+    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnAbout' not implemented!"
+        event.Skip()
+    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnDetectorSelect' not implemented!"
+        event.Skip()
+    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSaveInputs' not implemented!"
+        event.Skip()
+    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSave' not implemented!"
+        event.Skip()
+    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnAbout' not implemented!"
+        event.Skip()
+    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnDetectorSelect' not implemented!"
+        event.Skip()
+    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSaveInputs' not implemented!"
+        event.Skip()
+    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSave' not implemented!"
+        event.Skip()
+    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnAbout' not implemented!"
+        event.Skip()
+    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnDetectorSelect' not implemented!"
+        event.Skip()
 # end of class MyFrame
 
 if __name__ == "__main__":
