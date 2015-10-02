@@ -104,7 +104,7 @@ class MyFrame(wx.Frame):
         self.sizer_5_copy_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("Arbitrary absorption"))
         self.chkAbsCorr = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
         self.txtAbsCorr = wx.TextCtrl(self.panel_1, wx.ID_ANY, "")
-        self.txtTakeoff = wx.TextCtrl(self.panel_1, wx.ID_ANY, _("90"))
+        self.txtTakeoff = wx.TextCtrl(self.panel_1, wx.ID_ANY, _("18"))
         self.label_1 = wx.StaticText(self.panel_1, wx.ID_ANY, _("g/cm3 * nm"), style=wx.ALIGN_CENTER)
         self.label_1_copy = wx.StaticText(self.panel_1, wx.ID_ANY, _("takeoff in deg"), style=wx.ALIGN_CENTER)
         self.sizer_3_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("TEM Thickness Correction"))
@@ -401,8 +401,8 @@ class MyFrame(wx.Frame):
         if self.chkAbsCorr.IsChecked():
             try:
                 # The text box uses nm.  Absorption path lengths are in microns, convert.
-                AbsorptionCorrection = float(self.txtAbsCorr.GetString(0,-1))/1000
-                Takeoff = clip(float(self.txtTakeoff.GetString(0,-1)), 0.1, 90) # Allow angles between 0.1 and 90 degrees.
+                AbsorptionCorrection = float(self.txtAbsCorr.GetValue())/1000
+                Takeoff = clip(float(self.txtTakeoff.GetValue()), 0.1, 90) # Allow angles between 0.1 and 90 degrees.
             except:
                 wx.MessageBox('Absorption Correction is not a valid number.', 'Please correct input:')
                 return
@@ -629,7 +629,7 @@ class MyFrame(wx.Frame):
             return
 
         fid = open(dlg.GetPath(), 'w')
-        fid.write(self.txtOutput.GetString(0, -1))
+        fid.write(self.txtOutput.GetValue())
         fid.close()
 
         return
@@ -642,6 +642,30 @@ class MyFrame(wx.Frame):
         event.Skip()
 
     # CURRENT END OF CLASS
+    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSaveInputs' not implemented!"
+        event.Skip()
+    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSave' not implemented!"
+        event.Skip()
+    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnAbout' not implemented!"
+        event.Skip()
+    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnDetectorSelect' not implemented!"
+        event.Skip()
+    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSaveInputs' not implemented!"
+        event.Skip()
+    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnSave' not implemented!"
+        event.Skip()
+    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnAbout' not implemented!"
+        event.Skip()
+    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
+        print "Event handler 'OnDetectorSelect' not implemented!"
+        event.Skip()
     def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
         print "Event handler 'OnSaveInputs' not implemented!"
         event.Skip()
