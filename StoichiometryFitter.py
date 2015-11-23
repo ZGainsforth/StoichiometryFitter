@@ -555,6 +555,7 @@ class MyFrame(wx.Frame):
         dlg = wx.FileDialog(self, 'Open counts/At%/Wt% input file', '','','Comma space delimited (*.csv)|*'
                                                                           '.csv|Any file (*.*)|*.*', wx.FD_OPEN |
                                                                           wx.FD_FILE_MUST_EXIST)
+        dlg.SetFilterIndex(0)
 
         if dlg.ShowModal() == wx.ID_CANCEL:
             return
@@ -597,8 +598,8 @@ class MyFrame(wx.Frame):
         return
 
     def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
-        dlg = wx.FileDialog(self, '', '', '', 'CSV file (*.csv)|*'
-                                                         '.csv|Any file (*.*)|*.*', wx.FD_SAVE)
+        dlg = wx.FileDialog(self, '', '', '', 'CSV file (*.csv)|*.csv|Any file (*.*)|*.*', wx.FD_SAVE)
+        dlg.SetFilterIndex(0)
 
         if dlg.ShowModal() == wx.ID_CANCEL:
             return
@@ -624,6 +625,7 @@ class MyFrame(wx.Frame):
 
     def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
         dlg = wx.FileDialog(self, 'Save report', '', '', 'Text file (*.txt)|*.txt|Any file (*.*)|*.*', wx.FD_SAVE)
+        dlg.SetFilterIndex(0)
 
         if dlg.ShowModal() == wx.ID_CANCEL:
             return
@@ -642,114 +644,7 @@ class MyFrame(wx.Frame):
         event.Skip()
 
     # CURRENT END OF CLASS
-    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSaveInputs' not implemented!"
-        event.Skip()
-    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSave' not implemented!"
-        event.Skip()
-    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnAbout' not implemented!"
-        event.Skip()
-    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnDetectorSelect' not implemented!"
-        event.Skip()
-    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSaveInputs' not implemented!"
-        event.Skip()
-    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSave' not implemented!"
-        event.Skip()
-    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnAbout' not implemented!"
-        event.Skip()
-    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnDetectorSelect' not implemented!"
-        event.Skip()
-    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSaveInputs' not implemented!"
-        event.Skip()
-    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSave' not implemented!"
-        event.Skip()
-    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnAbout' not implemented!"
-        event.Skip()
-    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnDetectorSelect' not implemented!"
-        event.Skip()
-    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSaveInputs' not implemented!"
-        event.Skip()
-    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSave' not implemented!"
-        event.Skip()
-    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnAbout' not implemented!"
-        event.Skip()
-    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnDetectorSelect' not implemented!"
-        event.Skip()
-    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSaveInputs' not implemented!"
-        event.Skip()
-    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSave' not implemented!"
-        event.Skip()
-    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnAbout' not implemented!"
-        event.Skip()
-    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnDetectorSelect' not implemented!"
-        event.Skip()
-    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSaveInputs' not implemented!"
-        event.Skip()
-    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSave' not implemented!"
-        event.Skip()
-    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnAbout' not implemented!"
-        event.Skip()
-    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnDetectorSelect' not implemented!"
-        event.Skip()
-    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSaveInputs' not implemented!"
-        event.Skip()
-    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSave' not implemented!"
-        event.Skip()
-    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnAbout' not implemented!"
-        event.Skip()
-    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnDetectorSelect' not implemented!"
-        event.Skip()
-    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSaveInputs' not implemented!"
-        event.Skip()
-    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSave' not implemented!"
-        event.Skip()
-    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnAbout' not implemented!"
-        event.Skip()
-    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnDetectorSelect' not implemented!"
-        event.Skip()
-    def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSaveInputs' not implemented!"
-        event.Skip()
-    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnSave' not implemented!"
-        event.Skip()
-    def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnAbout' not implemented!"
-        event.Skip()
-    def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnDetectorSelect' not implemented!"
-        event.Skip()
+
 # end of class MyFrame
 
 if __name__ == "__main__":
