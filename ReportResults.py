@@ -14,7 +14,8 @@ import PhysicsBasics as pb
 def FormatQuantResults(Quant, ArbitraryAbsorptionCorrection=None,
                        AbsorptionCorrection=None,
                        Takeoff=90,
-                       OByStoichiometry=None):
+                       OByStoichiometry=None,
+                       kFactors=None):
     """ReportQuantResults(Quant): Generates human readable report strings for the At% and Wt% results from the quant.
 
     :param Quant: An OrderedDict with key = element name (e.g. 'H' or 'Fe') and value = (At%, Wt %).  The first
@@ -29,8 +30,11 @@ def FormatQuantResults(Quant, ArbitraryAbsorptionCorrection=None,
         ReportStr += 'Arbitrary Absorption Correction used: %s\n' % (ArbitraryAbsorptionCorrection)
         print ArbitraryAbsorptionCorrection
 
+    if kFactors is not None:
+        ReportStr += 'k-factors used: %s\n' % (kFactors)
+
     if AbsorptionCorrection is not None and AbsorptionCorrection != 0:
-        ReportStr += 'Absorption Correction: %f nm*g/cm\n' % (AbsorptionCorrection*1000)
+        ReportStr += 'Absorption Correction: %f nm*g/cm3\n' % (AbsorptionCorrection*1000)
         ReportStr += 'Takeoff angle: %0.2f degrees\n' % (Takeoff)
 
     if OByStoichiometry is not None:
