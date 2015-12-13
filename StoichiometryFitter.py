@@ -433,7 +433,8 @@ class MyFrame(wx.Frame):
         ReportStr = ReportResults.FormatQuantResults(Quant, ArbitraryAbsorptionCorrection=DetectorFile,
                                                      AbsorptionCorrection=AbsorptionCorrection,
                                                      Takeoff=Takeoff,
-                                                     OByStoichiometry=OByStoich)
+                                                     OByStoichiometry=OByStoich,
+                                                     kFactors=kfacsfile)
 
         # Report it by printing to console and put it in the output text box.
         print ReportStr
