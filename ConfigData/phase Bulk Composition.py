@@ -17,25 +17,21 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     E = dict(zip(pb.ElementalSymbols, AtPct))
 
     # We output an output string which contains the analysis.
-    OutStr = '--- Common ratios ---\n\n'
+    OutStr = '--- Simple At\% ratios ---\n\n'
 
-    # Report the atom ratios.
-    if E['Fe'] > 0 and E['Ni'] > 0:
-        OutStr += 'Fe/Ni = %0.3f, %0.3f X chondritic\n' % (E['Fe']/E['Ni'], (E['Fe']/E['Ni'])*float('5.751E-2'))
-    # if E['Se'] > 0:
-    #     OutStr += 'S/Se = %0.3f, %0.3f X chondritic\n' % (E['S']/E['Se'], (E['S']/E['Se'])/float('6.344E+3'))
-    # if E['Cr'] > 0:
-    #     OutStr += 'Cr/Fe = %0.3f, %0.3f X chondritic\n' % (E['Cr']/E['Fe'], (E['Cr']/E['Fe'])/float('1.564E-2'))
-    # if E['Mn'] > 0:
-    #     OutStr += 'Mn/Fe = %0.3f, %0.3f X chondritic\n' % (E['Mn']/E['Fe'], (E['Mn']/E['Fe'])/float('1.084E-2'))
-    # if E['Cu'] > 0:
-    #     OutStr += 'Cu/Fe = %0.3f, %0.3f X chondritic\n' % (E['Cu']/E['Fe'], (E['Cu']/E['Fe'])/float('6.036E-4'))
-    # if E['Zn'] > 0:
-    #     OutStr += 'Zn/Fe = %0.3f, %0.3f X chondritic\n' % (E['Zn']/E['Fe'], (E['Zn']/E['Fe'])/float('1.478E-3'))
+    OutStr += "Abundances ratioed to:\n"
+    OutStr += "Element to   Mg       Si       Fe\n"
+    OutStr += '-'*41 + '\n'
+    for Zminus, E in enumerate(AtPct):
+        if E != 0:
+            EtoMg = E / AtPct[pb.Mg-1]
+            EtoSi = E / AtPct[pb.Si-1]
+            EtoFe = E / AtPct[pb.Fe-1]
+            OutStr += '%-13s%-9.3f%-9.3f%-9.3f\n' % (tuple([pb.ElementalSymbols[Zminus+1]]) + tuple([EtoMg, EtoSi, EtoFe]))
 
 
     # We output an output string which contains the analysis.
-    OutStr =+ '--- Chondritic Analysis ---\n\n'
+    OutStr += '--- Chondritic Analysis ---\n\n'
 
     # Load the prosolar abundances.  This is recorded from the Lodders ref with logarithmic values.
     ProtosolarAbundancesFileName = 'ProtosolarAbundances.csv'
