@@ -17,7 +17,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     E = dict(zip(pb.ElementalSymbols, AtPct))
 
     # We output an output string which contains the analysis.
-    OutStr = '--- Simple At\% ratios ---\n\n'
+    OutStr = '--- Simple At% ratios ---\n\n'
 
     OutStr += "Abundances ratioed to:\n"
     OutStr += "Element to   Mg       Si       Fe\n"
