@@ -1,5 +1,5 @@
 import matplotlib
-matplotlib.use('Qt4Agg')
+matplotlib.use('WXagg')#'Qt4Agg')
 from matplotlib.pyplot import *
 from numpy import *
 import PhysicsBasics as pb
