@@ -20,7 +20,6 @@ matplotlib.rc('ytick', labelsize=FontSizeBasis)
 # Increase their padding.
 matplotlib.rc('xtick.major', pad=TickMajorBasis)
 matplotlib.rc('ytick.major', pad=TickMajorBasis)
-#plt.ion()
 
 def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
