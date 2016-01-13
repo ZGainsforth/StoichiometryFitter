@@ -114,9 +114,9 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
             if AtPct[El-1] != 0:
                 SampleNums[i] = AtPct[El-1] / AtPct[pb.Si-1]
 
-        plt.scatter(GEMSElementsInds*5, GEMSNums, color='blue', s=200,alpha=0.5)
-        plt.scatter(GEMSElementsInds, SampleNums, color='red', s=200,alpha=0.5)
-        plt.scatter(GEMSElementsInds, ChondriticNums, color='green', s=200,alpha=0.5)
+        plt.scatter(GEMSElementsInds*5, GEMSNums, marker='v', color='blue', s=200,alpha=0.5)
+        plt.scatter(GEMSElementsInds, SampleNums, marker='o', color='red', s=200,alpha=0.5)
+        plt.scatter(GEMSElementsInds, ChondriticNums, marker='s', color='green', s=200,alpha=0.5)
 
         plt.xticks(GEMSElementsInds, GEMSElements, rotation='vertical')
         plt.gca().set_yscale('log')
