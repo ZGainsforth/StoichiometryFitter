@@ -7,7 +7,7 @@
 
 3) Do application specific processing for phases such as computing site occupancies from stoichiometry, or determining Fo#.
 
-For a quick overview of what the program does, see [the video](StoichiometryFitterOverview.mov)
+For a quick overview of what the program does, see [the video](StoichiometryFitterOverview720p.mov)
 
 ##Todo:
 ====================
