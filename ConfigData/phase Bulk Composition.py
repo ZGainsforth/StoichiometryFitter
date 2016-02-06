@@ -107,12 +107,20 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
          [4.99, 0.82, 0.12, 0.12, 0.04, 0.01, 0.43, 0.03],
          ])
 
-        ChondriticNums = array([4.34, 1.075, 0.85, 0.515, 0.061, 0.013, 0.9, 0.049])
+        #Average composition of Chondritic meteorites from Bradley (2007).
+        # ChondriticNums = array([4.34, 1.075, 0.85, 0.515, 0.061, 0.013, 0.9, 0.049])
+        # Chondritic from Lodders (2003)
+        ChondriticNums = array([v for (k,v) in ProtosolarDict.items() if k in GEMSElements])
+        ChondriticNums = power(10, ChondriticNums)
+        ChondriticNums /= power(10, ProtosolarDict['Si'])
 
         SampleNums = zeros(8)
         for i, El in enumerate(GEMSElementsZ):
             if AtPct[El-1] != 0:
                 SampleNums[i] = AtPct[El-1] / AtPct[pb.Si-1]
+
+        # We will be plotting so clear the plot that may already be plotted.
+        plt.clf()
 
         plt.scatter(GEMSElementsInds*5, GEMSNums, marker='v', color='blue', s=200,alpha=0.5)
         plt.scatter(GEMSElementsInds, SampleNums, marker='o', color='red', s=200,alpha=0.5)
@@ -122,7 +130,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
         plt.gca().set_yscale('log')
         plt.legend(['Literature GEMS', 'This Spectrum', 'Chondritic'])
         plt.ylabel('Element/Si, At%', fontsize=FontSizeBasis)
-        plt.gca().set_ylim([1e-3, 10])
+        plt.gca().set_ylim([1e-3, 30])
         plt.tight_layout()
         plt.show()
 
