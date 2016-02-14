@@ -1,4 +1,9 @@
 from __future__ import division
+
+__author__ = 'Zack Gainsforth'
+__copyright__ = 'Copyright 2016, Zack Gainsforth'
+__email__ = 'zsg@gainsforth.com'
+
 #numpy.set_printoptions(threshold=numpy.nan) # Makes arrays print fully when they are large.
 from collections import OrderedDict
 

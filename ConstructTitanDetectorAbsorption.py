@@ -1,6 +1,9 @@
 """
 This script constructs the file 'Detector Titan.csv'
 """
+__author__ = 'Zack Gainsforth'
+__copyright__ = 'Copyright 2016, Zack Gainsforth'
+__email__ = 'zsg@gainsforth.com'
 
 from numpy import *
 from ConfigParser import ConfigParser

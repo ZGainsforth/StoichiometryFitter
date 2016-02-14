@@ -1,3 +1,7 @@
+__author__ = 'Zack Gainsforth'
+__copyright__ = 'Copyright 2016, Zack Gainsforth'
+__email__ = 'zsg@gainsforth.com'
+
 import matplotlib
 matplotlib.use('WXagg')#'Qt4Agg')
 from matplotlib.pyplot import *
