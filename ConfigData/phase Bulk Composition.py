@@ -110,9 +110,10 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
         #Average composition of Chondritic meteorites from Bradley (2007).
         # ChondriticNums = array([4.34, 1.075, 0.85, 0.515, 0.061, 0.013, 0.9, 0.049])
         # Chondritic from Lodders (2003)
-        ChondriticNums = array([v for (k,v) in ProtosolarDict.items() if k in GEMSElements])
-        ChondriticNums = power(10, ChondriticNums)
-        ChondriticNums /= power(10, ProtosolarDict['Si'])
+        ChrondriticList = []
+        for E in GEMSElements:
+            ChrondriticList.append(power(10,ProtosolarDict[E])/power(10,ProtosolarDict['Si']))
+        ChondriticNums = array(ChrondriticList)
 
         SampleNums = zeros(8)
         for i, El in enumerate(GEMSElementsZ):
