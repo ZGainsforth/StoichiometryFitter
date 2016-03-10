@@ -63,13 +63,16 @@ def FitPhases(Quant, Phases):
     # The PhaseAbund should be normalized so these reflect molar %.
     PhaseAbund = PhaseAbund/sum(PhaseAbund)*100
 
+    FitComposition = sum((PhaseMatrix*PhaseAbund), axis=1)
+    FitComposition = FitComposition/sum(FitComposition)*100
+
     # Package up the fit result.
     Names = [PhaseNames[0] for PhaseNames in Phases]
     Formulas = [PhaseNames[1] for PhaseNames in Phases]
     FitResult = OrderedDict(zip(Names, zip(Formulas, PhaseAbund)))
 
     # Send it back up
-    return (FitResult, Residual)
+    return (FitResult, Residual, FitComposition)
 
 # Le Beautifuleaux text harness
 if __name__ == '__main__':

@@ -457,10 +457,10 @@ class MyFrame(wx.Frame):
             PhasesToFit = [PhasesToFit for PhasesToFit in self.Phases if PhasesToFit[0] in SelectedPhases]
 
             # Do a linear least squares fit for the best set of phases to represent this composition.
-            FitResult, Residual = PhaseFit.FitPhases(Quant, PhasesToFit)
+            FitResult, Residual, FitComposition = PhaseFit.FitPhases(Quant, PhasesToFit)
 
             # Report it to console and output text box.
-            ReportStr = ReportResults.FormatPhaseResults(FitResult, Residual)
+            ReportStr = ReportResults.FormatPhaseResults(FitResult, Residual, FitComposition)
             print ReportStr
             self.txtOutput.AppendText(ReportStr)
 

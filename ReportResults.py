@@ -103,10 +103,11 @@ def FormatInputResults(Quant, InputType):
 
     return ReportStr
 
-def FormatPhaseResults(FitResult, Residual):
+def FormatPhaseResults(FitResult, Residual, FitComposition):
     """FormatPhaseResults(FitResult, Residual): Generates human readable report strings for the reesults of
     fitting phases against the quantitative element abundances.
 
+    :param FitComposition:
     :param FitResult: OrderedDict with key = phase name (e.g. 'Forsterite') and value = (Formula, mol%),
     where formula is a string and mol % is a float.
     :param Residual: A float giving the residual of the fit.
@@ -121,6 +122,27 @@ def FormatPhaseResults(FitResult, Residual):
         ReportStr += '{:30s} {:5.3f}%\n'.format(Phase, Result[1])
 
     ReportStr += '{:30s} {:g}\n'.format('Fit residual', Residual)
+
+    ReportStr += '\n'.format()
+
+    # We also need to report new At%'s
+    # Comprehend all the zero-abundance elements out.
+    Q = OrderedDict([(El, Abund) for (El, Abund) in enumerate(FitComposition) if Abund > 0])
+
+    # Now let's print out each element
+    SumAbundance = 0
+    ReportStr += 'Composition of phase fit:\n'.format()
+    ReportStr += '{:<8s} {:>8s}\n'.format('Element', 'At %')
+    for El, Abund in Q.iteritems():
+        SumAbundance += Abund
+        if Abund > 0.1:
+            # Report straightforward percentages.
+            ReportStr += '{:8s} {:8.3f}\n'.format(pb.ElementalSymbols[El+1], Abund)
+        else:
+            # For trace elements report ppm.
+            ReportStr += '{:8s} {:4.0f} ppm\n'.format(pb.ElementalSymbols[El+1], Abund*1e4)
+    # Report the sum.
+    ReportStr += '{:8s} {:8.3f}\n'.format('Total:', SumAbundance)
 
     ReportStr += '\n'.format()
 
