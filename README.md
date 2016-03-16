@@ -7,7 +7,7 @@
 
 3) Do application specific processing for phases such as computing site occupancies from stoichiometry, or determining Fo#.
 
-For a quick overview of what the program does, download [the video](StoichiometryFitterOverview720p.mov) to your machine and view it.
+For a quick overview of what the program does, download [the video](https://www.youtube.com/watch?v=OrgHYjvGTHI) to your machine and view it.
 
 Is there a feature that would be very useful to you?  Contact me at zsg@gainsforth.com.
 
