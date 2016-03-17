@@ -45,5 +45,6 @@ Temp/
 
 # No brine in the GitHub
 *.pickle
+*.pkl
 *.py~
 *.wxg~
