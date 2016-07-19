@@ -6,6 +6,66 @@ __email__ = 'zsg@gainsforth.com'
 from numpy import *
 if __name__ != '__main__':
     import PhysicsBasics as pb
+from PhaseFit import FitPhases
+from collections import OrderedDict
+
+def ComputeCp(T, PhaseName):
+    # The values are from Ghiorso & Sack 1991 Thermochemistry of the Oxide Minerals in the book Oxide Minerals: Petrologic and Magnetic Significance.  Table 10.
+    # Delta Hf, S, k0, k1, k2, k3, Tlambda, l1 and l2
+    PhaseConstants = array([('Chromite', -1445.490, 142.676, 236.874, -16.796, 0, -16.765, 0, 0, 0, 0),
+                            ('Hercynite', -1947.681, 115.362, 235.190, -14.370, -46.913, 64.564, 0, 0, 0, 0),
+                            ('Magnesioferrite', -1406.465, 122.765, 196.66, 0.0, -74.922, 81.007, 665, 15.236, -53.571, 931),
+                            ('Magnesiotitanate', -2161.998, 120.170, 226.11, -13.801, -17.011, 4.128, 0, 0, 0, 0),
+                            ('Magnetite', -1117.403, 146.114, 207.93, 0.0, -72.433, 66.436, 848, -19.502, 61.037, 1565),
+                            ('Picochromite', -1783.640, 106.020, 201.981, -5.519, -57.844, -57.729, 0, 0, 0, 0),
+                            ('Magnesiospinel', -2300.313, 84.535, 235.90, -17.666, -17.104, 4.062, 0, 0, 0, 0),
+                            ('Ulvospinel', -1488.500, 185.447, 249.63, -18.174, 0.000, -5.453, 0, 0, 0, 0),
+                            ], dtype = [('Mineral', 'S20'), ('DeltaHf0', 'f4'), ('S', 'f4'), ('k0', 'f4'), ('k1', 'f4'), ('k2', 'f4'), ('k3', 'f4'), ('Tlambda', 'f4'), ('l1', 'f4'), ('l2', 'f4'), ('DeltagH', 'f4')])
+
+    # Scale DeltaH units to joules
+    PhaseConstants['DeltaHf0'] *= 1000
+    # Add exponenents on the constants.
+    PhaseConstants['k1'] *= 10**-2
+    PhaseConstants['k2'] *= 10**-5
+    PhaseConstants['k3'] *= 10**-7
+    PhaseConstants['l1'] *= 10**2
+    PhaseConstants['l2'] *= 10**5
+
+    # Get the thermodynamic constants for the phase we want to compute.
+    V = PhaseConstants[PhaseConstants['Mineral'] == PhaseName]
+    if len(V) != 1:
+        print 'Phase %s not one of the thermodynamic endmembers in the Ghiorso & Sack implementation.' % PhaseName
+        return
+
+    print V
+# TODO Implement Cp and Gf equations.
+    return
+
+def GetThermodynamicPropertiesForSpinel(AtPct):
+    # First we have to fit it against the end-member spinel species from Sack and Ghiorso.
+
+    # Make a quant array for PhaseFit.
+    Quant = OrderedDict(zip(pb.ElementalSymbols[1:], zip(AtPct, AtPct)))
+
+    # We are using a bunch of them.  S&G use just five in MELTS, but we use them all.  Hopefully,
+    # we can sort out site degeneracies!  Well, let's find out.
+    PhaseArray = [['Chromite', 'Fe1 Cr2 O4'],
+                  ['Hercynite', 'Fe1 Al2 O4'],
+                  ['Magnesioferrite', 'Mg1 Fe2 O4'],
+                  ['Magnesiotitanate', 'Ti1 Mg2 O4'],
+                  ['Magnetite', 'Fe3 O4'],
+                  ['Picochromite', 'Mg1 Cr2 O4'],
+                  ['Magnesiospinel', 'Mg1 Al2 O4'],
+                  ['Ulvospinel', 'Fe2 Ti1 O4']]
+
+    (FitResult, Residual, FitComposition) = FitPhases(Quant, PhaseArray)
+    #print(FitResult)
+
+    # Make a temperatures vector
+    T = linspace(298, 2000, 2000-298)
+    ComputeCp(T, 'Hercynite')
+
+    return
 
 
 def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
@@ -14,6 +74,9 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     #Normalize our AtPct vector.
     AtPct = AtPct/sum(AtPct)*100
+
+    # This isn't fully implemented yet.  Intention is to compute free energies for spinel at some point based on Sack & Ghiorso.
+    GetThermodynamicPropertiesForSpinel(AtPct)
 
     # We output an output string which contains the analysis.
     OutStr = '--- Spinel Analysis ---\n\n'
@@ -111,7 +174,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
         B += Fe2+Fe3
         BCharge += 2*Fe2 + 3*Fe3
 
-    OutStr += 'Site A (octahedral):\n'
+    OutStr += 'Site A (tetrahedral):\n'
     OutStr += '{:>11s}:    {:<10s}\n'.format('Element', 'Occupancy')
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Mg2+', E['Mg'])
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Mn2+', E['Mn'])
@@ -122,7 +185,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Total occ', A)
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Charge', ACharge)
     OutStr += '\n'
-    OutStr += 'Site B (Tetrahedral):\n'
+    OutStr += 'Site B (octahedral):\n'
     OutStr += '{:>11s}:    {:<10s}\n'.format('Element', 'Occupancy')
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Al3+', E['Al'])
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Cr3+', E['Cr'])
@@ -143,10 +206,9 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr += 'Note, the cations have been set to 3 so the occupancy should be perfect.  Sum cations is the original sum for evaluating the quality of the fit.\n'
     OutStr += '\n'
 
-
-
     return OutStr
-    
+
+
 if __name__ == '__main__':
 
     import imp
