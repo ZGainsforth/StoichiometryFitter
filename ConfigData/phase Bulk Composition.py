@@ -84,57 +84,6 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     OutStr += '\nRef:Lodders, K. (2003). Solar System Abundances and Condensation Temperatures of the Elements. The Astrophysical Journal, 591(2), 1220-1247. http://doi.org/10.1086/375492\n'
 
-    # Now draw a plot comparing this spectrum to CI and GEMS.  Only if Si is measured.
-    if AtPct[pb.Si-1] != 0:
-        # Literature numbers for GEMS from Bradley, J., & Ireland, T. (1996). The search for interstellar components in interplanetary dust particles. In B. A. S. Gustafson & M. S. Hanner (Eds.), Physics, Chemistry, and Dynamics of Interplanetary Dust (Vol. 104, pp. 275-282). IAU Colloq 150: Physics.
-        # GEMSNums = dict()
-        # GEMSNums['O'] = array([3.76, 3.7, 3.96, 3.51, 4.99])
-        # GEMSNums['Mg'] = array([0.38, 0.24, 1.11, 0.65, 0.82])
-        # GEMSNums['Al'] = array([0.12, 0.11, 0.08, 0.11, 0.12])
-        # GEMSNums['S'] = array([0.14, 0.08, 0.10, 0.05, 0.12])
-        # GEMSNums['Ca'] = array([0.01, 0.02, 0.08, 0.03, 0.04])
-        # GEMSNums['Cr'] = array([0.02, 0.04, 0.03, 0.02, 0.01])
-        # GEMSNums['Fe'] = array([0.42, 0.38, 0.70, 0.12, 0.43])
-        # GEMSNums['Ni'] = array([0.03, 0.03, 0.05, 0.006, 0.03])
-
-        GEMSElements = ['O', 'Mg', 'Al', 'S', 'Ca', 'Cr', 'Fe', 'Ni']
-        GEMSElementsZ = [pb.O, pb.Mg, pb.Al, pb.S, pb.Ca, pb.Cr, pb.Fe, pb.Ni]
-        GEMSElementsInds = range(len(GEMSElements))
-        GEMSNums = array([[3.76, 0.38, 0.12, 0.14, 0.01, 0.02, 0.42, 0.03],
-         [3.7,  0.24, 0.11, 0.08, 0.02, 0.04, 0.38, 0.03],
-         [3.96, 1.11, 0.08, 0.10, 0.08, 0.03, 0.70, 0.05],
-         [3.51, 0.65, 0.11, 0.05, 0.03, 0.02, 0.12, 0.006],
-         [4.99, 0.82, 0.12, 0.12, 0.04, 0.01, 0.43, 0.03],
-         ])
-
-        #Average composition of Chondritic meteorites from Bradley (2007).
-        # ChondriticNums = array([4.34, 1.075, 0.85, 0.515, 0.061, 0.013, 0.9, 0.049])
-        # Chondritic from Lodders (2003)
-        ChrondriticList = []
-        for E in GEMSElements:
-            ChrondriticList.append(power(10,ProtosolarDict[E])/power(10,ProtosolarDict['Si']))
-        ChondriticNums = array(ChrondriticList)
-
-        SampleNums = zeros(8)
-        for i, El in enumerate(GEMSElementsZ):
-            if AtPct[El-1] != 0:
-                SampleNums[i] = AtPct[El-1] / AtPct[pb.Si-1]
-
-        # We will be plotting so clear the plot that may already be plotted.
-        plt.clf()
-
-        plt.scatter(GEMSElementsInds*5, GEMSNums, marker='v', color='blue', s=200,alpha=0.5)
-        plt.scatter(GEMSElementsInds, SampleNums, marker='o', color='red', s=200,alpha=0.5)
-        plt.scatter(GEMSElementsInds, ChondriticNums, marker='s', color='green', s=200,alpha=0.5)
-
-        plt.xticks(GEMSElementsInds, GEMSElements, rotation='vertical')
-        plt.gca().set_yscale('log')
-        plt.legend(['Literature GEMS', 'This Spectrum', 'Chondritic'])
-        plt.ylabel('Element/Si, At%', fontsize=FontSizeBasis)
-        plt.gca().set_ylim([1e-3, 30])
-        plt.tight_layout()
-        plt.show()
-
     return OutStr
     
 if __name__ == '__main__':

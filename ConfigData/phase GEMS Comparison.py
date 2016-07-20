@@ -8,7 +8,10 @@ import matplotlib.pyplot as plt
 from numpy import *
 import os
 import pickle
-import ternary
+try:
+    import ternary
+except:
+    ternary = None
 if __name__ != '__main__':
     import PhysicsBasics as pb
 
@@ -85,113 +88,6 @@ def RecordLastPos(evt):
             pass
 
 
-# def ShowLastPos(plt):
-#     # Call plt.show but pickles the plot position on window close.  When called a second time
-#     # it loads the figure to the last position.  So matplotlib now remembers figure positions!
-#     # This version works for QT and WX backends.
-#
-#     print plt.isinteractive()
-#
-#     backend = matplotlib.get_backend()
-#
-#     FigNums = plt.get_fignums()
-#
-#     for FigNum in FigNums:
-#         plt.figure(FigNum)
-#         mgr = plt.get_current_fig_manager()
-#         print 'Before show figure #%d'%FigNum
-#         print 'Before show mgr: ' + repr(mgr)
-#         # WX backend
-#         if 'WX' in backend:
-#             try:
-#                 with open('CurrentWindowPos%d.pkl'%FigNum, 'r') as f:
-#                     CurPos = pickle.load(f)
-#                     print 'Reading' + 'CurrentWindowPos%d.pkl'%FigNum
-#                     print CurPos
-#                 mgr.window.SetPosition((CurPos[0], CurPos[1]))
-#                 mgr.window.SetSize((CurPos[2], CurPos[3]))
-#             except:
-#                 pass
-#         # QT backend.
-#         elif 'QT' in backend:
-#             try:
-#                 with open('CurrentWindowPos%d.pkl'%FigNum, 'r') as f:
-#                     CurPos = pickle.load(f)
-#                 mgr.window.setGeometry(CurPos[0], CurPos[1], CurPos[2], CurPos[3])
-#             except:
-#                 pass
-#         else:
-#             print 'Backend ' + backend + ' not supported.  Plot figure position will not be sticky.'
-#
-#     plt.show()
-#
-#     for FigNum in FigNums:
-#         plt.figure(FigNum)
-#         mgr = plt.get_current_fig_manager()
-#         print 'After show figure #%d'%FigNum
-#         print 'After show mgr: ' + repr(mgr)
-#         # WX backend
-#         if 'WX' in backend:
-#             p = mgr.window.GetPosition()
-#             s = mgr.window.GetSize()
-#             CurPos = (p[0], p[1], s[0], s[1])
-#             with open('CurrentWindowPos%d.pkl'%FigNum, 'w') as f:
-#                 pickle.dump(CurPos, f)
-#                 print 'Writing' + 'CurrentWindowPos%d.pkl'%FigNum
-#                 print CurPos
-#         # QT backend.
-#         elif 'QT' in backend:
-#             CurPos = mgr.window.geometry().getRect()
-#             with open('CurrentWindowPos%d.pkl'%FigNum, 'w') as f:
-#                 pickle.dump(CurPos, f)
-#         else:
-#             pass
-
-
-
-# def ShowLastPos(plt):
-#     # Call plt.show but pickles the plot position on window close.  When called a second time
-#     # it loads the figure to the last position.  So matplotlib now remembers figure positions!
-#     # This version works for QT and WX backends.
-#
-#     backend = matplotlib.get_backend()
-#
-#     FigNum = plt.gcf().number
-#
-#     # WX backend
-#     if 'WX' in backend:
-#         mgr = plt.get_current_fig_manager()
-#         try:
-#             with open('CurrentWindowPos%d.pkl'%FigNum, 'r') as f:
-#                 CurPos = pickle.load(f)
-#             mgr.window.SetPosition((CurPos[0], CurPos[1]))
-#             mgr.window.SetSize((CurPos[2], CurPos[3]))
-#         except:
-#             pass
-#         plt.show()
-#         p = mgr.window.GetPosition()
-#         s = mgr.window.GetSize()
-#         CurPos = (p[0], p[1], s[0], s[1])
-#         with open('CurrentWindowPos%d.pkl'%FigNum, 'w') as f:
-#             pickle.dump(CurPos, f)
-#     # QT backend.
-#     elif 'QT' in backend:
-#         mgr = plt.get_current_fig_manager()
-#         try:
-#             with open('CurrentWindowPos%d.pkl'%FigNum, 'r') as f:
-#                 CurPos = pickle.load(f)
-#             mgr.window.setGeometry(CurPos[0], CurPos[1], CurPos[2], CurPos[3])
-#         except:
-#             pass
-#         plt.show()
-#         CurPos = mgr.window.geometry().getRect()
-#         with open('CurrentWindowPos%d.pkl'%FigNum, 'w') as f:
-#             pickle.dump(CurPos, f)
-#     else:
-#         print 'Backend ' + backend + ' not supported.  Plot figure position will not be sticky.'
-#         plt.show()
-
-
 def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     #Normalize our AtPct vector.
@@ -255,9 +151,10 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr += '%-13s%-9.3f%-9.3f%-9.3f\n' % (tuple(['Standard dev']) + tuple(Stdevs))
     OutStr += '-'*41 + '\n'
 
-    OutStr += '\nRef:Lodders, K. (2003). Solar System Abundances and Condensation Temperatures of the Elements. The Astrophysical Journal, 591(2), 1220-1247. http://doi.org/10.1086/375492\n'
-
-
+    OutStr += '\nRefs:\n    Lodders, K. (2003). Solar System Abundances and Condensation Temperatures of the Elements. The Astrophysical ' \
+              'Journal, 591(2), 1220-1247. http://doi.org/10.1086/375492\n' \
+              '    Ishii, H. A., et al. (2008). Comparison of Comet 81P/Wild 2 Dust with Interplanetary Dust from Comets. Science, ' \
+              '319(5), 447. http://doi.org/10.1126/science.1150683'
 
     ### Draw a plot comparing this spectrum normalized to CI and plotted against GEMS compositions.
 
@@ -278,12 +175,13 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     # Make these Si normalized.
     SiTemp = IshiiAtPct[pb.Si-1]
-    IshiiAtPct /= SiTemp
-    IshiiAtPctSD /= SiTemp
+    # IshiiRel is derived from IshiiAtPct, but is normalized against Si and normalized against chondritic.
+    IshiiRel = copy(IshiiAtPct)/SiTemp
+    IshiiRelSD = copy(IshiiAtPctSD)/SiTemp
 
     # And normalize to chondritic
-    IshiiAtPct /= ProtosolarToSi[0:pb.U-1]
-    IshiiAtPctSD /= ProtosolarToSi[0:pb.U-1]
+    IshiiRel /= ProtosolarToSi[0:pb.U-1]
+    IshiiRelSD /= ProtosolarToSi[0:pb.U-1]
 
     # Make a version of the sample quant which is ratioed to si
     AtPctToSi = AtPct / AtPct[pb.Si-1]
@@ -292,7 +190,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     # Get the union of elements which are in our spectrum and in the GEMS mean values.
     # All indices for elements which have non zero values from either array.
-    IncludedZ = hstack((nonzero(AtPct)[0], nonzero(IshiiAtPct)[0]))
+    IncludedZ = hstack((nonzero(AtPct)[0], nonzero(IshiiRel)[0]))
     # Eliminate duplicates and make sure in ascending order.
     IncludedZ = sort(unique(IncludedZ))
     # Indices are 0 based, Z is 1 based.
@@ -310,10 +208,10 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     ChondriticInds = []
     ChondriticVals = []
     for Zminus1, Val in enumerate(AtPctToSi[:pb.U-1]):
-        if IshiiAtPct[Zminus1] > 0:
+        if IshiiRel[Zminus1] > 0:
             IshiiInds.append(TickLabels.index(pb.ElementalSymbols[Zminus1+1]))
-            IshiiVals.append(IshiiAtPct[Zminus1])
-            IshiiErrs.append(IshiiAtPctSD[Zminus1])
+            IshiiVals.append(IshiiRel[Zminus1])
+            IshiiErrs.append(IshiiRelSD[Zminus1])
         if AtPct[Zminus1] > 0:
             SpectrumInds.append(TickLabels.index(pb.ElementalSymbols[Zminus1+1]))
             SpectrumVals.append(AtPctToSi[Zminus1])
@@ -344,35 +242,52 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     plt.gca().set_ylim([3e-2, 30])
     plt.tight_layout()
 
-    #ShowLastPos(plt)
+    PrintTernary(AtPct, IshiiAtPct, IshiiAtPctSD)
+
+    ShowLastPos(plt)
+
+    return OutStr
 
 
+def PrintTernary(AtPct, IshiiAtPct, IshiiAtPctSD):
 
+    if ternary == None:
+        print "For ternary plot please pip install python-ternary"
+        return
 
     ### Now print a ternary plot
     if plt.fignum_exists(2):
         plt.figure(2)
         plt.close()
-    fig,tax = ternary.figure(scale=100)
+    fig, tax = ternary.figure(scale=100)
     tax.boundary(linewidth=4)
     tax.gridlines(color='black', multiple=10)
     tax.left_axis_label("Fe-S", fontsize=FontSizeBasis)
     tax.bottom_axis_label("Si", fontsize=FontSizeBasis)
     tax.right_axis_label("Mg", fontsize=FontSizeBasis)
     # Remove default matplotlib ticks.
+    tax.ticks(axis='lbr', linewidth=1, multiple=10)
     tax.clear_matplotlib_ticks()
 
-    FeminusS = AtPct[pb.Fe-1] - AtPct[pb.S-1]
-    Points = array([FeminusS, AtPct[pb.Si-1], AtPct[pb.Mg-1]]).astype('float')
-    Points = Points/sum(Points)*100
-    Points = vstack((Points,Points)) #Seems to be a bug -- you need a minimum of two points...
-    tax.scatter(Points, marker='.', s=300, alpha=0.5, color='red', label="This Spectrum")
+    # Compute and plot this point on the ternary for this composition
+    FeminusS = AtPct[pb.Fe - 1] - AtPct[pb.S - 1]
+    ThisPoint = array([FeminusS, AtPct[pb.Si - 1], AtPct[pb.Mg - 1]]).astype('float')
+    ThisPoint = ThisPoint / sum(ThisPoint) * 100
+    ThisPoint = vstack((ThisPoint, ThisPoint))  # Seems to be a bug -- you need a minimum of two points...
+    tax.scatter(ThisPoint, marker='.', s=300, alpha=0.5, color='blue', label="This Spectrum")
+
+    # Compute and plot the point for the average of GEMS.
+    FeminusS = IshiiAtPct[pb.Fe - 1] - IshiiAtPct[pb.S - 1]
+    IshiiPoint = array([FeminusS, IshiiAtPct[pb.Si - 1], IshiiAtPct[pb.Mg - 1]]).astype('float')
+    IshiiPoint = IshiiPoint / sum(IshiiPoint) * 100
+    IshiiPoint = vstack((IshiiPoint, IshiiPoint))  # Seems to be a bug -- you need a minimum of two points...
+    tax.scatter(IshiiPoint, marker='.', s=300, alpha=0.5, color='red', label="Ishii et al., 2008")
+
+    tax.legend()
+
     plt.title('At %')
 
-    ShowLastPos(plt)
 
-    return OutStr
-    
 if __name__ == '__main__':
 
     import imp
