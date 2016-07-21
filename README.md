@@ -1,7 +1,7 @@
 #StoichiometryFitter
 ====================
 
-Read the [paper](https://github.com/ZGainsforth/StoichiometryFitter/2016 - M&M - Stoichiometry Fitter.pdf) describing the software.
+Read the [paper](https://github.com/ZGainsforth/StoichiometryFitter/blob/master/2016%20-%20M%26M%20-%20Stoichiometry%20Fitter.pdf) describing the software.
 
 
 1) Interconvert X-ray counts into elemental abundances.
