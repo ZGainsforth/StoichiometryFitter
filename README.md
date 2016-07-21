@@ -1,6 +1,9 @@
 #StoichiometryFitter
 ====================
 
+Read the [paper](https://github.com/ZGainsforth/StoichiometryFitter/2016 - M&M - Stoichiometry Fitter.pdf) describing the software.
+
+
 1) Interconvert X-ray counts into elemental abundances.
 
 2) Use elemental abundances to determine mineral compositions and solid solutions.
@@ -9,7 +12,7 @@
 
 For a quick overview of what the program does, download [the video](https://www.youtube.com/watch?v=OrgHYjvGTHI) to your machine and view it.
 
-Is there a feature that would be very useful to you?  Contact me at zsg@gainsforth.com.
+Is there a feature that would be very useful to you?  Contact me at xraysoftware@ssl.berkeley.edu.
 
 ##Todo:
 ====================

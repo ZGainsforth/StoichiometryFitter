@@ -16,8 +16,8 @@ def FitPhases(Quant, Phases):
     """FitPhases(Quant, Phases): Using a list of quantitative element abundances, determine which set of phases/solid
     solution end members best produce that elemental abundance.
 
-    :param Quant: A list of tuples with ('H', 1, 2), where 'H' is the name of the element (string), 1, and 2 are at %
-    and wt% respectively.
+    :param Quant: An ordered dict like so: ('H', (0.0, 0.0, 0.0, 1.0)),  where 'H' is the name of the element (string), the numbers are at %
+    and wt%, oxide wt% and kfactors respectively.
     :param Phases: as list of lists: [['Name', 'Formula'], ...] for each phase to fit against.
 
     :return: returns OrderedDict with the molar abundance added. {'Name':  ('Formula', Abundance),...]
