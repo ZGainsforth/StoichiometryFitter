@@ -30,6 +30,7 @@ import PhysicsBasics as pb
 from MyPython import *
 import CountsToQuant
 import PhaseFit
+import pandas as pd
 
 wx.SystemOptions.SetOption('mac.listctrl.always_use_generic', '1')
 
@@ -565,7 +566,24 @@ class MyFrame(wx.Frame):
         if dlg.ShowModal() == wx.ID_CANCEL:
             return
 
-        InputDat = genfromtxt(dlg.GetPath(), dtype=float, delimiter=',', usecols=(1), autostrip=True, comments='#',
+        # First read the first line of the file and see if it is a StoichiometryFitter csv file or a Bruker text file.
+        with open(dlg.GetPath(), 'r') as f:
+            FirstLine = f.readline()
+
+        if FirstLine.startswith('Spectrum: '):
+            # This is a Bruker text file, so let's read it in and convert it to an InputDat structure like we expect.
+            S = genfromtxt(dlg.GetPath(), skip_header=5, skip_footer=2, dtype=None)
+            # Drop it into pandas and sort based on elemental Z.
+            pdS = pd.DataFrame(S).sort('f1')
+            BrukerInput = pdS.as_matrix()[:, (0, 3)].T
+            # Make a structure like we expect to import from a StoichiometryFitter csv.  (All values are zero of course)
+            InputDat = zeros(pb.MAXELEMENT, dtype=[('Counts', '<f8')])
+            # For every entry in the Bruker file, update the respective element in our csv.
+            for El,Cnts in [(BrukerInput[0,i], BrukerInput[1,i]) for i in range(BrukerInput.shape[1])]:
+                InputDat[pb.ElementDict[El][0]-1][0] = Cnts
+        else:
+            # It is not a Bruker format, so it should be a StoichiometryFitter format.
+            InputDat = genfromtxt(dlg.GetPath(), dtype=float, delimiter=',', usecols=(1), autostrip=True, comments='#',
                               names=True)
 
         HowlBadFile = lambda s: wx.MessageBox("Input file does not match the expected format.\n"
