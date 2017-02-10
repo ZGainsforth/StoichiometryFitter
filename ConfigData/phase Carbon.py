@@ -1,6 +1,6 @@
 from __future__ import division
 __author__ = 'Zack Gainsforth'
-__copyright__ = 'Copyright 2014, Zack Gainsforth'
+__copyright__ = 'Copyright 2017, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
 
 from numpy import *
@@ -9,7 +9,7 @@ if __name__ != '__main__':
 
 
 def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
-    """ Olivine analysis
+    """ Carbon analysis
     """
 
     #Normalize our AtPct vector.
@@ -45,29 +45,4 @@ if __name__ == '__main__':
 
     import imp
     pb = imp.load_source('PhysicsBasics', '../PhysicsBasics.py')
-
-    # AtPct = zeros(pb.MAXELEMENT)
-    # AtPct[pb.O-1] = 4/7*100
-    # AtPct[pb.Mg-1] = 2/7*100
-    # AtPct[pb.Si-1] = 1/7*100
-    # print 'Forsterite: Mg2 Si O4:\n'
-    # print AnalyzePhase(AtPct)
-
-    # AtPct = zeros(pb.MAXELEMENT)
-    # AtPct[pb.O-1] = 4/7*100
-    # AtPct[pb.Fe-1] = 2/7*100
-    # AtPct[pb.Si-1] = 1/7*100
-    # print 'Fayalite: Fe2 Si O4:\n'
-    # print AnalyzePhase(AtPct)
-
-    # AtPct = zeros(pb.MAXELEMENT)
-    # AtPct[pb.O-1] =  57.135
-    # AtPct[pb.Si-1] = 14.273
-    # AtPct[pb.Mg-1] = 24.825
-    # AtPct[pb.Fe-1] = 3.544
-    # AtPct[pb.Mn-1] = 0.057
-    # AtPct[pb.Ca-1] = 0.091
-    # AtPct[pb.Ni-1] = 0.074
-    # print 'UC Fo87:\n'
-    # print AnalyzePhase(AtPct)
 
