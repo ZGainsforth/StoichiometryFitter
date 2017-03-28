@@ -1,0 +1,15 @@
+Installing Stoichiometry Fitter on Windows 7:
+
+1) Install python 2.7 using Anaconda or similar.  http://www.continuum.io
+2) Make a scientific python 2.7 environment:
+	conda create -n conda27 python=2.7 anaconda
+	(You can rename conda27 to any name you want.)
+3) Switch to the new environment
+	activate conda27
+4) Install wxpython.
+	conda install wxpython
+5) Install git.  http://git-scm.com/downloads
+6) Clone StoichiometryFitter
+	git clone https://github.com/ZGainsforth/StoichiometryFitter.git
+7) Run StoichiometryFitter
+	python StoichiometryFitter.py
