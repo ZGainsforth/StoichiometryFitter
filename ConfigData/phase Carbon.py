@@ -28,7 +28,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
         if ElAtPct > 0 and pb.ElementalSymbols[Zsub+1] not in KnownElements:
             OtherCations += ElAtPct
 
-    if OtherCations > 10:
+    if OtherCations > 20:
         OutStr += 'More than 10% of the atomic abundance is comprised by atoms other than: ' + ' '.join(KnownElements) + '.'
         OutStr += '\nCannot analyze.'
         return OutStr
@@ -40,9 +40,8 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr += 'O/Si = %0.3f\n' % (AtPct[pb.O-1]/AtPct[pb.Si-1])
 
     return OutStr
-    
+
 if __name__ == '__main__':
 
     import imp
     pb = imp.load_source('PhysicsBasics', '../PhysicsBasics.py')
-

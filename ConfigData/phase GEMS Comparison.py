@@ -287,6 +287,9 @@ def PrintTernary(AtPct, IshiiAtPct, IshiiAtPctSD):
 
     plt.title('At %')
 
+def SaveResults(FileRoot):
+    plt.savefig(FileRoot + '.png')
+
 
 if __name__ == '__main__':
 

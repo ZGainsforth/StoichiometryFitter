@@ -88,7 +88,8 @@ class MyFrame(wx.Frame):
         wxglade_tmp_menu = wx.Menu()
         wxglade_tmp_menu.Append(wx.ID_OPEN, _("&Open Inputs..."), "", wx.ITEM_NORMAL)
         wxglade_tmp_menu.Append(1000, _("Save &Inputs..."), "", wx.ITEM_NORMAL)
-        wxglade_tmp_menu.Append(wx.ID_SAVE, _("&Save Results..."), "", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(1001, _("Save &Results..."), "", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(wx.ID_SAVE, _("&Save All..."), "", wx.ITEM_NORMAL)
         wxglade_tmp_menu.Append(wx.ID_ABOUT, _("&About"), "", wx.ITEM_NORMAL)
         self.MainMenu.Append(wxglade_tmp_menu, _("File"))
         self.SetMenuBar(self.MainMenu)
@@ -103,22 +104,17 @@ class MyFrame(wx.Frame):
         self.panel_2 = wx.Panel(self.panel_1, wx.ID_ANY)
         self.chkPhaseAnalysis = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
         self.cmbPhaseAnalysis = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_READONLY)
-        self.sizer_14_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("Phase Analysis"))
         self.chkArbAbsCorrection = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
         self.comboArbAbsCorrection = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_READONLY)
-        self.sizer_5_copy_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("Arbitrary absorption"))
         self.chkAbsCorr = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
         self.txtAbsCorr = wx.TextCtrl(self.panel_1, wx.ID_ANY, "")
         self.txtTakeoff = wx.TextCtrl(self.panel_1, wx.ID_ANY, _("18"))
         self.label_1 = wx.StaticText(self.panel_1, wx.ID_ANY, _("g/cm3 * nm"), style=wx.ALIGN_CENTER)
         self.label_1_copy = wx.StaticText(self.panel_1, wx.ID_ANY, _("takeoff in deg"), style=wx.ALIGN_CENTER)
-        self.sizer_3_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("TEM Thickness Correction"))
         self.chkKfacs = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
         self.comboKfacs = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_READONLY)
-        self.sizer_4_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("Apply k-factors for:"))
         self.chkOByStoichiometry = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
         self.comboStoich = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_READONLY)
-        self.sizer_5_staticbox = wx.StaticBox(self.panel_1, wx.ID_ANY, _("Oxygen by stoichiometry?"))
         self.btnGo = wx.Button(self.panel_1, wx.ID_ANY, _("Go!"))
         self.panel_3 = wx.Panel(self.panel_1, wx.ID_ANY)
         self.txtOutput = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_MULTILINE | wx.TE_READONLY)
@@ -128,6 +124,7 @@ class MyFrame(wx.Frame):
 
         self.Bind(wx.EVT_MENU, self.OnOpen, id=wx.ID_OPEN)
         self.Bind(wx.EVT_MENU, self.OnSaveInputs, id=1000)
+        self.Bind(wx.EVT_MENU, self.OnSaveResults, id=1001)
         self.Bind(wx.EVT_MENU, self.OnSave, id=wx.ID_SAVE)
         self.Bind(wx.EVT_MENU, self.OnAbout, id=wx.ID_ABOUT)
         self.Bind(wx.EVT_RADIOBOX, self.OnInputType, self.rdioInputType)
@@ -195,18 +192,13 @@ class MyFrame(wx.Frame):
         sizer_2 = wx.FlexGridSizer(1, 4, 0, 0)
         grid_sizer_1 = wx.FlexGridSizer(8, 1, 0, 0)
         sizer_7 = wx.BoxSizer(wx.VERTICAL)
-        self.sizer_5_staticbox.Lower()
-        sizer_5 = wx.StaticBoxSizer(self.sizer_5_staticbox, wx.HORIZONTAL)
-        self.sizer_4_staticbox.Lower()
-        sizer_4 = wx.StaticBoxSizer(self.sizer_4_staticbox, wx.HORIZONTAL)
-        self.sizer_3_staticbox.Lower()
-        sizer_3 = wx.StaticBoxSizer(self.sizer_3_staticbox, wx.HORIZONTAL)
+        sizer_5 = wx.StaticBoxSizer(wx.StaticBox(self.panel_1, wx.ID_ANY, _("Oxygen by stoichiometry?")), wx.HORIZONTAL)
+        sizer_4 = wx.StaticBoxSizer(wx.StaticBox(self.panel_1, wx.ID_ANY, _("Apply k-factors for:")), wx.HORIZONTAL)
+        sizer_3 = wx.StaticBoxSizer(wx.StaticBox(self.panel_1, wx.ID_ANY, _("TEM Thickness Correction")), wx.HORIZONTAL)
         sizer_13 = wx.BoxSizer(wx.VERTICAL)
         sizer_12 = wx.BoxSizer(wx.VERTICAL)
-        self.sizer_5_copy_staticbox.Lower()
-        sizer_5_copy = wx.StaticBoxSizer(self.sizer_5_copy_staticbox, wx.HORIZONTAL)
-        self.sizer_14_staticbox.Lower()
-        sizer_14 = wx.StaticBoxSizer(self.sizer_14_staticbox, wx.HORIZONTAL)
+        sizer_5_copy = wx.StaticBoxSizer(wx.StaticBox(self.panel_1, wx.ID_ANY, _("Arbitrary absorption")), wx.HORIZONTAL)
+        sizer_14 = wx.StaticBoxSizer(wx.StaticBox(self.panel_1, wx.ID_ANY, _("Phase Analysis")), wx.HORIZONTAL)
         sizer_11 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_6 = wx.FlexGridSizer(3, 1, 0, 0)
         sizer_8 = wx.BoxSizer(wx.HORIZONTAL)
@@ -627,6 +619,12 @@ class MyFrame(wx.Frame):
         if dlg.ShowModal() == wx.ID_CANCEL:
             return
 
+        self.DoSaveInputs(dlg.GetPath())
+
+        return
+
+    def DoSaveInputs(self, FileName):
+
         if self.rdioInputType.GetSelection() == 0:
             SavStr = 'Element,Counts\n'
         elif self.rdioInputType.GetSelection() == 1:
@@ -642,22 +640,58 @@ class MyFrame(wx.Frame):
             ElName = pb.ElementalSymbols[Z]
             SavStr += '%s,%f\n' % (ElName, float(self.ElementsListCtrl.GetItem(Z-1,1).GetText()))
 
-        with open(dlg.GetPath(), 'w') as fid:
+        with open(FileName, 'w') as fid:
             fid.write(SavStr)
         return
 
-    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
+    def OnSaveResults(self, event):  # wxGlade: MyFrame.<event_handler>
         dlg = wx.FileDialog(self, 'Save report', '', '', 'Text file (*.txt)|*.txt|Any file (*.*)|*.*', wx.FD_SAVE)
         dlg.SetFilterIndex(0)
 
         if dlg.ShowModal() == wx.ID_CANCEL:
             return
 
-        fid = open(dlg.GetPath(), 'w')
+        self.DoSaveResults(dlg.GetPath())
+
+        return
+
+    def DoSaveResults(self, FileName):
+
+        fid = open(FileName, 'w')
         fid.write(self.txtOutput.GetValue())
         fid.close()
 
         return
+
+    def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
+        dlg = wx.FileDialog(self, 'Save all', '', '', 'Any file (*.*)|*.*', wx.FD_SAVE)
+        dlg.SetFilterIndex(0)
+
+        if dlg.ShowModal() == wx.ID_CANCEL:
+            return
+
+        FileRoot = dlg.GetPath()
+
+        # Save the input and output files
+        self.DoSaveInputs(FileRoot + '.csv')
+        self.DoSaveResults(FileRoot + '.txt')
+
+        # If there is a custom phase analysis, then tell it to save (not all have save.)
+        if self.chkPhaseAnalysis.IsChecked():
+            # Construct the name of the py file containing the analysis function.
+            PhaseFile = self.cmbPhaseAnalysis.StringSelection
+            PhaseFile = 'ConfigData/phase ' + PhaseFile + '.py'
+
+            # import it and call the save function (if it exists).
+            a = imp.load_source('SaveResults', PhaseFile)
+            try:
+                a.SaveResults(FileRoot)
+            except:
+                # We won't worry if there is no save option.
+                pass
+
+        return
+
 
     def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
         print "Event handler 'OnAbout' not implemented!"
@@ -668,7 +702,7 @@ class MyFrame(wx.Frame):
 
     # CURRENT END OF CLASS
 
-# end of class MyFrame
+ # end of class MyFrame
 
 if __name__ == "__main__":
     gettext.install("app")  # replace with the appropriate catalog name
