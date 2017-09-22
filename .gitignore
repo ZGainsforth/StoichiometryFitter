@@ -48,3 +48,6 @@ Temp/
 *.pkl
 *.py~
 *.wxg~
+
+# On Macs we don't need metadata.
+.DS_Store
