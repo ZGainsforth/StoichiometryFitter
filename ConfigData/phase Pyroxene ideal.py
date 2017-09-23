@@ -18,7 +18,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr = '--- Pyroxene Analysis ---\n\n'
 
     # This analysis only knows about these elements:
-    KnownElements = ['O', 'Na', 'Si', 'Al', 'Fe', 'Ti', 'Cr', 'V', 'Zr', 'Sc', 'Zn', 'Mg', 'Mn', 'Li', 'Ca']
+    KnownElements = ['O', 'Na', 'Si', 'Al', 'Fe', 'Ni', 'Ti', 'Cr', 'V', 'Zr', 'Sc', 'Zn', 'Mg', 'Mn', 'Li', 'Ca']
 
     # If anything else accounts for more than 2 At % then note this
     OtherCations = 0
@@ -292,7 +292,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr += 'We assume oxidation priority: Ti3+ - Ti4+ - Fe2+ - Fe3+ (i.e. Ti3+ is only possible if all Fe is 2+, and Fe3+ is possible only with Ti4+).\n'
 
     return OutStr
-    
+
 if __name__ == '__main__':
 
     import imp
@@ -353,4 +353,3 @@ if __name__ == '__main__':
     AtPct[pb.O-1] = 60.23
     print 'Iris CPX TEM: CaMgSi2O6\n'
     print AnalyzePhase(AtPct)
-
