@@ -71,6 +71,28 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     OutStr += 'Assumed M1+M2 = %0.3f which is everything except O, Si and Al\n\n' % Cationtally
 
+    ECatsPerOxygen = E.copy()
+
+    # We already did stoichiometry so cations/6 oxy can be ratioed against the O exactly.
+    for Element in KnownElements:
+        ECatsPerOxygen[Element] = eval('AtPct[pb.%s-1]/AtPct[pb.O-1]*6'%Element)
+
+    OutStr += '\n'
+    OutStr += 'Cations per 6 oxygens:\n'
+    OutStr += '{:>11s}:    {:<10s}\n'.format('Element', '#')
+    CationSum = 0
+    for ElName in KnownElements:
+        if ElName != 'O' and ECatsPerOxygen[ElName] != 0:
+            CationSum += ECatsPerOxygen[ElName]
+            if E[ElName] < 0.01:
+                # Handle ppm levels gracefully.
+                OutStr += '{:>11s}:    {:<1.3f}'.format(ElName, ECatsPerOxygen[ElName])
+                OutStr += ', {:>11s}:    {:<4.0f} * 10^-6\n'.format(ElName, ECatsPerOxygen[ElName]*1e6)
+            else:
+                OutStr += '{:>11s}:    {:<1.3f}\n'.format(ElName, ECatsPerOxygen[ElName])
+    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Total Cats', CationSum)
+    OutStr += 'Ideal number of cats is 4.\n\n'
+
 
     # Build the site occupancies.
     # T site gets all the Si, and then as much Al3+ and Fe3+ as necessary to fill it up.
@@ -215,7 +237,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     PrintIfNonzero = lambda k, v: '{:>11s}:    {:<1.3f}\n'.format(k, v) if v != 0 else ''
 
-    OutStr += 'Assume exactly 4 cations and compute to fill sites and balance charge:\n'
+    OutStr += 'Assuming exactly 4 cations and compute to fill sites and balance charge:\n'
     OutStr += 'Site T (tetrahedral):\n'
     OutStr += '{:>11s}:    {:<10s}\n'.format('Element', 'Occupancy')
     for k, v in OrderedDict((('Si4+', SiT),

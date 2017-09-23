@@ -41,7 +41,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     E = dict()
 
-    # We already did stoichiometry so cations/13 oxy can be ratioed against the O exactly.
+    # We already did stoichiometry so cations/8 oxy can be ratioed against the O exactly.
     for Element in KnownElements:
         E[Element] = eval('AtPct[pb.%s-1]/AtPct[pb.O-1]*8'%Element)
 
