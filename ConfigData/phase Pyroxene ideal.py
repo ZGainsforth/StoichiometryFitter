@@ -18,7 +18,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr = '--- Pyroxene Analysis ---\n\n'
 
     # This analysis only knows about these elements:
-    KnownElements = ['O', 'Na', 'Si', 'Al', 'Fe', 'Ni', 'Ti', 'Cr', 'V', 'Zr', 'Sc', 'Zn', 'Mg', 'Mn', 'Li', 'Ca']
+    KnownElements = ['O', 'Na', 'K', 'S', 'Si', 'Al', 'Fe', 'Ni', 'Ti', 'Cr', 'V', 'Zr', 'Sc', 'Zn', 'Mg', 'Mn', 'Li', 'Ca', 'Cl']
 
     # If anything else accounts for more than 2 At % then note this
     OtherCations = 0

@@ -19,7 +19,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr = '--- Feldspar Analysis ---\n\n'
 
     # This analysis only knows about these elements:
-    KnownElements = ['O', 'Na', 'Al', 'Si', 'K', 'Ca']
+    KnownElements = ['O', 'Na', 'Al', 'Si', 'K', 'Ca', 'Mg', 'Fe', 'P', 'S', 'Mn']
 
     # If anything else accounts for more than 2 At % then this analysis is garbage
     OtherCations = 0
@@ -75,7 +75,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
 
     return OutStr
-    
+
 if __name__ == '__main__':
 
     import imp
@@ -117,4 +117,3 @@ if __name__ == '__main__':
     print '\n\n-----------------------\n\n'
     print 'Lunar Sanidine: K Al Si3 O8:\n'
     print AnalyzePhase(AtPct)
-
