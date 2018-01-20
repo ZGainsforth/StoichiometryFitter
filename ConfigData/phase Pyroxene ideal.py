@@ -18,7 +18,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr = '--- Pyroxene Analysis ---\n\n'
 
     # This analysis only knows about these elements:
-    KnownElements = ['O', 'Na', 'Si', 'Al', 'Fe', 'Ti', 'Cr', 'V', 'Zr', 'Sc', 'Zn', 'Mg', 'Mn', 'Li', 'Ca']
+    KnownElements = ['O', 'Na', 'K', 'S', 'Si', 'Al', 'Fe', 'Ni', 'Ti', 'Cr', 'V', 'Zr', 'Sc', 'Zn', 'Mg', 'Mn', 'Li', 'Ca', 'Cl']
 
     # If anything else accounts for more than 2 At % then note this
     OtherCations = 0
@@ -70,6 +70,28 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
             Cationtally += E[e]/M1M2sum
 
     OutStr += 'Assumed M1+M2 = %0.3f which is everything except O, Si and Al\n\n' % Cationtally
+
+    ECatsPerOxygen = E.copy()
+
+    # We already did stoichiometry so cations/6 oxy can be ratioed against the O exactly.
+    for Element in KnownElements:
+        ECatsPerOxygen[Element] = eval('AtPct[pb.%s-1]/AtPct[pb.O-1]*6'%Element)
+
+    OutStr += '\n'
+    OutStr += 'Cations per 6 oxygens:\n'
+    OutStr += '{:>11s}:    {:<10s}\n'.format('Element', '#')
+    CationSum = 0
+    for ElName in KnownElements:
+        if ElName != 'O' and ECatsPerOxygen[ElName] != 0:
+            CationSum += ECatsPerOxygen[ElName]
+            if E[ElName] < 0.01:
+                # Handle ppm levels gracefully.
+                OutStr += '{:>11s}:    {:<1.3f}'.format(ElName, ECatsPerOxygen[ElName])
+                OutStr += ', {:>11s}:    {:<4.0f} * 10^-6\n'.format(ElName, ECatsPerOxygen[ElName]*1e6)
+            else:
+                OutStr += '{:>11s}:    {:<1.3f}\n'.format(ElName, ECatsPerOxygen[ElName])
+    OutStr += '{:>11s}:    {:<1.3f}\n'.format('Total Cats', CationSum)
+    OutStr += 'Ideal number of cats is 4.\n\n'
 
 
     # Build the site occupancies.
@@ -215,7 +237,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     PrintIfNonzero = lambda k, v: '{:>11s}:    {:<1.3f}\n'.format(k, v) if v != 0 else ''
 
-    OutStr += 'Assume exactly 4 cations and compute to fill sites and balance charge:\n'
+    OutStr += 'Assuming exactly 4 cations and compute to fill sites and balance charge:\n'
     OutStr += 'Site T (tetrahedral):\n'
     OutStr += '{:>11s}:    {:<10s}\n'.format('Element', 'Occupancy')
     for k, v in OrderedDict((('Si4+', SiT),
@@ -270,7 +292,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr += 'We assume oxidation priority: Ti3+ - Ti4+ - Fe2+ - Fe3+ (i.e. Ti3+ is only possible if all Fe is 2+, and Fe3+ is possible only with Ti4+).\n'
 
     return OutStr
-    
+
 if __name__ == '__main__':
 
     import imp
@@ -331,4 +353,3 @@ if __name__ == '__main__':
     AtPct[pb.O-1] = 60.23
     print 'Iris CPX TEM: CaMgSi2O6\n'
     print AnalyzePhase(AtPct)
-
