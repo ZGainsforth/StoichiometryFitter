@@ -131,6 +131,18 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     ProtosolarToFe = power(10, Protosolar)
     ProtosolarToFe /= ProtosolarToFe[pb.Fe-1]
 
+    AtPctMean = copy(AtPct[:len(Protosolar)])
+    AtPctMean /= sum(AtPctMean)
+    AtPctMean[AtPctMean == 0] = nan # We don't want zero abundance elements included in the mean.
+    AtPctMean -= nanmean(AtPctMean)
+
+    #####################    GOT ATPCTMEAN WORKING, NOW NEED TO DO THE SAME WITH PROTOSOLARCHONDRICITY AND THEN MAKE CHONDRICITY
+
+    ProtosolarChondricity = power(10, Protosolar)
+    ProtosolarChondricity[AtPctMean==0] = nan
+    ProtosolarChondricity /= sum(ProtosolarChondricity) # Normed vector for only the protosolar elements we are evaluating.
+
+
     # Print out the abundances normalized to protosolar.
     Ratios = list() # Keep track of the ratios, so at the end we can compute standard deviations.
     OutStr += "Abundances ratioed to protosolar and normalized to:\n"
@@ -138,10 +150,13 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr += '-'*41 + '\n'
     for Zminus, E in enumerate(AtPct):
         if E != 0:
-            EtoMg = E / AtPct[pb.Mg-1]
-            EtoSi = E / AtPct[pb.Si-1]
-            EtoFe = E / AtPct[pb.Fe-1]
-            Ratios.append([EtoMg/ProtosolarToMg[Zminus], EtoSi/ProtosolarToSi[Zminus], EtoFe/ProtosolarToFe[Zminus]])
+            EtoMg = E / AtPct[pb.Mg-1] # Norm to Mg
+            EtoSi = E / AtPct[pb.Si-1] # Si
+            EtoFe = E / AtPct[pb.Fe-1] # Fe
+            Ratios.append([EtoMg/ProtosolarToMg[Zminus], # Norm Mg and protosolar
+                           EtoSi/ProtosolarToSi[Zminus], # Si and protosolar
+                           EtoFe/ProtosolarToFe[Zminus], # Fe and protosolar
+                           Protosolar[Zminus]])          # One with the raw protosolar values for chondriticty.
             OutStr += '%-13s%-9.3f%-9.3f%-9.3f\n' % (tuple([pb.ElementalSymbols[Zminus+1]]) + tuple(Ratios[-1]))
     Ratios = array(Ratios)
     Means = mean(Ratios, axis=0)
@@ -294,7 +309,7 @@ def SaveResults(FileRoot):
 if __name__ == '__main__':
 
     import imp
-    pb = imp.load_source('PhysicsBasics', '../PhysicsBasics.py')
+    pb = imp.load_source('PhysicsBasics', 'PhysicsBasics.py')
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.O-1] = 61.9
