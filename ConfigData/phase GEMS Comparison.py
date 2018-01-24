@@ -132,10 +132,18 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     ProtosolarToFe /= ProtosolarToFe[pb.Fe-1]
     ProtosolarChondricity = ProtosolarToFe
 
+    IshiiAtPct, IshiiAtPctSD = IshiiPlot(AtPct, ProtosolarToSi)
+
+    #PrintTernary(AtPct, IshiiAtPct, IshiiAtPctSD)
+
+    GEMSicity, JointGEMSicity = GEMSicityPlot(AtPct, Protosolar)
+
+    ShowLastPos(plt)
+
     # Print out the abundances normalized to protosolar.
     Ratios = list() # Keep track of the ratios, so at the end we can compute standard deviations.
     OutStr += "Abundances ratioed to protosolar and normalized to:\n"
-    OutStr += "Element to   Mg       Si       Fe     Mean\n"
+    OutStr += "Element to   Mg       Si       Fe     GEMSicity\n"
     OutStr += '-'*50 + '\n'
     for Zminus, E in enumerate(AtPct):
         if E != 0:
@@ -145,7 +153,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
             Ratios.append([EtoMg/ProtosolarToMg[Zminus], # Norm Mg and protosolar
                            EtoSi/ProtosolarToSi[Zminus], # Si and protosolar
                            EtoFe/ProtosolarToFe[Zminus], # Fe and protosolar
-                           ProtosolarChondricity[Zminus]])          # One with the raw protosolar values for chondriticty.
+                           GEMSicity[Zminus]])          # GEMSicity.
             OutStr += '%-13s%-9.3f%-9.3f%-9.3f%-9.3f\n' % (tuple([pb.ElementalSymbols[Zminus+1]]) + tuple(Ratios[-1]))
     Ratios = array(Ratios)
     Means = nanmean(Ratios, axis=0)
@@ -153,6 +161,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     OutStr += '-'*41 + '\n'
     OutStr += '%-13s%-9.3f%-9.3f%-9.3f%-9.3f\n' % (tuple(['Mean']) + tuple(Means))
     OutStr += '%-13s%-9.3f%-9.3f%-9.3f%-9.3f\n' % (tuple(['Standard dev']) + tuple(Stdevs))
+    OutStr += 'Joint GEMSicity: %g\n' % JointGEMSicity
     OutStr += '-'*50 + '\n'
 
     OutStr += '\nRefs:\n    Lodders, K. (2003). Solar System Abundances and Condensation Temperatures of the Elements. The Astrophysical ' \
@@ -160,17 +169,10 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
               '    Ishii, H. A., et al. (2008). Comparison of Comet 81P/Wild 2 Dust with Interplanetary Dust from Comets. Science, ' \
               '319(5), 447. http://doi.org/10.1126/science.1150683'
 
-    IshiiAtPct, IshiiAtPctSD = IshiiPlot(AtPct, ProtosolarToSi)
-
-    #PrintTernary(AtPct, IshiiAtPct, IshiiAtPctSD)
-
-    ChondricityPlot(AtPct, Protosolar)
-
-    ShowLastPos(plt)
 
     return OutStr
 
-def ChondricityPlot(AtPct, Protosolar):
+def GEMSicityPlot(AtPct, Protosolar):
     AtPctMean = copy(AtPct[:len(Protosolar)])
     AtPctMean[AtPctMean == 0] = nan # We don't want zero abundance elements included in the mean.
     AtPctMean[:pb.Na-1] = nan # Ignore anything below Na as it is too volatilie for GEMS comparison.
@@ -183,20 +185,30 @@ def ChondricityPlot(AtPct, Protosolar):
     ProtosolarChondricity /= nansum(ProtosolarChondricity)
     Chondricity = log10(AtPctMean/ProtosolarChondricity)
 
-    IshiiAtPct = zeros(len(AtPctMean));    IshiiAtPctSD = zeros(len(AtPctMean))
-    IshiiAtPct[pb.O - 1] = 66.71;    IshiiAtPctSD[pb.O - 1] = 4.43
-    IshiiAtPct[pb.Mg - 1] = 9.37;    IshiiAtPctSD[pb.Mg - 1] = 4.42
-    IshiiAtPct[pb.Al - 1] = 1.62;    IshiiAtPctSD[pb.Al - 1] = 1.09
-    IshiiAtPct[pb.Si - 1] = 14.40;   IshiiAtPctSD[pb.Si - 1] = 2.36
-    IshiiAtPct[pb.S - 1] = 3.69;     IshiiAtPctSD[pb.S - 1] = 2.73
-    IshiiAtPct[pb.Ca - 1] = 0.82;    IshiiAtPctSD[pb.Ca - 1] = 0.70
-    IshiiAtPct[pb.Cr - 1] = 0.12;    IshiiAtPctSD[pb.Cr - 1] = 0.10
-    IshiiAtPct[pb.Mn - 1] = 0.02;    IshiiAtPctSD[pb.Mn - 1] = 0.06
-    IshiiAtPct[pb.Fe - 1] = 6.39;    IshiiAtPctSD[pb.Fe - 1] = 2.39
-    IshiiAtPct[pb.Ni - 1] = 0.40;    IshiiAtPctSD[pb.Ni - 1] = 0.23
-    IshiiAtPct[isnan(AtPctMean)] = nan
-    IshiiAtPct /= nansum(IshiiAtPct)
-    GEMSicity = log10(AtPctMean/IshiiAtPct)
+    # GEMS average values and standard deviations from Ishii 2008 Science paper.
+    GEMSAtPct = zeros(len(AtPctMean));    GEMSAtPctSD = zeros(len(AtPctMean))
+    GEMSAtPct[pb.O - 1] = 66.71;    GEMSAtPctSD[pb.O - 1] = 4.43
+    GEMSAtPct[pb.Mg - 1] = 9.37;    GEMSAtPctSD[pb.Mg - 1] = 4.42
+    GEMSAtPct[pb.Al - 1] = 1.62;    GEMSAtPctSD[pb.Al - 1] = 1.09
+    GEMSAtPct[pb.Si - 1] = 14.40;   GEMSAtPctSD[pb.Si - 1] = 2.36
+    GEMSAtPct[pb.S - 1] = 3.69;     GEMSAtPctSD[pb.S - 1] = 2.73
+    GEMSAtPct[pb.Ca - 1] = 0.82;    GEMSAtPctSD[pb.Ca - 1] = 0.70
+    GEMSAtPct[pb.Cr - 1] = 0.12;    GEMSAtPctSD[pb.Cr - 1] = 0.10
+    GEMSAtPct[pb.Mn - 1] = 0.02;    GEMSAtPctSD[pb.Mn - 1] = 0.06
+    GEMSAtPct[pb.Fe - 1] = 6.39;    GEMSAtPctSD[pb.Fe - 1] = 2.39
+    GEMSAtPct[pb.Ni - 1] = 0.40;    GEMSAtPctSD[pb.Ni - 1] = 0.23
+    GEMSAtPctSDRel = GEMSAtPctSD/GEMSAtPct
+    GEMSAtPct[isnan(AtPctMean)] = nan
+    GEMSAtPct /= nansum(GEMSAtPct)
+    # Original ElementGEMSicity is like chondricity.
+    # ElementGEMSicity = log10(AtPctMean/GEMSAtPct)
+    # New ElementGEMSicity isn't how many x larger smaller is it, but how many sigmas larger/smaller.
+    ElementGEMSicity = (AtPctMean-GEMSAtPct)/(GEMSAtPct*GEMSAtPctSDRel)
+    # GEMSicity is the joint probability of individual element GEMSicities.
+    # We assume normal distributions for each element which is wrong -- but this still produced a scalar metric which is better than none.
+    # Todo in future work: JointGEMSicity using joint distributions based off GEMS compositions from Keller and Messenger 2011.
+    NumElements = nansum(~isnan(GEMSAtPct))
+    GEMSicity = sqrt(nansum(ElementGEMSicity**2)/(NumElements-1))
 
     plt.figure(3)
     plt.clf()
@@ -206,12 +218,12 @@ def ChondricityPlot(AtPct, Protosolar):
     # plt.scatter(TickInds, AtPctMean[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='AtPctMean')
     # plt.scatter(TickInds, Protosolar[IncludedZ-1], marker='o', color='green', s=150, alpha=0.5, label='Protosolar')
     plt.scatter(TickInds, Chondricity[IncludedZ-1], marker='o', color='red', s=150, alpha=0.5, label='Chondricity')
-    plt.scatter(TickInds, GEMSicity[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='GEMSicity')
+    plt.scatter(TickInds, ElementGEMSicity[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='ElementGEMSicity')
     plt.xticks(TickInds, TickLabels, rotation='vertical')
     plt.axhline(0, 0, 92, color='green', linewidth=3, label='Chondritic/GEMSitic')
     #plt.gca().set_yscale('log')
     plt.legend()
-    plt.ylabel('log$_{10}$(At%/Norm)', fontsize=FontSizeBasis)
+    plt.ylabel('Chondricity: log$_{10}$(At%/Chondritic)\nElemental GEMSicity: #$\sigma$ from GEMS mean', fontsize=FontSizeBasis)
     plt.tight_layout()
 
     # print('AtPct values: ', AtPctMean[IncludedZ-1])
@@ -223,8 +235,12 @@ def ChondricityPlot(AtPct, Protosolar):
     # print('ProtosolarChondricity mean: ', nanmean(ProtosolarChondricity), ' ProtosolarChondricity sum: ', nansum(ProtosolarChondricity))
     #
     print('Chondricity values: ', Chondricity[IncludedZ-1])
-    print('Chondricity mean: ', nanmean(Chondricity), ' Chondricity std: ', nanstd(Chondricity))
+    print('Chondricity mean: %g, Chondricity std: %g' % (nanmean(Chondricity), nanstd(Chondricity)))
+    print('ElementGEMSicity values: ', ElementGEMSicity[IncludedZ-1])
+    print('ElementGEMSicity mean: %g, ElementGEMSicity std: %g' % (nanmean(ElementGEMSicity), nanstd(ElementGEMSicity)))
+    print('Joint GEMSicity: %g' % GEMSicity)
 
+    return ElementGEMSicity, GEMSicity
 
 
 def IshiiPlot(AtPct, ProtosolarToSi):
@@ -406,6 +422,21 @@ if __name__ == '__main__':
     AtPct[pb.Cr - 1] = 0.12;
     AtPct[pb.Mn - 1] = 0.02;
     AtPct[pb.Fe - 1] = 6.39;
+    AtPct[pb.Ni - 1] = 0.40;
+    print 'Ishii GEMS mean values\n'
+    print AnalyzePhase(AtPct)
+
+    # GEMS mean from Ishii's science paper in 2008, but with 1 sigma more Fe
+    AtPct = zeros(pb.MAXELEMENT)
+    AtPct[pb.O - 1] = 66.71;
+    AtPct[pb.Mg - 1] = 9.37;
+    AtPct[pb.Al - 1] = 1.62;
+    AtPct[pb.Si - 1] = 14.40;
+    AtPct[pb.S - 1] = 3.69;
+    AtPct[pb.Ca - 1] = 0.82;
+    AtPct[pb.Cr - 1] = 0.12;
+    AtPct[pb.Mn - 1] = 0.02;
+    AtPct[pb.Fe - 1] = 6.39+2.39;
     AtPct[pb.Ni - 1] = 0.40;
     print 'Ishii GEMS mean values\n'
     print AnalyzePhase(AtPct)
