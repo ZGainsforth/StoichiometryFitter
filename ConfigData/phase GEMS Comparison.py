@@ -130,24 +130,13 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     ProtosolarToSi /= ProtosolarToSi[pb.Si-1]
     ProtosolarToFe = power(10, Protosolar)
     ProtosolarToFe /= ProtosolarToFe[pb.Fe-1]
-
-    AtPctMean = copy(AtPct[:len(Protosolar)])
-    AtPctMean /= sum(AtPctMean)
-    AtPctMean[AtPctMean == 0] = nan # We don't want zero abundance elements included in the mean.
-    AtPctMean -= nanmean(AtPctMean)
-
-    #####################    GOT ATPCTMEAN WORKING, NOW NEED TO DO THE SAME WITH PROTOSOLARCHONDRICITY AND THEN MAKE CHONDRICITY
-
-    ProtosolarChondricity = power(10, Protosolar)
-    ProtosolarChondricity[AtPctMean==0] = nan
-    ProtosolarChondricity /= sum(ProtosolarChondricity) # Normed vector for only the protosolar elements we are evaluating.
-
+    ProtosolarChondricity = ProtosolarToFe
 
     # Print out the abundances normalized to protosolar.
     Ratios = list() # Keep track of the ratios, so at the end we can compute standard deviations.
     OutStr += "Abundances ratioed to protosolar and normalized to:\n"
-    OutStr += "Element to   Mg       Si       Fe\n"
-    OutStr += '-'*41 + '\n'
+    OutStr += "Element to   Mg       Si       Fe     Mean\n"
+    OutStr += '-'*50 + '\n'
     for Zminus, E in enumerate(AtPct):
         if E != 0:
             EtoMg = E / AtPct[pb.Mg-1] # Norm to Mg
@@ -156,53 +145,115 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
             Ratios.append([EtoMg/ProtosolarToMg[Zminus], # Norm Mg and protosolar
                            EtoSi/ProtosolarToSi[Zminus], # Si and protosolar
                            EtoFe/ProtosolarToFe[Zminus], # Fe and protosolar
-                           Protosolar[Zminus]])          # One with the raw protosolar values for chondriticty.
-            OutStr += '%-13s%-9.3f%-9.3f%-9.3f\n' % (tuple([pb.ElementalSymbols[Zminus+1]]) + tuple(Ratios[-1]))
+                           ProtosolarChondricity[Zminus]])          # One with the raw protosolar values for chondriticty.
+            OutStr += '%-13s%-9.3f%-9.3f%-9.3f%-9.3f\n' % (tuple([pb.ElementalSymbols[Zminus+1]]) + tuple(Ratios[-1]))
     Ratios = array(Ratios)
-    Means = mean(Ratios, axis=0)
-    Stdevs = std(Ratios, axis=0)
+    Means = nanmean(Ratios, axis=0)
+    Stdevs = nanstd(Ratios, axis=0)
     OutStr += '-'*41 + '\n'
-    OutStr += '%-13s%-9.3f%-9.3f%-9.3f\n' % (tuple(['Mean']) + tuple(Means))
-    OutStr += '%-13s%-9.3f%-9.3f%-9.3f\n' % (tuple(['Standard dev']) + tuple(Stdevs))
-    OutStr += '-'*41 + '\n'
+    OutStr += '%-13s%-9.3f%-9.3f%-9.3f%-9.3f\n' % (tuple(['Mean']) + tuple(Means))
+    OutStr += '%-13s%-9.3f%-9.3f%-9.3f%-9.3f\n' % (tuple(['Standard dev']) + tuple(Stdevs))
+    OutStr += '-'*50 + '\n'
 
     OutStr += '\nRefs:\n    Lodders, K. (2003). Solar System Abundances and Condensation Temperatures of the Elements. The Astrophysical ' \
               'Journal, 591(2), 1220-1247. http://doi.org/10.1086/375492\n' \
               '    Ishii, H. A., et al. (2008). Comparison of Comet 81P/Wild 2 Dust with Interplanetary Dust from Comets. Science, ' \
               '319(5), 447. http://doi.org/10.1126/science.1150683'
 
-    ### Draw a plot comparing this spectrum normalized to CI and plotted against GEMS compositions.
+    IshiiAtPct, IshiiAtPctSD = IshiiPlot(AtPct, ProtosolarToSi)
 
+    #PrintTernary(AtPct, IshiiAtPct, IshiiAtPctSD)
+
+    ChondricityPlot(AtPct, Protosolar)
+
+    ShowLastPos(plt)
+
+    return OutStr
+
+def ChondricityPlot(AtPct, Protosolar):
+    AtPctMean = copy(AtPct[:len(Protosolar)])
+    AtPctMean[AtPctMean == 0] = nan # We don't want zero abundance elements included in the mean.
+    AtPctMean[:pb.Na-1] = nan # Ignore anything below Na as it is too volatilie for GEMS comparison.
+    # AtPctMean -= nanmean(AtPctMean)
+    AtPctMean /= nansum(AtPctMean)
+
+    ProtosolarChondricity = power(10, Protosolar)
+    ProtosolarChondricity[isnan(AtPctMean)] = nan
+    # ProtosolarChondricity -= nanmean(ProtosolarChondricity) # Normed vector for only the protosolar elements we are evaluating.
+    ProtosolarChondricity /= nansum(ProtosolarChondricity)
+    Chondricity = log10(AtPctMean/ProtosolarChondricity)
+
+    IshiiAtPct = zeros(len(AtPctMean));    IshiiAtPctSD = zeros(len(AtPctMean))
+    IshiiAtPct[pb.O - 1] = 66.71;    IshiiAtPctSD[pb.O - 1] = 4.43
+    IshiiAtPct[pb.Mg - 1] = 9.37;    IshiiAtPctSD[pb.Mg - 1] = 4.42
+    IshiiAtPct[pb.Al - 1] = 1.62;    IshiiAtPctSD[pb.Al - 1] = 1.09
+    IshiiAtPct[pb.Si - 1] = 14.40;   IshiiAtPctSD[pb.Si - 1] = 2.36
+    IshiiAtPct[pb.S - 1] = 3.69;     IshiiAtPctSD[pb.S - 1] = 2.73
+    IshiiAtPct[pb.Ca - 1] = 0.82;    IshiiAtPctSD[pb.Ca - 1] = 0.70
+    IshiiAtPct[pb.Cr - 1] = 0.12;    IshiiAtPctSD[pb.Cr - 1] = 0.10
+    IshiiAtPct[pb.Mn - 1] = 0.02;    IshiiAtPctSD[pb.Mn - 1] = 0.06
+    IshiiAtPct[pb.Fe - 1] = 6.39;    IshiiAtPctSD[pb.Fe - 1] = 2.39
+    IshiiAtPct[pb.Ni - 1] = 0.40;    IshiiAtPctSD[pb.Ni - 1] = 0.23
+    IshiiAtPct[isnan(AtPctMean)] = nan
+    IshiiAtPct /= nansum(IshiiAtPct)
+    GEMSicity = log10(AtPctMean/IshiiAtPct)
+
+    plt.figure(3)
+    plt.clf()
+    IncludedZ = where(~isnan(Chondricity))[0]+1
+    TickLabels = [El for Z, El in enumerate(pb.ElementalSymbols) if Z in IncludedZ]
+    TickInds = range(len(TickLabels))
+    # plt.scatter(TickInds, AtPctMean[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='AtPctMean')
+    # plt.scatter(TickInds, Protosolar[IncludedZ-1], marker='o', color='green', s=150, alpha=0.5, label='Protosolar')
+    plt.scatter(TickInds, Chondricity[IncludedZ-1], marker='o', color='red', s=150, alpha=0.5, label='Chondricity')
+    plt.scatter(TickInds, GEMSicity[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='GEMSicity')
+    plt.xticks(TickInds, TickLabels, rotation='vertical')
+    plt.axhline(0, 0, 92, color='green', linewidth=3, label='Chondritic/GEMSitic')
+    #plt.gca().set_yscale('log')
+    plt.legend()
+    plt.ylabel('log$_{10}$(At%/Norm)', fontsize=FontSizeBasis)
+    plt.tight_layout()
+
+    # print('AtPct values: ', AtPctMean[IncludedZ-1])
+    # print('AtPct mean: ', nanmean(AtPctMean), ' AtPct sum: ', nansum(AtPctMean))
+    # print('AtPct mean: ', nanmean(AtPctMean), ' AtPct sum: ', nansum(AtPctMean))
+    #
+    # print('ProtosolarChondricity values: ', ProtosolarChondricity[IncludedZ-1])
+    # print('ProtosolarChondricity mean: ', nanmean(ProtosolarChondricity), ' ProtosolarChondricity sum: ', nansum(ProtosolarChondricity))
+    # print('ProtosolarChondricity mean: ', nanmean(ProtosolarChondricity), ' ProtosolarChondricity sum: ', nansum(ProtosolarChondricity))
+    #
+    print('Chondricity values: ', Chondricity[IncludedZ-1])
+    print('Chondricity mean: ', nanmean(Chondricity), ' Chondricity std: ', nanstd(Chondricity))
+
+
+
+def IshiiPlot(AtPct, ProtosolarToSi):
+    ### Draw a plot comparing this spectrum normalized to CI and plotted against GEMS compositions.
     # First we have mean and standard deviation values for GEMS compositions.
     # Ishii 2008 GEMS mean (left) and std (right) values.
-    IshiiAtPct = zeros(pb.U-1)
-    IshiiAtPctSD = zeros(pb.U-1)
-    IshiiAtPct[pb.O-1]  =  66.71;   IshiiAtPctSD[pb.O-1]  = 4.43
-    IshiiAtPct[pb.Mg-1] =  9.37;    IshiiAtPctSD[pb.Mg-1] = 4.42
-    IshiiAtPct[pb.Al-1] =  1.62;    IshiiAtPctSD[pb.Al-1] = 1.09
-    IshiiAtPct[pb.Si-1] =  14.40;   IshiiAtPctSD[pb.Si-1] = 2.36
-    IshiiAtPct[pb.S-1]  =  3.69;    IshiiAtPctSD[pb.S-1]  = 2.73
-    IshiiAtPct[pb.Ca-1] =  0.82;    IshiiAtPctSD[pb.Ca-1] = 0.70
-    IshiiAtPct[pb.Cr-1] =  0.12;    IshiiAtPctSD[pb.Cr-1] = 0.10
-    IshiiAtPct[pb.Mn-1] =  0.02;    IshiiAtPctSD[pb.Mn-1] = 0.06
-    IshiiAtPct[pb.Fe-1] =  6.39;    IshiiAtPctSD[pb.Fe-1] = 2.39
-    IshiiAtPct[pb.Ni-1] =  0.40;    IshiiAtPctSD[pb.Ni-1] = 0.23
-
+    IshiiAtPct = zeros(pb.U - 1);    IshiiAtPctSD = zeros(pb.U - 1)
+    IshiiAtPct[pb.O - 1] = 66.71;    IshiiAtPctSD[pb.O - 1] = 4.43
+    IshiiAtPct[pb.Mg - 1] = 9.37;    IshiiAtPctSD[pb.Mg - 1] = 4.42
+    IshiiAtPct[pb.Al - 1] = 1.62;    IshiiAtPctSD[pb.Al - 1] = 1.09
+    IshiiAtPct[pb.Si - 1] = 14.40;   IshiiAtPctSD[pb.Si - 1] = 2.36
+    IshiiAtPct[pb.S - 1] = 3.69;     IshiiAtPctSD[pb.S - 1] = 2.73
+    IshiiAtPct[pb.Ca - 1] = 0.82;    IshiiAtPctSD[pb.Ca - 1] = 0.70
+    IshiiAtPct[pb.Cr - 1] = 0.12;    IshiiAtPctSD[pb.Cr - 1] = 0.10
+    IshiiAtPct[pb.Mn - 1] = 0.02;    IshiiAtPctSD[pb.Mn - 1] = 0.06
+    IshiiAtPct[pb.Fe - 1] = 6.39;    IshiiAtPctSD[pb.Fe - 1] = 2.39
+    IshiiAtPct[pb.Ni - 1] = 0.40;    IshiiAtPctSD[pb.Ni - 1] = 0.23
     # Make these Si normalized.
-    SiTemp = IshiiAtPct[pb.Si-1]
+    SiTemp = IshiiAtPct[pb.Si - 1]
     # IshiiRel is derived from IshiiAtPct, but is normalized against Si and normalized against chondritic.
-    IshiiRel = copy(IshiiAtPct)/SiTemp
-    IshiiRelSD = copy(IshiiAtPctSD)/SiTemp
-
+    IshiiRel = copy(IshiiAtPct) / SiTemp
+    IshiiRelSD = copy(IshiiAtPctSD) / SiTemp
     # And normalize to chondritic
-    IshiiRel /= ProtosolarToSi[0:pb.U-1]
-    IshiiRelSD /= ProtosolarToSi[0:pb.U-1]
-
+    IshiiRel /= ProtosolarToSi[0:pb.U - 1]
+    IshiiRelSD /= ProtosolarToSi[0:pb.U - 1]
     # Make a version of the sample quant which is ratioed to si
-    AtPctToSi = AtPct / AtPct[pb.Si-1]
+    AtPctToSi = AtPct / AtPct[pb.Si - 1]
     # And chondritic
     AtPctToSi[:len(ProtosolarToSi)] /= ProtosolarToSi
-
     # Get the union of elements which are in our spectrum and in the GEMS mean values.
     # All indices for elements which have non zero values from either array.
     IncludedZ = hstack((nonzero(AtPct)[0], nonzero(IshiiRel)[0]))
@@ -210,11 +261,9 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     IncludedZ = sort(unique(IncludedZ))
     # Indices are 0 based, Z is 1 based.
     IncludedZ += 1
-
     # Get the list of element names for those elements.
     TickLabels = [El for Z, El in enumerate(pb.ElementalSymbols) if Z in IncludedZ]
     TickInds = range(len(TickLabels))
-
     IshiiInds = []
     IshiiVals = []
     IshiiErrs = []
@@ -222,33 +271,30 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     SpectrumVals = []
     ChondriticInds = []
     ChondriticVals = []
-    for Zminus1, Val in enumerate(AtPctToSi[:pb.U-1]):
+    for Zminus1, Val in enumerate(AtPctToSi[:pb.U - 1]):
         if IshiiRel[Zminus1] > 0:
-            IshiiInds.append(TickLabels.index(pb.ElementalSymbols[Zminus1+1]))
+            IshiiInds.append(TickLabels.index(pb.ElementalSymbols[Zminus1 + 1]))
             IshiiVals.append(IshiiRel[Zminus1])
             IshiiErrs.append(IshiiRelSD[Zminus1])
         if AtPct[Zminus1] > 0:
-            SpectrumInds.append(TickLabels.index(pb.ElementalSymbols[Zminus1+1]))
+            SpectrumInds.append(TickLabels.index(pb.ElementalSymbols[Zminus1 + 1]))
             SpectrumVals.append(AtPctToSi[Zminus1])
         # This part only applies if not normalizing to chondritic.
         # if pb.ElementalSymbols[Zminus1+1] in TickLabels:
         #     ChondriticInds.append(TickLabels.index(pb.ElementalSymbols[Zminus1+1]))
         #     ChondriticVals.append(ProtosolarToSi[Zminus1])
-
     # We will be plotting so clear the plot that may already be plotted.
     plt.figure(1)
     plt.clf()
-
     # Ishii plot
     plt.scatter(IshiiInds, IshiiVals, marker='o', color='red', s=150, alpha=0.5, label='Ishii et al., 2008')
-    #plt.errorbar(IshiiInds, IshiiVals, yerr=IshiiErrs, fmt='none', elinewidth=3, capsize=7, capthick=3, ecolor='red')
+    # plt.errorbar(IshiiInds, IshiiVals, yerr=IshiiErrs, fmt='none', elinewidth=3, capsize=7, capthick=3, ecolor='red')
     plt.errorbar(IshiiInds, IshiiVals, yerr=IshiiErrs, fmt='none', alpha=0.5, elinewidth=5, capsize=0, capthick=3, ecolor='red')
     # This spectrum.
-    plt.scatter(SpectrumInds, SpectrumVals, marker='v', color='blue', s=150,alpha=0.5, label='This Spectrum')
+    plt.scatter(SpectrumInds, SpectrumVals, marker='v', color='blue', s=150, alpha=0.5, label='This Spectrum')
     # Chondritic
     # plt.scatter(ChondriticInds, ChondriticVals, marker='s', color='green', s=200,alpha=0.5)
     plt.axhline(1, 0, 92, color='green', linewidth=3, label='Chondritic')
-
     plt.xticks(TickInds, TickLabels, rotation='vertical')
     plt.gca().set_yscale('log')
     plt.legend()
@@ -256,12 +302,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
     plt.ylabel('Element/Si/chondritic, At%', fontsize=FontSizeBasis)
     plt.gca().set_ylim([3e-2, 30])
     plt.tight_layout()
-
-    PrintTernary(AtPct, IshiiAtPct, IshiiAtPctSD)
-
-    ShowLastPos(plt)
-
-    return OutStr
+    return IshiiAtPct, IshiiAtPctSD
 
 
 def PrintTernary(AtPct, IshiiAtPct, IshiiAtPctSD):
@@ -336,4 +377,53 @@ if __name__ == '__main__':
     AtPct[pb.Fe-1] = 0.697
     AtPct[pb.Ni-1] = 0.027
     print 'Chondritic IDPs bulk\n'
+    print AnalyzePhase(AtPct)
+
+    # Protosolar abundances: Planetary Scientists Handbook, Chapter 2.1, Table 2.1, column 1.
+    AtPct = zeros(pb.MAXELEMENT)
+    AtPct[pb.C-1] = 1*10**(8.55)
+    AtPct[pb.O-1] = 1*10**(8.87)
+    AtPct[pb.Na-1] = 1*10**(6.31)
+    AtPct[pb.Mg-1] = 1*10**(7.56)
+    AtPct[pb.Al-1] = 1*10**(6.48)
+    AtPct[pb.Si-1] = 1*10**(7.55)
+    AtPct[pb.S-1] = 1*10**(7.20)
+    AtPct[pb.Ca-1] = 1*10**(6.36)
+    AtPct[pb.Cr-1] = 1*10**(5.68)
+    AtPct[pb.Fe-1] = 1*10**(7.50)
+    AtPct[pb.Ni-1] = 1*10**(6.25)
+    print 'Protosolar values\n'
+    print AnalyzePhase(AtPct)
+
+    # GEMS mean from Ishii's science paper in 2008.
+    AtPct = zeros(pb.MAXELEMENT)
+    AtPct[pb.O - 1] = 66.71;
+    AtPct[pb.Mg - 1] = 9.37;
+    AtPct[pb.Al - 1] = 1.62;
+    AtPct[pb.Si - 1] = 14.40;
+    AtPct[pb.S - 1] = 3.69;
+    AtPct[pb.Ca - 1] = 0.82;
+    AtPct[pb.Cr - 1] = 0.12;
+    AtPct[pb.Mn - 1] = 0.02;
+    AtPct[pb.Fe - 1] = 6.39;
+    AtPct[pb.Ni - 1] = 0.40;
+    print 'Ishii GEMS mean values\n'
+    print AnalyzePhase(AtPct)
+
+    # Protosolar abundances: Planetary Scientists Handbook, Chapter 2.1, Table 2.1, column 1.
+    # With wild K.
+    AtPct = zeros(pb.MAXELEMENT)
+    AtPct[pb.C-1] = 1*10**(8.55)
+    AtPct[pb.O-1] = 1*10**(8.87)
+    AtPct[pb.Na-1] = 1*10**(6.31)
+    AtPct[pb.Mg-1] = 1*10**(7.56)
+    AtPct[pb.Al-1] = 1*10**(6.48)
+    AtPct[pb.Si-1] = 1*10**(7.55)
+    AtPct[pb.S-1] = 1*10**(7.20)
+    AtPct[pb.K-1] = 10*10**(5.12)
+    AtPct[pb.Ca-1] = 1*10**(6.36)
+    AtPct[pb.Cr-1] = 1*10**(5.68)
+    AtPct[pb.Fe-1] = 1*10**(7.50)
+    AtPct[pb.Ni-1] = 1*10**(6.25)
+    print 'Protosolar values\n'
     print AnalyzePhase(AtPct)
