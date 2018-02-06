@@ -136,15 +136,15 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
 
     #PrintTernary(AtPct, IshiiAtPct, IshiiAtPctSD)
 
-    GEMSicity, JointGEMSicity = GEMSicityPlot(AtPct, Protosolar)
+    Chondricity, GEMSicity, JointGEMSicity = GEMSicityPlot(AtPct, Protosolar)
 
     ShowLastPos(plt)
 
     # Print out the abundances normalized to protosolar.
     Ratios = list() # Keep track of the ratios, so at the end we can compute standard deviations.
     OutStr += "Abundances ratioed to protosolar and normalized to:\n"
-    OutStr += "Element to   Mg       Si       Fe     GEMSicity\n"
-    OutStr += '-'*50 + '\n'
+    OutStr += "Element to   Mg       Si       Fe      Chondricity GEMSicity\n"
+    OutStr += '-'*60 + '\n'
     for Zminus, E in enumerate(AtPct):
         if E != 0:
             EtoMg = E / AtPct[pb.Mg-1] # Norm to Mg
@@ -153,16 +153,17 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
             Ratios.append([EtoMg/ProtosolarToMg[Zminus], # Norm Mg and protosolar
                            EtoSi/ProtosolarToSi[Zminus], # Si and protosolar
                            EtoFe/ProtosolarToFe[Zminus], # Fe and protosolar
+                           Chondricity[Zminus],         # GEMSicity.
                            GEMSicity[Zminus]])          # GEMSicity.
-            OutStr += '%-13s%-9.3f%-9.3f%-9.3f%-9.3f\n' % (tuple([pb.ElementalSymbols[Zminus+1]]) + tuple(Ratios[-1]))
+            OutStr += '%-13s%-9.3f%-9.3f%-9.3f%-11.3f%-9.3f\n' % (tuple([pb.ElementalSymbols[Zminus+1]]) + tuple(Ratios[-1]))
     Ratios = array(Ratios)
     Means = nanmean(Ratios, axis=0)
     Stdevs = nanstd(Ratios, axis=0)
-    OutStr += '-'*41 + '\n'
-    OutStr += '%-13s%-9.3f%-9.3f%-9.3f%-9.3f\n' % (tuple(['Mean']) + tuple(Means))
-    OutStr += '%-13s%-9.3f%-9.3f%-9.3f%-9.3f\n' % (tuple(['Standard dev']) + tuple(Stdevs))
+    OutStr += '-'*60 + '\n'
+    OutStr += '%-13s%-9.3f%-9.3f%-9.3f%-11.3f%-9.3f\n' % (tuple(['Mean']) + tuple(Means))
+    OutStr += '%-13s%-9.3f%-9.3f%-9.3f%-11.3f%-9.3f\n' % (tuple(['Standard dev']) + tuple(Stdevs))
     OutStr += 'Joint GEMSicity: %g\n' % JointGEMSicity
-    OutStr += '-'*50 + '\n'
+    OutStr += '-'*60 + '\n'
 
     OutStr += '\nRefs:\n    Lodders, K. (2003). Solar System Abundances and Condensation Temperatures of the Elements. The Astrophysical ' \
               'Journal, 591(2), 1220-1247. http://doi.org/10.1086/375492\n' \
@@ -215,32 +216,22 @@ def GEMSicityPlot(AtPct, Protosolar):
     IncludedZ = where(~isnan(Chondricity))[0]+1
     TickLabels = [El for Z, El in enumerate(pb.ElementalSymbols) if Z in IncludedZ]
     TickInds = range(len(TickLabels))
-    # plt.scatter(TickInds, AtPctMean[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='AtPctMean')
-    # plt.scatter(TickInds, Protosolar[IncludedZ-1], marker='o', color='green', s=150, alpha=0.5, label='Protosolar')
     plt.scatter(TickInds, Chondricity[IncludedZ-1], marker='o', color='red', s=150, alpha=0.5, label='Chondricity')
-    plt.scatter(TickInds, ElementGEMSicity[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='ElementGEMSicity')
+    plt.scatter(TickInds, ElementGEMSicity[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='Elemental GEMSicity')
     plt.xticks(TickInds, TickLabels, rotation='vertical')
     plt.axhline(0, 0, 92, color='green', linewidth=3, label='Chondritic/GEMSitic')
-    #plt.gca().set_yscale('log')
     plt.legend()
-    plt.ylabel('Chondricity: log$_{10}$(At%/Chondritic)\nElemental GEMSicity: #$\sigma$ from GEMS mean', fontsize=FontSizeBasis)
+    plt.ylabel('Chondricity:\nlog$_{10}$(At%/Chondritic)\nElemental GEMSicity ($\sigma$)', fontsize=FontSizeBasis)
     plt.tight_layout()
+    print(plt.get_backend())
 
-    # print('AtPct values: ', AtPctMean[IncludedZ-1])
-    # print('AtPct mean: ', nanmean(AtPctMean), ' AtPct sum: ', nansum(AtPctMean))
-    # print('AtPct mean: ', nanmean(AtPctMean), ' AtPct sum: ', nansum(AtPctMean))
-    #
-    # print('ProtosolarChondricity values: ', ProtosolarChondricity[IncludedZ-1])
-    # print('ProtosolarChondricity mean: ', nanmean(ProtosolarChondricity), ' ProtosolarChondricity sum: ', nansum(ProtosolarChondricity))
-    # print('ProtosolarChondricity mean: ', nanmean(ProtosolarChondricity), ' ProtosolarChondricity sum: ', nansum(ProtosolarChondricity))
-    #
     print('Chondricity values: ', Chondricity[IncludedZ-1])
     print('Chondricity mean: %g, Chondricity std: %g' % (nanmean(Chondricity), nanstd(Chondricity)))
     print('ElementGEMSicity values: ', ElementGEMSicity[IncludedZ-1])
     print('ElementGEMSicity mean: %g, ElementGEMSicity std: %g' % (nanmean(ElementGEMSicity), nanstd(ElementGEMSicity)))
     print('Joint GEMSicity: %g' % GEMSicity)
 
-    return ElementGEMSicity, GEMSicity
+    return Chondricity, ElementGEMSicity, GEMSicity
 
 
 def IshiiPlot(AtPct, ProtosolarToSi):
@@ -360,7 +351,10 @@ def PrintTernary(AtPct, IshiiAtPct, IshiiAtPctSD):
     plt.title('At %')
 
 def SaveResults(FileRoot):
-    plt.savefig(FileRoot + '.png')
+    plt.figure(1)
+    plt.savefig(FileRoot + '_GEMSplot.png')
+    plt.figure(3)
+    plt.savefig(FileRoot + '_Chondricity_GEMSicity.png')
 
 
 if __name__ == '__main__':
