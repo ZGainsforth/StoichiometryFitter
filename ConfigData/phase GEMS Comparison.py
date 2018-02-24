@@ -250,7 +250,7 @@ def GEMSChiPlot(AtPct, Protosolar):
     plt.xticks(TickInds, TickLabels, rotation='vertical')
     plt.axhline(0, 0, 92, color='green', linewidth=3, label='Chondritic/GEMSitic')
     plt.legend()
-    plt.ylabel('Chondricity:\nlog$_{10}$(At%/Chondritic)\nGEMSicity ($\sigma$)', fontsize=FontSizeBasis)
+    plt.ylabel('Chondricity:\nlog$_{10}$(At%/Chondritic)\nVariation from GEMS ($\sigma$)', fontsize=FontSizeBasis)
     plt.tight_layout()
     # print(plt.get_backend())
 
