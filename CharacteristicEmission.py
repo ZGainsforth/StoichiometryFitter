@@ -57,7 +57,7 @@ def GetElamFluorescenceLines(ElementName, E=None, I=None):
 
     # Zoom forward to the element we are looking for.
     for line in ElamData:
-        if ('Element '+ElementName) in line:
+        if ('Element '+ElementName+' ') in line:
             break
 
     # Pull out the section with the fluorescence lines, which is first.
