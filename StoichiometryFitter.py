@@ -566,7 +566,7 @@ class MyFrame(wx.Frame):
             # This is a Bruker text file, so let's read it in and convert it to an InputDat structure like we expect.
             S = genfromtxt(dlg.GetPath(), skip_header=5, skip_footer=2, dtype=None)
             # Drop it into pandas and sort based on elemental Z.
-            pdS = pd.DataFrame(S).sort('f1')
+            pdS = pd.DataFrame(S).sort_values('f1')
             BrukerInput = pdS.as_matrix()[:, (0, 3)].T
             # Make a structure like we expect to import from a StoichiometryFitter csv.  (All values are zero of course)
             InputDat = zeros(pb.MAXELEMENT, dtype=[('Counts', '<f8')])
@@ -707,9 +707,13 @@ class MyFrame(wx.Frame):
 if __name__ == "__main__":
     gettext.install("app")  # replace with the appropriate catalog name
 
-    app = wx.PySimpleApp(0)
+    print 'showing'
+    app = wx.App()
+    print 'showing'
     wx.InitAllImageHandlers()
+    print 'showing'
     frame_1 = MyFrame(None, wx.ID_ANY, "")
+    print 'showing'
     app.SetTopWindow(frame_1)
     frame_1.Show()
     app.MainLoop()
