@@ -1,51 +1,52 @@
-#Phase Name(Human Formula),     Elements
-Forsterite (Mg2SiO4),           Mg2 Si1 O4
-Fayalite (Fe2SiO4),             Fe2 Si1 O4
-Tephroite (Mn2SiO4),            Mn2 Si1 O4
-Monticellite (CaMgSiO4),        Ca1 Mg1 Si1 O4
-Liebenbergite (NiMgSiO4),       Ni1 Mg1 Si1 O4
-Troilite (FeS),                 Fe1 S1
-Greigite (Fe3S4),               Fe3 S4
-Pentlandite (Fe4.5Ni4.5S8),     Fe4.5 Ni4.5 S8 
-Daubreelite (FeCr2S4),          Fe1 Cr2 S4
-Schreibersite (Fe1.5Ni1.5P),    Fe1.5 Ni1.5 P 
-Enstatite (Mg2Si2O6),           Mg2  Si2 O6
-Ferrosilite (Fe2Si2O6),         Fe2  Si2 O6
-Wollastonite (Ca2Si2O6),        Ca2  Si2 O6
-Diopside (MgCaSi2O6),           Mg1  Ca1 Si2 O6
-Kosmochlor (NaCrSi2O6),         Na1  Cr1 Si2 O6
-Hedenbergite (FeCaSi2O6),       Fe1  Ca1 Si2 O6
-Jadeite (NaAlSi2O6),            Na1  Al1 Si2 O6
-Aegirine (NaFe3+Si2O6),         Na1  Fe1 Si2 O6
-Kosmochlor (NaCr3+Si2O6),       Na1  Cr1 Si2 O6
-Johannsenite (CaMnSi2O6),       Ca1  Mn1 Si2 O6
-Aluminopyroxene (Mg2Al2Si3O12),         Mg2  Al2 Si3 O12
-Buffonite (CaTi0.5MgFeSiO6),            Ca1  Ti0.5 Mg1 Fe1 Si1 O6
-Alumno-Buffonite (CaTi0.5Mg0.5AlSiO6),  Ca1  Ti0.5 Mg0.5 Al1 Si1 O6
-Ti4+ Pyroxene (CaTiAl2O6),				Ca1 Ti1 Al2 O6
-Ti3+ Pyroxene (CaTiAlSiO6),				Ca1 Ti1 Al1 Si1 O6
-Ca-Tschermak (CaAl2SiO6),				Ca1 Al2 Si1 O6
-Anorthite (Ca-feldspar: CaAl2Si2O8),    Ca1 Al2 Si2 O8
-Albite (Na-feldspar: NaAlSi3O8),        Na1 Al1 Si3 O8
-Orthoclase (K-feldspar: KAlSi3O8),      K1 Al1 Si3 O8
-Nepheline (NaAlSiO4),           Na1 Al1 Si1 O4
-Gehlenite (Ca2Al(AlSi)O7),      Ca2 Al2 Si1 O7
-Akermanite (Ca2MgSi2O7),        Ca2 Mg1 Si2 O7
-SiO2,                           Si1 O2
-Chromite (FeCr2O4),             Fe1 Cr2 O4
-Hercynite (FeAl2O4),             Fe1 Al2 O4
-Magnetite (Fe3O4),              Fe3 O4
-Spinel (MgAl2O4),               Mg1 Al2 O4
-Ulvospinel (TiFe2O4),           Ti1 Fe2 O4
-Fe Schreibersite (Fe3P),        Fe3  P1
-Ni Schreibersite (Ni3P),        Ni3  P1
-Fe Barringerite (Fe2P),         Fe2  P1
-Ni Barringerite (Fe2P),         Ni2  P1
-Cronstedtite (Fe3+)2(Fe2+)2SiO5(OH)4,           Fe4  Si1  O9
-Chrysotile (Mg3Si2O5(OH)4),       Mg3  Si2  O9
-Fe Clinochlore (Fe5Al2Si3O18H8),  Fe5  Al2  Si3  O18
-Mg Clinochlore (Mg5Al2Si3O18H8),  Mg5  Al2  Si3  O18
-Chondritic,  O5.75  Na0.023  Mg0.42  Al0.035  Si0.407  Ca0.026  Cr0.005  Fe0.347  Ni0.020
-Chondritic solids,  O5.096  Na0.069  Mg1.26  Al0.105  Si1.221  Ca0.078  Cr0.015  Fe1.041  Ni0.06
-Cecil Sulfide, S50.86 Fe46.51 Ni2.61
-Andromeda CPX, O60.330 Na1.757 Mg8.344 Al0.415 Si20.316 P0.310 S0.95 Ca6.069 Ti0.066 Cr1.158 Fe1.140
+            #Phase Name(Human Formula),                                                                               Elements
+                  Forsterite (Mg2SiO4),                                                                             Mg2 Si1 O4
+                    Fayalite (Fe2SiO4),                                                                             Fe2 Si1 O4
+                   Tephroite (Mn2SiO4),                                                                             Mn2 Si1 O4
+               Monticellite (CaMgSiO4),                                                                         Ca1 Mg1 Si1 O4
+              Liebenbergite (NiMgSiO4),                                                                         Ni1 Mg1 Si1 O4
+                        Troilite (FeS),                                                                                 Fe1 S1
+                      Greigite (Fe3S4),                                                                                 Fe3 S4
+            Pentlandite (Fe4.5Ni4.5S8),                                                                        Fe4.5 Ni4.5 S8 
+                 Daubreelite (FeCr2S4),                                                                             Fe1 Cr2 S4
+           Schreibersite (Fe1.5Ni1.5P),                                                                         Fe1.5 Ni1.5 P 
+                  Enstatite (Mg2Si2O6),                                                                            Mg2  Si2 O6
+                Ferrosilite (Fe2Si2O6),                                                                            Fe2  Si2 O6
+               Wollastonite (Ca2Si2O6),                                                                            Ca2  Si2 O6
+                  Diopside (MgCaSi2O6),                                                                        Mg1  Ca1 Si2 O6
+                Kosmochlor (NaCrSi2O6),                                                                        Na1  Cr1 Si2 O6
+              Hedenbergite (FeCaSi2O6),                                                                        Fe1  Ca1 Si2 O6
+                   Jadeite (NaAlSi2O6),                                                                        Na1  Al1 Si2 O6
+                Aegirine (NaFe3+Si2O6),                                                                        Na1  Fe1 Si2 O6
+              Kosmochlor (NaCr3+Si2O6),                                                                        Na1  Cr1 Si2 O6
+              Johannsenite (CaMnSi2O6),                                                                        Ca1  Mn1 Si2 O6
+        Aluminopyroxene (Mg2Al2Si3O12),                                                                       Mg2  Al2 Si3 O12
+           Buffonite (CaTi0.5MgFeSiO6),                                                              Ca1  Ti0.5 Mg1 Fe1 Si1 O6
+ Alumno-Buffonite (CaTi0.5Mg0.5AlSiO6),                                                            Ca1  Ti0.5 Mg0.5 Al1 Si1 O6
+             Ti4+ Pyroxene (CaTiAl2O6),                                                                     				Ca1 Ti1 Al2 O6
+            Ti3+ Pyroxene (CaTiAlSiO6),                                                                 				Ca1 Ti1 Al1 Si1 O6
+              Ca-Tschermak (CaAl2SiO6),                                                                     				Ca1 Al2 Si1 O6
+Di-En-Garnet (Py2Gr: Ca0.5MgAlSi1.5O6),                                                                    	Ca0.5 Mg1 Al1 Si1.5 O6
+   Anorthite (Ca-feldspar: CaAl2Si2O8),                                                                         Ca1 Al2 Si2 O8
+       Albite (Na-feldspar: NaAlSi3O8),                                                                         Na1 Al1 Si3 O8
+     Orthoclase (K-feldspar: KAlSi3O8),                                                                          K1 Al1 Si3 O8
+Ca-Mg plag (CM-feldspar: CaMgSi3O8),                                                                          Ca1 Mg1 Si3 O8
+Ca-Fe plag (CF-feldspar: CaFeSi3O8),                                                                          Ca1 Fe1 Si3 O8
+                  Nepheline (NaAlSiO4),                                                                         Na1 Al1 Si1 O4
+             Gehlenite (Ca2Al(AlSi)O7),                                                                         Ca2 Al2 Si1 O7
+               Akermanite (Ca2MgSi2O7),                                                                         Ca2 Mg1 Si2 O7
+                                  SiO2,                                                                                 Si1 O2
+                    Chromite (FeCr2O4),                                                                             Fe1 Cr2 O4
+                   Hercynite (FeAl2O4),                                                                             Fe1 Al2 O4
+                     Magnetite (Fe3O4),                                                                                 Fe3 O4
+                      Spinel (MgAl2O4),                                                                             Mg1 Al2 O4
+                  Ulvospinel (TiFe2O4),                                                                             Ti1 Fe2 O4
+               Fe Schreibersite (Fe3P),                                                                                Fe3  P1
+               Ni Schreibersite (Ni3P),                                                                                Ni3  P1
+                Fe Barringerite (Fe2P),                                                                                Fe2  P1
+                Ni Barringerite (Fe2P),                                                                                Ni2  P1
+  Cronstedtite (Fe3+)2(Fe2+)2SiO5(OH)4,                                                                           Fe4  Si1  O9
+            Chrysotile (Mg3Si2O5(OH)4),                                                                           Mg3  Si2  O9
+       Fe Clinochlore (Fe5Al2Si3O18H8),                                                                     Fe5  Al2  Si3  O18
+       Mg Clinochlore (Mg5Al2Si3O18H8),                                                                     Mg5  Al2  Si3  O18
+                            Chondritic,           O5.75  Na0.023  Mg0.42  Al0.035  Si0.407  Ca0.026  Cr0.005  Fe0.347  Ni0.020
+                     Chondritic solids,           O5.096  Na0.069  Mg1.26  Al0.105  Si1.221  Ca0.078  Cr0.015  Fe1.041  Ni0.06
