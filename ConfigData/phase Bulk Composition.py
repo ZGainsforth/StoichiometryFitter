@@ -21,7 +21,7 @@ matplotlib.rc('ytick', labelsize=FontSizeBasis)
 matplotlib.rc('xtick.major', pad=TickMajorBasis)
 matplotlib.rc('ytick.major', pad=TickMajorBasis)
 
-def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
+def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
 
     #Normalize our AtPct vector.
     AtPct = AtPct/sum(AtPct)*100

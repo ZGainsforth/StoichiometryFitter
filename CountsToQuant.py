@@ -7,6 +7,7 @@ __email__ = 'zsg@gainsforth.com'
 from numpy import *
 from collections import OrderedDict
 import linecache
+from fractions import Fraction
 
 import MyPython as mp
 import PhysicsBasics as pb
@@ -125,8 +126,6 @@ def WtPctToOxWtPct(OByStoichiometry, WtPct):
 
     # Oxide weight is the cation + the oxygen (where the relative amount of oxygen is computed based on the
     # cation charge.
-    #OxygenWt = nan_to_num(PosCharges / 2 * WtPct / M_el * M_O)
-    #OxWtPct = nan_to_num(WtPct + OxygenWt) + nan_to_num(WtPct * NegMask)
     OxWtPct = nan_to_num(WtPct * (1 + PosCharges / 2 * M_O / M_el))
 
     # Of course this means that the weight of oxygen by itself is none.
@@ -136,7 +135,6 @@ def WtPctToOxWtPct(OByStoichiometry, WtPct):
     OxWtPct = nan_to_num(OxWtPct / sum(OxWtPct) * 100)
 
     return OxWtPct
-
 
 def OxWtPctToWtPct(OByStoichiometry, OxWtPct):
     """ OxWtPctToWtPct(OByStoichiometry, WtPct): Takes an oxide weight % vector, and produces wt % using the
@@ -200,6 +198,15 @@ def WtPctToEverything(WtPct, OByStoichiometry=None):
 
     return AtPct, WtPct, OxWtPct
 
+def AtPctToWtPct(AtPct, OByStoichiometry=None):
+    # We have to do O stoichoimetry before conversion to wt % or it could be WAY off.
+    AtPct = ComputeOxygenStoichiometry(Counts, OByStoichiometry, ByMass=False)
+
+    # Convert to weight %
+    M_el = array(pb.ElementalWeights[1:])
+    WtPct = nan_to_num(AtPct * M_el)
+    WtPct = nan_to_num(WtPct / sum(WtPct) * 100)
+    return WtPct
 
 def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', ArbitraryAbsorptionCorrection=None,
                             AbsorptionCorrection=0, Takeoff=0, OByStoichiometry=None):
@@ -249,13 +256,7 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', Arbitrar
 
     # In the case of at %, we just convert to wt %
     if InputType == 'At %':
-        # We have to do O stoichoimetry before conversion to wt % or it could be WAY off.
-        AtPct = ComputeOxygenStoichiometry(Counts, OByStoichiometry, ByMass=False)
-
-        # Convert to weight %
-        M_el = array(pb.ElementalWeights[1:])
-        WtPct = nan_to_num(AtPct * M_el)
-        WtPct = nan_to_num(WtPct / sum(WtPct) * 100)
+        WtPct = AtPctToWtPct(Counts, OByStoichiometry)
 
     # In the case of wt %, we just convert to at %
     if InputType == 'Wt %':

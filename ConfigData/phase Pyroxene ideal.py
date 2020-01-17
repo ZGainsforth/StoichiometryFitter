@@ -9,7 +9,7 @@ if __name__ != '__main__':
     import PhysicsBasics as pb
 
 
-def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
+def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
 
     #Normalize our AtPct vector.
     AtPct = AtPct/sum(AtPct)*100

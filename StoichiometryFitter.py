@@ -465,7 +465,7 @@ class MyFrame(wx.Frame):
 
             # import it and run it.
             a = imp.load_source('AnalyzePhase', PhaseFile)
-            ReportStr = a.AnalyzePhase(AtPct, WtPct, OxWtPct)
+            ReportStr = a.AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich)
 
             # Report it by printing to console and put it in the output text box.
             print ReportStr

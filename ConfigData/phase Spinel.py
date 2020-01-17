@@ -68,7 +68,7 @@ def GetThermodynamicPropertiesForSpinel(AtPct):
     return
 
 
-def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None):
+def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     """ Assume an "ideal" spinel...
     """
 
