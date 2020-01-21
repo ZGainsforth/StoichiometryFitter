@@ -200,7 +200,7 @@ def WtPctToEverything(WtPct, OByStoichiometry=None):
 
 def AtPctToWtPct(AtPct, OByStoichiometry=None):
     # We have to do O stoichoimetry before conversion to wt % or it could be WAY off.
-    AtPct = ComputeOxygenStoichiometry(Counts, OByStoichiometry, ByMass=False)
+    AtPct = ComputeOxygenStoichiometry(AtPct, OByStoichiometry, ByMass=False)
 
     # Convert to weight %
     M_el = array(pb.ElementalWeights[1:])
