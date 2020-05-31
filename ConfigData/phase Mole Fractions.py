@@ -11,7 +11,7 @@ if __name__ != '__main__':
 
 def CatsPerNOxygens(AtPct, KnownElements, NOxygens):
     OutStr = ''
-    E = dict()
+    E = {}
 
     # We already did stoichiometry so cations/8 oxy can be ratioed against the O exactly.
     for Element in KnownElements:

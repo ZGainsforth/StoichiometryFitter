@@ -476,19 +476,19 @@ class MyFrame(wx.Frame):
 
     def UpdateInputType(self, InputType=None):
         # If InputType=None, then this is being called because the user changed the input type.
-        # If it is 'Counts', 'At%' or 'Wt%' then we are being asked to update the type ourselves.
-        if InputType == 'Counts':
-            self.rdioInputType.SetSelection(0)
-            self.chkOByStoichiometry.Enable()
-        elif InputType == 'At%':
+            # If it is 'Counts', 'At%' or 'Wt%' then we are being asked to update the type ourselves.
+        if InputType == 'At%':
             self.rdioInputType.SetSelection(1)
             self.chkOByStoichiometry.Enable()
-        elif InputType == 'Wt%':
-            self.rdioInputType.SetSelection(2)
+        elif InputType == 'Counts':
+            self.rdioInputType.SetSelection(0)
             self.chkOByStoichiometry.Enable()
         elif InputType == 'OxWt%':
             self.rdioInputType.SetSelection(3)
 
+        elif InputType == 'Wt%':
+            self.rdioInputType.SetSelection(2)
+            self.chkOByStoichiometry.Enable()
         # We use kfacs and arbitrary absorption correction (optionally) for counts.  At% and Wt% don't, ever.
         if self.rdioInputType.GetSelection() == 0:
             self.chkKfacs.SetValue(True)  # By default we'll use kfacs.

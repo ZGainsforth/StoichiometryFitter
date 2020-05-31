@@ -107,7 +107,7 @@ def GetSelectedItemsFromListCtrl(ListCtrl):
         Strings.append(ListCtrl.GetItemText(item))
 
     # If there aren't any selected items, then say so to the caller.
-    if len(Strings) == 0:
+    if not Strings:
         return None
 
     # Return the list.
