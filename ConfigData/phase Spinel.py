@@ -135,44 +135,52 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     A += E['Ti']
     ACharge += E['Ti']*4
 
-    # Fe splits the difference, filling up 3+ in B and 2+ in A.
+    # Fe splits the difference if it is present, filling up 3+ in B and 2+ in A.
     # So first we fill up A:
 
-    Fe = E['Fe']
-    FeA = (1 - A) # How many atoms to fill up A.
-    FeB = Fe-FeA # The rest of the atoms are going into B.
-    if FeA<=Fe:
-        A += FeA
-        ACharge += FeA*2
-        Fe-=FeA
+    
+    if E['Fe'] > 0:
+        Fe = E['Fe']
+        FeA = (1 - A) # How many atoms to fill up A.
+        FeB = Fe-FeA # The rest of the atoms are going into B.
+        if FeA<=Fe:
+            A += FeA
+            ACharge += FeA*2
+            Fe-=FeA
 
-    # The remaining Fe goes in B as whatever oxidation state balances the total charge.
-    ChargeDeficit = 8-(ACharge+BCharge)
-    #AtomDeficit = 3-(A+B)
+        # The remaining Fe goes in B as whatever oxidation state balances the total charge.
+        ChargeDeficit = 8-(ACharge+BCharge)
+        #AtomDeficit = 3-(A+B)
 
-    # If there is not enough iron to make up the difference, it all goes 3+
-    if ChargeDeficit > 3*FeB:
-        Fe2 = 0
-        Fe3 = FeB
-        B += FeB
-        BCharge += 3*FeB
-    # Or if there is too much iron for the charge deficit, it all goes 2+
-    elif ChargeDeficit <= 2*FeB:
-        Fe2 = FeB
-        Fe3 = 0
-        B += FeB
-        BCharge += 2*FeB
+        # If there is not enough iron to make up the difference, it all goes 3+
+        if ChargeDeficit > 3*FeB:
+            Fe2 = 0
+            Fe3 = FeB
+            B += FeB
+            BCharge += 3*FeB
+        # Or if there is too much iron for the charge deficit, it all goes 2+
+        elif ChargeDeficit <= 2*FeB:
+            Fe2 = FeB
+            Fe3 = 0
+            B += FeB
+            BCharge += 2*FeB
+        else:
+            # In between:
+            # x is Fe2+ in B.  y is Fe3+ in B.  FeB is the total number of Fe atoms in B.
+            # ChargeDeficit is the total charge supplied by the Fe.
+            # 2x+3y = ChargeDeficit
+            # x+y = FeB
+            # Solve for x (Fe2+) and y (Fe3+)
+            Fe2 = (3*FeB-ChargeDeficit)
+            Fe3 = (ChargeDeficit-2*FeB)
+            B += Fe2+Fe3
+            BCharge += 2*Fe2 + 3*Fe3
+
+        # Finally compute the Fe3/Sum(Fe) ratio.
+        Fe3OverSumFe = Fe3/(FeA+Fe2+Fe3)
+
     else:
-        # In between:
-        # x is Fe2+ in B.  y is Fe3+ in B.  FeB is the total number of Fe atoms in B.
-        # ChargeDeficit is the total charge supplied by the Fe.
-        # 2x+3y = ChargeDeficit
-        # x+y = FeB
-        # Solve for x (Fe2+) and y (Fe3+)
-        Fe2 = (3*FeB-ChargeDeficit)
-        Fe3 = (ChargeDeficit-2*FeB)
-        B += Fe2+Fe3
-        BCharge += 2*Fe2 + 3*Fe3
+        FeA = FeB = Fe2 = Fe3 = Fe3OverSumFe = 0
 
     OutStr += 'Site A (tetrahedral):\n'
     OutStr += '{:>11s}:    {:<10s}\n'.format('Element', 'Occupancy')
@@ -202,8 +210,8 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
             OutStr += '{:>11s}:    {:<1.3f}\n'.format(ElName, OriginalE[ElName])
     OutStr += '\n'
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Sum Cations', OriginalTotalCations)
-    OutStr += 'Fe3+/sum(Fe) =  {:.3f}\n'.format(Fe3/(FeA+Fe2+Fe3))
-    OutStr += 'Note, the cations have been set to 3 so the occupancy should be perfect.  Sum cations is the original sum for evaluating the quality of the fit.\n'
+    OutStr += 'Fe3+/sum(Fe) =  {:.3f}\n'.format(Fe3OverSumFe)
+    OutStr += 'Note, the cations should ideally be 3 for spinel.\n'
     OutStr += '\n'
 
     return OutStr
