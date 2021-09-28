@@ -19,7 +19,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr = '--- Nepheline Analysis ---\n\n'
 
     # This analysis only knows about these elements:
-    KnownElements = ['O', 'Na', 'Al', 'Si', 'K', 'Ca', 'Mg', 'Mn']
+    KnownElements = ['O', 'Na', 'Al', 'Si', 'K', 'Ca', 'Mg', 'Mn', 'Fe']
 
     # If anything else accounts for more than 2 At % then this analysis is garbage
     OtherCations = 0
@@ -30,14 +30,14 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
 
     if OtherCations > 2.:
         OutStr += 'More than 2% of the atomic abundance is comprised by atoms other than: ' + ' '.join(KnownElements) + '.'
-        OutStr += '\nRemaining analysis is dubious.\n\n'
+        OutStr += '\nRemaining analysis is dubious.\n'
         #return OutStr
 
     # If the cation/O ratio is off by more than 2% outside of the window 11/32 to 12/32, then we can't analyze it.
     # Oxygen should be between 16/28 and 16/27 because Barth nepheline can have vacancies.
     if (AtPct[pb.O-1] < (16./28*100. - 2)) or (AtPct[pb.O-1] > (16./27*100. + 2)):
         OutStr += 'Cation/Anion ratio is not within 2% of Nepheline-Kalsilite.'
-        OutStr += '\nRemaining analysis is dubious.\n\n'
+        OutStr += '\nRemaining analysis is dubious.\n'
         #return OutStr
 
     E = dict()
@@ -57,7 +57,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     Ne = 3*E['Na'] * 100/24 # Nepheline component.
     Ks = 3*E['K'] * 100/24 # Kalsilite component.
     CaNe = 6*E['Ca'] * 100/24 # Vacancy-Anorthite component.
-    KsM = 6*(E['Mg']+E['Mn']) * 100/24 # Kalsilite-impurity component.
+    KsM = 6*(E['Mg']+E['Mn']+E['Fe']) * 100/24 # Kalsilite-impurity component.
 
     # Report the component numbers.
     OutStr += '\nM sites:\n'
@@ -68,10 +68,10 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += 'K2 M1 Si3 O8 = %0.3f (KsM# M = 2+ cation: Mg, Fe2+, Mn)\n' % (KsM)
     OutStr += 'Filled M Sites (based on 32 O) = %0.3f (should be 8 without vacancies).\n' % (E['Na'] + E['K'])
     OutStr += '\nT sites:\n'
-    OutStr += 'Al/(Al+Si+Mg+Mn) = %0.3f\n' % (E['Al'] / (E['Al'] + E['Si'] + E['Mg'] + E['Mn']))
-    OutStr += 'Si/(Al+Si+Mg+Mn) = %0.3f\n' % (E['Si'] / (E['Al'] + E['Si'] + E['Mg'] + E['Mn']))
+    OutStr += 'Al/(Al+Si+Mg+Mn+Fe) = %0.3f\n' % (E['Al'] / (E['Al'] + E['Si'] + E['Mg'] + E['Mn'] + E['Fe']))
+    OutStr += 'Si/(Al+Si+Mg+Mn+Fe) = %0.3f\n' % (E['Si'] / (E['Al'] + E['Si'] + E['Mg'] + E['Mn'] + E['Fe']))
     OutStr += 'Si/Al = %0.3f\n' % (E['Si'] / E['Al'])
-    OutStr += 'Filled T Sites (based on 32 O) = %0.3f (should be 16).\n' % (E['Al'] + E['Si'] + E['Mg'] + E['Mn'])
+    OutStr += 'Filled T Sites (based on 32 O) = %0.3f (should be 16).\n' % (E['Al'] + E['Si'] + E['Mg'] + E['Mn'] + E['Fe'])
 
     OutStr += '\n'
     OutStr += 'Cations per 32 oxygens:\n'
