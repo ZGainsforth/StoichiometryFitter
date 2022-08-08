@@ -6,8 +6,8 @@ __copyright__ = 'Copyright 2016, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
 
 from numpy import *
-from ConfigParser import ConfigParser
-from StringIO import StringIO
+from configparser import ConfigParser
+from io import StringIO
 import csv
 import imp
 import PhysicsBasics as pb
@@ -42,7 +42,7 @@ ElMass = tau*rho
 ElMass = ElMass/sum(ElMass)*100
 
 # To make the rest easy, we'll dictionary the elements in the film.
-ElDict = defaultdict(int, zip(El, ElMass))
+ElDict = defaultdict(int, list(zip(El, ElMass)))
 
 """ NOW PRODUCE A CSV FILE WHICH HAS ALL THIS INFO """
 #tau is the total thickness, and convert nm to microns.

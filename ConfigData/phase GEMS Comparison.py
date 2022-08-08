@@ -1,4 +1,4 @@
-from __future__ import division
+
 __author__ = 'Zack Gainsforth'
 __copyright__ = 'Copyright 2015, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
@@ -60,7 +60,7 @@ def ShowLastPos(plt):
             except:
                 pass
         else:
-            print 'Backend ' + backend + ' not supported.  Plot figure position will not be sticky.'
+            print('Backend ' + backend + ' not supported.  Plot figure position will not be sticky.')
 
     plt.show()
 
@@ -95,7 +95,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     AtPct = AtPct/sum(AtPct)*100
 
     # A dictionary of the AtPct values would be useful so we can look up by element name.
-    E = dict(zip(pb.ElementalSymbols, AtPct))
+    E = dict(list(zip(pb.ElementalSymbols, AtPct)))
 
 
     ### We output an output string which contains Mg, Si and Fe ratioed values.
@@ -122,7 +122,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
         ProtosolarAbundancesFileName = os.path.join('ConfigData', ProtosolarAbundancesFileName)
     Protosolar = genfromtxt(ProtosolarAbundancesFileName, delimiter=',', skip_header=1, dtype=None)
     ProtosolarDict = dict(Protosolar)   # This dictionary could be handy...
-    Protosolar = array(zip(*Protosolar)[1]) # But we really need just a numpy array with the numbers.
+    Protosolar = array(list(zip(*Protosolar))[1]) # But we really need just a numpy array with the numbers.
 
     # Convert to vectors which are normalized to Mg, Si, and Fe.
     ProtosolarToMg = power(10, Protosolar)  # Get out of log space into linear space.  Now the numbers relate to AtPct.
@@ -244,7 +244,7 @@ def GEMSChiPlot(AtPct, Protosolar):
     plt.clf()
     IncludedZ = where(~isnan(Chondricity))[0]+1
     TickLabels = [El for Z, El in enumerate(pb.ElementalSymbols) if Z in IncludedZ]
-    TickInds = range(len(TickLabels))
+    TickInds = list(range(len(TickLabels)))
     plt.scatter(TickInds, Chondricity[IncludedZ-1], marker='o', color='red', s=150, alpha=0.5, label='Chondricity')
     plt.scatter(TickInds, ElementSigma[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='Elemental sigmas from mean')
     plt.xticks(TickInds, TickLabels, rotation='vertical')
@@ -325,7 +325,7 @@ def GEMSPlot(AtPct, ProtosolarToSi):
     IncludedZ += 1
     # Get the list of element names for those elements.
     TickLabels = [El for Z, El in enumerate(pb.ElementalSymbols) if Z in IncludedZ]
-    TickInds = range(len(TickLabels))
+    TickInds = list(range(len(TickLabels)))
     GEMSInds = []
     GEMSVals = []
     GEMSErrs = []
@@ -370,7 +370,7 @@ def GEMSPlot(AtPct, ProtosolarToSi):
 def PrintTernary(AtPct, GEMSAtPct, GEMSAtPctSD):
 
     if ternary == None:
-        print "For ternary plot please pip install python-ternary"
+        print("For ternary plot please pip install python-ternary")
         return
 
     ### Now print a ternary plot
@@ -511,6 +511,6 @@ if __name__ == '__main__':
     AtPct[pb.Mn-1] = 0.38018939632056126
     AtPct[pb.Fe-1] = 34.673685045253166
     AtPct[pb.Ni-1] = 1.9498445997580456
-    print 'Protosolar values\n'
-    print AnalyzePhase(AtPct)
+    print('Protosolar values\n')
+    print(AnalyzePhase(AtPct))
 

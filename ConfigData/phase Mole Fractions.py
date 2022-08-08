@@ -1,4 +1,4 @@
-from __future__ import division
+
 __author__ = 'Zack Gainsforth'
 __copyright__ = 'Copyright 2017, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
@@ -18,7 +18,7 @@ def CatsPerNOxygens(AtPct, KnownElements, NOxygens):
         E[Element] = eval('AtPct[pb.%s-1]/AtPct[pb.O-1]*%d'%(Element, NOxygens))
 
     # Compute how many cations in the M sites.
-    M = sum(array([e for e in E.values()])) - E['O']
+    M = sum(array([e for e in list(E.values())])) - E['O']
 
     OutStr += '\n'
     OutStr += 'Cations per %d oxygens:\n'%NOxygens
@@ -79,10 +79,10 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
         # Compute the mol fractions: just the oxide weight % / oxide weights.
         for Element in KnownElements:
             E[Element] = eval('OxWtPct[pb.%s-1]/OxWt[pb.%s-1]'%(Element, Element))
-        print E
+        print(E)
 
         # Renormalize
-        MolFracNorm = sum(array([e for e in E.values()])) - E['O']
+        MolFracNorm = sum(array([e for e in list(E.values())])) - E['O']
 
         # Sidecheck.
         SumMolFrac = 0
@@ -133,7 +133,7 @@ if __name__ == '__main__':
     AtPct[pb.Ca-1] = 0.578
     AtPct[pb.Ti-1] = 0.0083
     AtPct[pb.Fe-1] = 4.244
-    print '\n\n-----------------------\n\n'
-    print 'Pyroxene En75Fs20Wo3\n'
-    print AnalyzePhase(AtPct)
+    print('\n\n-----------------------\n\n')
+    print('Pyroxene En75Fs20Wo3\n')
+    print(AnalyzePhase(AtPct))
 

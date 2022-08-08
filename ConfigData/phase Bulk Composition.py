@@ -1,4 +1,4 @@
-from __future__ import division
+
 __author__ = 'Zack Gainsforth'
 __copyright__ = 'Copyright 2015, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
@@ -27,7 +27,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     AtPct = AtPct/sum(AtPct)*100
 
     # A dictionary of the AtPct values would be useful so we can look up by element name.
-    E = dict(zip(pb.ElementalSymbols, AtPct))
+    E = dict(list(zip(pb.ElementalSymbols, AtPct)))
 
     # We output an output string which contains the analysis.
     OutStr = '--- Simple At% ratios ---\n\n'
@@ -52,7 +52,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
         ProtosolarAbundancesFileName = os.path.join('ConfigData', ProtosolarAbundancesFileName)
     Protosolar = genfromtxt(ProtosolarAbundancesFileName, delimiter=',', skip_header=1, dtype=None)
     ProtosolarDict = dict(Protosolar)   # This dictionary could be handy...
-    Protosolar = array(zip(*Protosolar)[1]) # But we really need just a numpy array with the numbers.
+    Protosolar = array(list(zip(*Protosolar))[1]) # But we really need just a numpy array with the numbers.
 
     # Convert to vectors which are normalized to Mg, Si, and Fe.
     ProtosolarToMg = power(10, Protosolar)  # Get out of log space into linear space.  Now the numbers relate to AtPct.
@@ -99,8 +99,8 @@ if __name__ == '__main__':
     AtPct[pb.S-1] = 6.1
     AtPct[pb.Cr-1] = 0.3
     AtPct[pb.Fe-1] = 11.1
-    print 'Planetary Materials Page 2-54 (Rietmeijer: Interplanetary Dust Particles): Table 23, Line 1\n'
-    print AnalyzePhase(AtPct)
+    print('Planetary Materials Page 2-54 (Rietmeijer: Interplanetary Dust Particles): Table 23, Line 1\n')
+    print(AnalyzePhase(AtPct))
 
     # Bradley, J. P. (2007). 1.26 - Interplanetary Dust Particles. In A. M. Davis (Ed.), Treatise on Geochemistry, Vol. 1, Meteorites, Comets, and Planets (pp. 689-711). Oxford: Pergamon. http://doi.org/10.1016/B0-08-043751-6/01152-X
     AtPct = zeros(pb.MAXELEMENT)
@@ -115,5 +115,5 @@ if __name__ == '__main__':
     AtPct[pb.Cr-1] = 0.015
     AtPct[pb.Fe-1] = 0.697
     AtPct[pb.Ni-1] = 0.027
-    print 'Chondritic IDPs bulk\n'
-    print AnalyzePhase(AtPct)
+    print('Chondritic IDPs bulk\n')
+    print(AnalyzePhase(AtPct))
