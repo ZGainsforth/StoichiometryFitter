@@ -1,4 +1,4 @@
-from __future__ import division
+
 __author__ = 'Zack Gainsforth'
 __copyright__ = 'Copyright 2014, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
@@ -39,8 +39,11 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     # Convert from At% to cations assuming 6 oxygens.
     for Element in KnownElements:
         E[Element] = eval('AtPct[pb.%s-1]/AtPct[pb.O-1]*6'%Element)
-
-    Cations = sum(E.values()) - E['O']
+    
+    summmm = 0
+    for x in list(E.values()):
+        summmm += x
+    Cations = summmm - E['O']
     Anions = E['O']
 
     # Based on: Morimoto, N., Fabries, J., Ferguson, A. K., Ginzburg, I. V., Ross, M., Seifert, F. A., et al. (1988). Nomenclature of pyroxenes. American Mineralogist, 73, 1123-1133.
@@ -52,14 +55,14 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
         OutStr += '(Too few cations, non-stoichiometric)\n'
 
     #OriginalTotalCations = E['Si'] + E['Ti'] + E['Al'] + E['Mn'] + E['Mg'] + E['Ca'] + E['Ni'] + E['Zn'] + E['Cr'] + E['V'] + E['Fe']
-    OriginalTotalCations = sum([e for (k, e) in E.items() if k in KnownElements if k != 'O'])
+    OriginalTotalCations = sum([e for (k, e) in list(E.items()) if k in KnownElements if k != 'O'])
     # For the stoichiometry calculation to work, we have to have EXACTLY 4 cations (10 atom basis).  So make it so, but we will keep the original number for reporting.
     for i in KnownElements:
         E[i] *= 4/OriginalTotalCations
 
     # Report the En type stuff.
     # First, assume M1+M2 = everything except O, Si and Al.
-    M1M2sum = sum([e for (k, e) in E.items() if k in KnownElements]) - E['O'] - E['Al'] - E['Si']
+    M1M2sum = sum([e for (k, e) in list(E.items()) if k in KnownElements]) - E['O'] - E['Al'] - E['Si']
     OutStr += 'Mg/(Mg+Fe) = %0.3f\n' % (E['Mg']/(E['Mg']+E['Fe']))
     Cationtally = 0
     for e in KnownElements:
@@ -240,16 +243,16 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += 'Assuming exactly 4 cations and compute to fill sites and balance charge:\n'
     OutStr += 'Site T (tetrahedral):\n'
     OutStr += '{:>11s}:    {:<10s}\n'.format('Element', 'Occupancy')
-    for k, v in OrderedDict((('Si4+', SiT),
+    for k, v in list(OrderedDict((('Si4+', SiT),
                              ('Al3+', AlT),
-                             ('Fe3+', FeT))).items():
+                             ('Fe3+', FeT))).items()):
         OutStr += PrintIfNonzero(k,v)
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Total occ', T)
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Charge', TCharge)
     OutStr += '\n'
     OutStr += 'Site M1 (octahedral):\n'
     OutStr += '{:>11s}:    {:<10s}\n'.format('Element', 'Occupancy')
-    for k, v in OrderedDict((('Al3+', AlM1),
+    for k, v in list(OrderedDict((('Al3+', AlM1),
                              ('Fe3+', Fe3_M1),
                              ('Ti3+', Ti3_M1),
                              ('Cr3+', CrM1),
@@ -260,19 +263,19 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
                              ('Zn2+', ZnM1),
                              ('Mg2+', MgM1),
                              ('Fe2+', Fe2_M1),
-                             ('Mn2+', MnM1))).items():
+                             ('Mn2+', MnM1))).items()):
         OutStr += PrintIfNonzero(k,v)
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Total occ', M1)
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Charge', M1Charge)
     OutStr += '\n'
     OutStr += 'Site M2 (octahedral):\n'
     OutStr += '{:>11s}:    {:<10s}\n'.format('Element', 'Occupancy')
-    for k, v in OrderedDict((('Mg2+', MgM2),
+    for k, v in list(OrderedDict((('Mg2+', MgM2),
                              ('Fe2+', FeM2),
                              ('Mn2+', MnM2),
                              ('Li+', LiM2),
                              ('Ca2+', CaM2),
-                             ('Na+', NaM2))).items():
+                             ('Na+', NaM2))).items()):
         OutStr += PrintIfNonzero(k,v)
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Total occ', M2)
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Charge', M2Charge)
@@ -302,31 +305,31 @@ if __name__ == '__main__':
     AtPct[pb.Mg-1] = 20
     AtPct[pb.Si-1] = 20
     AtPct[pb.O-1] = 60
-    print 'Enstatite: MgSiO3\n'
-    print AnalyzePhase(AtPct)
+    print('Enstatite: MgSiO3\n')
+    print((AnalyzePhase(AtPct)))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.Mg-1] = 10
     AtPct[pb.Ca-1] = 10
     AtPct[pb.Si-1] = 20
     AtPct[pb.O-1] = 60
-    print 'Diopside: CaMgSi2O6\n'
-    print AnalyzePhase(AtPct)
+    print('Diopside: CaMgSi2O6\n')
+    print((AnalyzePhase(AtPct)))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.Fe-1] = 20
     AtPct[pb.Si-1] = 20
     AtPct[pb.O-1] = 60
-    print 'Ferrisilite: Fe2Si2O6\n'
-    print AnalyzePhase(AtPct)
+    print('Ferrisilite: Fe2Si2O6\n')
+    print((AnalyzePhase(AtPct)))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.Mg-1] = 10
     AtPct[pb.Fe-1] = 10
     AtPct[pb.Si-1] = 20
     AtPct[pb.O-1] = 60
-    print 'En50: FeMgSi2O6\n'
-    print AnalyzePhase(AtPct)
+    print('En50: FeMgSi2O6\n')
+    print((AnalyzePhase(AtPct)))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.Si-1] = 2.010
@@ -338,8 +341,8 @@ if __name__ == '__main__':
     AtPct[pb.Fe-1] = 0.250
     AtPct[pb.Na-1] = 0.113
     AtPct[pb.O-1] = 6
-    print 'Iris CPX SEM: CaMgSi2O6\n'
-    print AnalyzePhase(AtPct)
+    print('Iris CPX SEM: CaMgSi2O6\n')
+    print((AnalyzePhase(AtPct)))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.Si-1] = 20.49
@@ -351,5 +354,5 @@ if __name__ == '__main__':
     AtPct[pb.Fe-1] = 1.93
     AtPct[pb.Na-1] = 1.51
     AtPct[pb.O-1] = 60.23
-    print 'Iris CPX TEM: CaMgSi2O6\n'
-    print AnalyzePhase(AtPct)
+    print('Iris CPX TEM: CaMgSi2O6\n')
+    print((AnalyzePhase(AtPct)))

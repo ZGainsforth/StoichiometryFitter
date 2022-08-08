@@ -32,7 +32,7 @@ def FitPhases(Quant, Phases):
     """ BUILD ElAbund and PhaseMatrix """
 
     # Pull ElAbund out fo the Quant list of tuples.  It's the first entry of the value tuple that is the element Z.
-    ElAbund = array(zip(*Quant.values())[0])
+    ElAbund = array(list(zip(*list(Quant.values())))[0])
 
     # Initialize the PhaseMatrix
     PhaseMatrix = zeros((pb.MAXELEMENT, len(Phases)))
@@ -69,7 +69,7 @@ def FitPhases(Quant, Phases):
     # Package up the fit result.
     Names = [PhaseNames[0] for PhaseNames in Phases]
     Formulas = [PhaseNames[1] for PhaseNames in Phases]
-    FitResult = OrderedDict(zip(Names, zip(Formulas, PhaseAbund)))
+    FitResult = OrderedDict(list(zip(Names, list(zip(Formulas, PhaseAbund)))))
 
     # Send it back up
     return (FitResult, Residual, FitComposition)
@@ -107,8 +107,8 @@ if __name__ == '__main__':
 
     FitResult, Residual = FitPhases(Quant, PhasesToFit)
 
-    print '{:30s} {:5s}'.format('Phase', 'Molar %')
-    for Phase, Result in FitResult.iteritems():
-        print '{:30s} {:5.3f}%'.format(Phase, Result[1])
+    print('{:30s} {:5s}'.format('Phase', 'Molar %'))
+    for Phase, Result in FitResult.items():
+        print('{:30s} {:5.3f}%'.format(Phase, Result[1]))
 
-    print '{:30s} {:g}'.format('Fit residual', Residual)
+    print('{:30s} {:g}'.format('Fit residual', Residual))

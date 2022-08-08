@@ -2,7 +2,7 @@ __author__ = 'Zack Gainsforth'
 __copyright__ = 'Copyright 2016, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
 
-import StringIO
+import io
 import numpy as np
 import pickle
 import itertools
@@ -44,7 +44,7 @@ def GetElamFluorescenceLines(ElementName, E=None, I=None):
         fo = open('Elam/ElamDB12.txt', "r+")
         str = fo.read();
         fo.close()
-        ElamData = StringIO.StringIO(str)
+        ElamData = io.StringIO(str)
         ElamLoaded = True
 
     # Initialize the lists that will contain the line information.
@@ -82,14 +82,14 @@ def GetElamFluorescenceLines(ElementName, E=None, I=None):
 
     # We are going to use the Siegbahn names, not IUPAC.
     # Make a dictionary where the key is the line name and the value is an (energy, intensity) tuple.
-    Lines = dict(zip(LineNamesSiegbahn, Geoms))
+    Lines = dict(list(zip(LineNamesSiegbahn, Geoms)))
 
     ElementXRayLines = {}
 
     for Series in ['K', 'L', 'M', 'N', 'O']:
 
         #Obtain the name strings for only the lines that have names that start with K (or L, or M, whatever Series we are on).
-        ThisSeries = dict([(k, v) for k, v in Lines.iteritems() if k.startswith(Series)])
+        ThisSeries = dict([(k, v) for k, v in list(Lines.items()) if k.startswith(Series)])
 
         # If these series is not present, then don't keep it.
         if len(ThisSeries) == 0:
@@ -118,7 +118,7 @@ def GetFluorescenceLineEnergy(ElementName, Series='K', Line=None):
             ser = LineData[Series]
             # For each line, multiply the energy times the intensity, and then we average these to get the weighted energy.
             # Note this works since the intensities sum to 1.
-            WeightedEnergy = sum([(line[0]*line[1]) for line in ser.values()])
+            WeightedEnergy = sum([(line[0]*line[1]) for line in list(ser.values())])
             return WeightedEnergy
     except:
         # If the user asked for a series or line that's not in the database, then we return none.
@@ -154,9 +154,9 @@ def GetFluorescenceLineEnergy(ElementName, Series='K', Line=None):
 #     return True
 
 if __name__ == '__main__':
-    print 'Fe-K: %s' % GetFluorescenceLineEnergy('Fe')
-    print 'Al-K: %s' % GetFluorescenceLineEnergy('Al')
-    print 'Mg-K: %s' % GetFluorescenceLineEnergy('Mg')
-    print 'Fe-Q: %s' % GetFluorescenceLineEnergy('Fe', Series='Q')
-    print 'Fe-Ka2: %f' % GetFluorescenceLineEnergy('Fe', Series='K', Line='Ka2')
-    print 'Fe-Ka1: %f' % GetFluorescenceLineEnergy('Fe', Series='K', Line='Ka1')
+    print(('Fe-K: %s' % GetFluorescenceLineEnergy('Fe')))
+    print(('Al-K: %s' % GetFluorescenceLineEnergy('Al')))
+    print(('Mg-K: %s' % GetFluorescenceLineEnergy('Mg')))
+    print(('Fe-Q: %s' % GetFluorescenceLineEnergy('Fe', Series='Q')))
+    print(('Fe-Ka2: %f' % GetFluorescenceLineEnergy('Fe', Series='K', Line='Ka2')))
+    print(('Fe-Ka1: %f' % GetFluorescenceLineEnergy('Fe', Series='K', Line='Ka1')))

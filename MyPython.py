@@ -75,7 +75,7 @@ def ReportError(ErrorString):
     # Print the caller's communication alongside the stack information.
     ReportStr = '%s\n\nFile:%s \nFunction: %s\nLine: %d\n\nPlease report to zackg@berkeley.edu' % (ErrorString, FileName, FunctionName, Line)
 
-    print ReportStr
+    print(ReportStr)
 
     wx.MessageBox(ReportStr, "Error", style=wx.OK)
 

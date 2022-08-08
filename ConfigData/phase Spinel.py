@@ -1,4 +1,4 @@
-from __future__ import division
+
 __author__ = 'Zack Gainsforth'
 __copyright__ = 'Copyright 2014, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
@@ -34,10 +34,10 @@ def ComputeCp(T, PhaseName):
     # Get the thermodynamic constants for the phase we want to compute.
     V = PhaseConstants[PhaseConstants['Mineral'] == PhaseName]
     if len(V) != 1:
-        print 'Phase %s not one of the thermodynamic endmembers in the Ghiorso & Sack implementation.' % PhaseName
+        print('Phase %s not one of the thermodynamic endmembers in the Ghiorso & Sack implementation.' % PhaseName)
         return
 
-    print V
+    print(V)
 # TODO Implement Cp and Gf equations.
     return
 
@@ -45,7 +45,7 @@ def GetThermodynamicPropertiesForSpinel(AtPct):
     # First we have to fit it against the end-member spinel species from Sack and Ghiorso.
 
     # Make a quant array for PhaseFit.
-    Quant = OrderedDict(zip(pb.ElementalSymbols[1:], zip(AtPct, AtPct)))
+    Quant = OrderedDict(list(zip(pb.ElementalSymbols[1:], list(zip(AtPct, AtPct)))))
 
     # We are using a bunch of them.  S&G use just five in MELTS, but we use them all.  Hopefully,
     # we can sort out site degeneracies!  Well, let's find out.
@@ -227,24 +227,24 @@ if __name__ == '__main__':
     AtPct[pb.O-1] = 4/7*100
     AtPct[pb.Mg-1] = 1/7*100
     AtPct[pb.Al-1] = 2/7*100
-    print 'Magnesiospinel: Mg Al2 O4:\n'
-    print AnalyzePhase(AtPct)
+    print('Magnesiospinel: Mg Al2 O4:\n')
+    print(AnalyzePhase(AtPct))
 
     # Ideal chromite
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.O-1] = 4/7*100
     AtPct[pb.Fe-1] = 1/7*100
     AtPct[pb.Cr-1] = 2/7*100
-    print 'Chromite: Fe Cr2 O4:\n'
-    print AnalyzePhase(AtPct)
+    print('Chromite: Fe Cr2 O4:\n')
+    print(AnalyzePhase(AtPct))
 
     # Ideal Ulvospinel
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.O-1] = 4/7*100
     AtPct[pb.Ti-1] = 1/7*100
     AtPct[pb.Fe-1] = 2/7*100
-    print 'Ulvospinel: Ti Fe2 O4:\n'
-    print AnalyzePhase(AtPct)
+    print('Ulvospinel: Ti Fe2 O4:\n')
+    print(AnalyzePhase(AtPct))
 
     # UC chromite
     AtPct = zeros(pb.MAXELEMENT)
@@ -257,6 +257,6 @@ if __name__ == '__main__':
     AtPct[pb.Mg-1] = 7.177
     AtPct[pb.V-1] =  0.066
     AtPct[pb.Si-1] = 0.005
-    print 'UC Chromite:\n'
-    print AnalyzePhase(AtPct)
+    print('UC Chromite:\n')
+    print(AnalyzePhase(AtPct))
 

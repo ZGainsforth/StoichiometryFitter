@@ -1,4 +1,4 @@
-from __future__ import division
+
 __author__ = 'Zack Gainsforth'
 __copyright__ = 'Copyright 2014, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
@@ -53,7 +53,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OriginalE = E.copy()
 
     # Compute how many cations in the M2 + M2 sites.
-    M1M2 = sum(array([e for e in E.values()])) - E['O'] - E['Si']
+    M1M2 = sum(array([e for e in list(E.values())])) - E['O'] - E['Si']
 
     # Report the Fo type stuff.
     OutStr += 'Mg/(Mg+Fe) = %0.3f\n' % (E['Mg']/(E['Mg']+E['Fe']))
@@ -90,15 +90,15 @@ if __name__ == '__main__':
     AtPct[pb.O-1] = 4/7*100
     AtPct[pb.Mg-1] = 2/7*100
     AtPct[pb.Si-1] = 1/7*100
-    print 'Forsterite: Mg2 Si O4:\n'
-    print AnalyzePhase(AtPct)
+    print('Forsterite: Mg2 Si O4:\n')
+    print(AnalyzePhase(AtPct))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.O-1] = 4/7*100
     AtPct[pb.Fe-1] = 2/7*100
     AtPct[pb.Si-1] = 1/7*100
-    print 'Fayalite: Fe2 Si O4:\n'
-    print AnalyzePhase(AtPct)
+    print('Fayalite: Fe2 Si O4:\n')
+    print(AnalyzePhase(AtPct))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.O-1] =  57.135
@@ -108,6 +108,6 @@ if __name__ == '__main__':
     AtPct[pb.Mn-1] = 0.057
     AtPct[pb.Ca-1] = 0.091
     AtPct[pb.Ni-1] = 0.074
-    print 'UC Fo87:\n'
-    print AnalyzePhase(AtPct)
+    print('UC Fo87:\n')
+    print(AnalyzePhase(AtPct))
 

@@ -155,7 +155,7 @@ def loadtxtcaching(FileName, skiprows=1):
     # Already loaded this file?
     if FileName not in ListOfLoadedFiles:
         # Nope, so read it in.
-        print 'Loading %s' % FileName
+        print('Loading %s' % FileName)
         ListOfLoadedFiles[FileName] = loadtxt(FileName, skiprows=skiprows)
 
     # Return the (previously or newly) cached file.

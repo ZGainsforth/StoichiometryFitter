@@ -1,4 +1,4 @@
-from __future__ import division
+
 __author__ = 'Zack Gainsforth'
 __copyright__ = 'Copyright 2014, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
@@ -98,26 +98,26 @@ if __name__ == '__main__':
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.S-1] = 50
     AtPct[pb.Fe-1] = 50
-    print 'Troilite: FeS\n'
-    print AnalyzePhase(AtPct)
+    print('Troilite: FeS\n')
+    print(AnalyzePhase(AtPct))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.S-1] = 8
     AtPct[pb.Fe-1] = 7
-    print 'Pyrrhotite: Fe7S8\n'
-    print AnalyzePhase(AtPct)
+    print('Pyrrhotite: Fe7S8\n')
+    print(AnalyzePhase(AtPct))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.S-1] = 8
     AtPct[pb.Fe-1] = 6
-    print 'Not enough cations\n'
-    print AnalyzePhase(AtPct)
+    print('Not enough cations\n')
+    print(AnalyzePhase(AtPct))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.S-1] = 8
     AtPct[pb.Fe-1] = 9
-    print 'Too many cations\n'
-    print AnalyzePhase(AtPct)
+    print('Too many cations\n')
+    print(AnalyzePhase(AtPct))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.S-1] = 7.9
@@ -129,5 +129,5 @@ if __name__ == '__main__':
     AtPct[pb.Zn-1] = 0.1
     AtPct[pb.Se-1] = 0.1
 
-    print 'A bit of everything (Cation)7.5(Anion)8\n'
-    print AnalyzePhase(AtPct)
+    print('A bit of everything (Cation)7.5(Anion)8\n')
+    print(AnalyzePhase(AtPct))

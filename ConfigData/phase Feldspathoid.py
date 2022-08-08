@@ -1,4 +1,4 @@
-from __future__ import division
+
 __author__ = 'Zack Gainsforth'
 __copyright__ = 'Copyright 2017, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
@@ -105,18 +105,18 @@ if __name__ == '__main__':
     AtPct[pb.Al-1] = 4/28*100
     AtPct[pb.Si-1] = 4/28*100
     AtPct[pb.O-1] = 16/28*100
-    print '\n\n-----------------------\n\n'
-    print 'Nepheline: K Na3 Al4 Si4 O16:\n'
-    print AnalyzePhase(AtPct)
+    print('\n\n-----------------------\n\n')
+    print('Nepheline: K Na3 Al4 Si4 O16:\n')
+    print(AnalyzePhase(AtPct))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.K-1] = 4/28*100
     AtPct[pb.Al-1] = 4/28*100
     AtPct[pb.Si-1] = 4/28*100
     AtPct[pb.O-1] = 16/28*100
-    print '\n\n-----------------------\n\n'
-    print 'Kalsilite: K4 Al4 Si4 O16:\n'
-    print AnalyzePhase(AtPct)
+    print('\n\n-----------------------\n\n')
+    print('Kalsilite: K4 Al4 Si4 O16:\n')
+    print(AnalyzePhase(AtPct))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.K-1] = 0/28*100
@@ -124,9 +124,9 @@ if __name__ == '__main__':
     AtPct[pb.Al-1] = 3/28*100
     AtPct[pb.Si-1] = 5/28*100
     AtPct[pb.O-1] = 16/28*100
-    print '\n\n-----------------------\n\n'
-    print 'Barth Nepheline: Na3 Al3 Si5 O16:\n'
-    print AnalyzePhase(AtPct)
+    print('\n\n-----------------------\n\n')
+    print('Barth Nepheline: Na3 Al3 Si5 O16:\n')
+    print(AnalyzePhase(AtPct))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.Ca-1] = 1.447
@@ -134,9 +134,9 @@ if __name__ == '__main__':
     AtPct[pb.Al-1] = 14.482 
     AtPct[pb.Si-1] = 14.510
     AtPct[pb.O-1] = 57.980
-    print '\n\n-----------------------\n\n'
-    print '80Ne20An (from Henderson ref):\n'
-    print AnalyzePhase(AtPct)
+    print('\n\n-----------------------\n\n')
+    print('80Ne20An (from Henderson ref):\n')
+    print(AnalyzePhase(AtPct))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.Ca-1] = 1.516
@@ -144,9 +144,9 @@ if __name__ == '__main__':
     AtPct[pb.Al-1] = 10.604 
     AtPct[pb.Si-1] = 19.696
     AtPct[pb.O-1] = 60.605
-    print '\n\n-----------------------\n\n'
-    print '50Ne20An30Q (from Henderson ref):\n'
-    print AnalyzePhase(AtPct)
+    print('\n\n-----------------------\n\n')
+    print('50Ne20An30Q (from Henderson ref):\n')
+    print(AnalyzePhase(AtPct))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.K-1] = 1.519
@@ -155,6 +155,6 @@ if __name__ == '__main__':
     AtPct[pb.Al-1] = 13.415
     AtPct[pb.Si-1] = 16.992
     AtPct[pb.O-1] = 59.327
-    print '\n\n-----------------------\n\n'
-    print 'Track 220 TP5 Nepheline:\n'
-    print AnalyzePhase(AtPct)
+    print('\n\n-----------------------\n\n')
+    print('Track 220 TP5 Nepheline:\n')
+    print(AnalyzePhase(AtPct))
