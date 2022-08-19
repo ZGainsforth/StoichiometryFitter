@@ -53,7 +53,7 @@ class EditableTextListCtrl(wx.ListCtrl, TextEditMixin):
         # IF this is not an editable ListCtrl, then EditableColumns == None.  Nothing to do here in this case.  Defer
         #  to super.
         if self.EditableColumns == None:
-            print 'Warning: It appears you are using an EditableTextListCtrl where there are no editable columns.'
+            print ("Warning: It appears you are using an EditableTextListCtrl where there are no editable columns.")
             return
 
         # The only editable entry is column 1 (counts for a given element.)
@@ -208,7 +208,7 @@ class MyFrame(wx.Frame):
         sizer_6.Add(sizer_9, 0, wx.EXPAND, 0)
         sizer_10.Add(self.rdioInputType, 0, wx.EXPAND, 0)
         sizer_6.Add(sizer_10, 0, wx.EXPAND, 0)
-        sizer_8.Add(self.btnReset, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.EXPAND, 2)
+        sizer_8.Add(self.btnReset, 0, wx.ALL | wx.EXPAND, 2)
         sizer_6.Add(sizer_8, 0, wx.EXPAND, 0)
         self.panel_4.SetSizer(sizer_6)
         sizer_6.AddGrowableRow(0)
@@ -227,9 +227,9 @@ class MyFrame(wx.Frame):
         sizer_12.Add(self.txtAbsCorr, 1, wx.EXPAND, 0)
         sizer_12.Add(self.txtTakeoff, 0, wx.EXPAND, 0)
         sizer_3.Add(sizer_12, 1, wx.EXPAND, 0)
-        sizer_13.Add(self.label_1, 0, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
-        sizer_13.Add(self.label_1_copy, 0, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
-        sizer_3.Add(sizer_13, 1, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, 0)
+        sizer_13.Add(self.label_1, 0, wx.EXPAND, 0)
+        sizer_13.Add(self.label_1_copy, 0, wx.EXPAND, 0)
+        sizer_3.Add(sizer_13, 1, wx.EXPAND, 0)
         grid_sizer_1.Add(sizer_3, 1, wx.EXPAND, 0)
         sizer_4.Add(self.chkKfacs, 0, 0, 0)
         sizer_4.Add(self.comboKfacs, 1, wx.ALL | wx.EXPAND, 2)
@@ -237,8 +237,8 @@ class MyFrame(wx.Frame):
         sizer_5.Add(self.chkOByStoichiometry, 0, 0, 0)
         sizer_5.Add(self.comboStoich, 1, wx.ALL | wx.EXPAND, 2)
         grid_sizer_1.Add(sizer_5, 1, wx.EXPAND, 0)
-        sizer_7.Add(self.btnGo, 0, wx.ALIGN_CENTER | wx.ALL | wx.EXPAND, 2)
-        grid_sizer_1.Add(sizer_7, 1, wx.ALIGN_CENTER | wx.EXPAND, 0)
+        sizer_7.Add(self.btnGo, 0, wx.ALL | wx.EXPAND, 2)
+        grid_sizer_1.Add(sizer_7, 1, wx.EXPAND, 0)
         grid_sizer_1.Add(self.panel_3, 1, wx.EXPAND, 0)
         self.panel_1.SetSizer(grid_sizer_1)
         grid_sizer_1.AddGrowableRow(0)
@@ -375,10 +375,10 @@ class MyFrame(wx.Frame):
             self.Stoich[Z-1][1] = float(self.ElementsListCtrl.GetItem(Z - 1,2).GetText())
 
         # Make the input human readable and output it for reference.
-        InputDat = OrderedDict(zip(pb.ElementalSymbols[1:], self.Counts))
+        InputDat = OrderedDict(list(zip(pb.ElementalSymbols[1:], self.Counts)))
         ReportStr = ReportResults.FormatInputResults(InputDat, self.rdioInputType.StringSelection)
         # Report it by printing to console and put it in the output text box.
-        print ReportStr
+        print ("ReportStr")
         self.txtOutput.SetValue(ReportStr)
         
         # Find out if there is a k-factor file to use.
@@ -412,7 +412,7 @@ class MyFrame(wx.Frame):
             # Stoich is a list of tuples.  We want an array of atom charges from the 1 index of the tuples.  So unzip
             # the list into two tuples,
             # choose the tuple which corresponds to the charges not the atom names and feed it to numpy to make a vector.
-            OByStoich = array(zip(*self.Stoich)[1])
+            OByStoich = array(list(zip(*self.Stoich))[1])
         else:
             OByStoich = None
 
@@ -423,8 +423,8 @@ class MyFrame(wx.Frame):
                                                       Takeoff=Takeoff,
                                                       OByStoichiometry=OByStoich)
 
-        QuantNumbers = [a[1] for a in Quant.items()]
-        AtPct, WtPct, OxWtPct, kfactors = zip(*QuantNumbers)
+        QuantNumbers = [a[1] for a in list(Quant.items())]
+        AtPct, WtPct, OxWtPct, kfactors = list(zip(*QuantNumbers))
 
         # Make it human readable.
         ReportStr = ReportResults.FormatQuantResults(Quant, ArbitraryAbsorptionCorrection=DetectorFile,
@@ -434,7 +434,7 @@ class MyFrame(wx.Frame):
                                                      kFactors=kfacsfile)
 
         # Report it by printing to console and put it in the output text box.
-        print ReportStr
+        print ("ReportStr")
         self.txtOutput.AppendText(ReportStr)
 
         """ FIT PHASES """
@@ -454,7 +454,7 @@ class MyFrame(wx.Frame):
 
             # Report it to console and output text box.
             ReportStr = ReportResults.FormatPhaseResults(FitResult, Residual, FitComposition)
-            print ReportStr
+            print(ReportStr)
             self.txtOutput.AppendText(ReportStr)
 
         """ DO CUSTOM PHASE ANALYSES """
@@ -468,7 +468,7 @@ class MyFrame(wx.Frame):
             ReportStr = a.AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich)
 
             # Report it by printing to console and put it in the output text box.
-            print ReportStr
+            print(ReportStr)
             self.txtOutput.AppendText(ReportStr)
 
 
@@ -694,10 +694,10 @@ class MyFrame(wx.Frame):
 
 
     def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnAbout' not implemented!"
+        print("Event handler 'OnAbout' not implemented!")
         event.Skip()
     def OnDetectorSelect(self, event):  # wxGlade: MyFrame.<event_handler>
-        print "Event handler 'OnDetectorSelect' not implemented!"
+        print("Event handler 'OnDetectorSelect' not implemented!")
         event.Skip()
 
     # CURRENT END OF CLASS
@@ -707,13 +707,13 @@ class MyFrame(wx.Frame):
 if __name__ == "__main__":
     gettext.install("app")  # replace with the appropriate catalog name
 
-    print 'showing'
+    print('showing')
     app = wx.App()
-    print 'showing'
+    print('showing')
     wx.InitAllImageHandlers()
-    print 'showing'
+    print('showing')
     frame_1 = MyFrame(None, wx.ID_ANY, "")
-    print 'showing'
+    print('showing')
     app.SetTopWindow(frame_1)
     frame_1.Show()
     app.MainLoop()

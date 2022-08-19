@@ -1,4 +1,4 @@
-from __future__ import division
+
 __author__ = 'Zack Gainsforth'
 __copyright__ = 'Copyright 2017, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
@@ -46,7 +46,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
         E[Element] = eval('AtPct[pb.%s-1]/AtPct[pb.O-1]*8'%Element)
 
     # Compute how many cations in the M sites.
-    M = sum(array([e for e in E.values()])) - E['O'] - E['Si'] - E['Al']
+    M = sum(array([e for e in list(E.values())])) - E['O'] - E['Si'] - E['Al']
 
     # Report the AnAbOr numbers.
     OutStr += 'Ca/(Ca+Na+K) = %0.3f (An#)\n' % (E['Ca']/(E['Ca']+E['Na']+E['K']))
@@ -86,27 +86,27 @@ if __name__ == '__main__':
     AtPct[pb.Ca-1] = 1/13*100
     AtPct[pb.Al-1] = 2/13*100
     AtPct[pb.Si-1] = 2/13*100
-    print '\n\n-----------------------\n\n'
-    print 'Anorthite: Ca Al2 Si2 O8:\n'
-    print AnalyzePhase(AtPct)
+    print('\n\n-----------------------\n\n')
+    print('Anorthite: Ca Al2 Si2 O8:\n')
+    print(AnalyzePhase(AtPct))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.O-1] = 8/13*100
     AtPct[pb.Na-1] = 1/13*100
     AtPct[pb.Al-1] = 1/13*100
     AtPct[pb.Si-1] = 3/13*100
-    print '\n\n-----------------------\n\n'
-    print 'Albite: Ca Al Si3 O8:\n'
-    print AnalyzePhase(AtPct)
+    print('\n\n-----------------------\n\n')
+    print('Albite: Ca Al Si3 O8:\n')
+    print(AnalyzePhase(AtPct))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.O-1] = 8/13*100
     AtPct[pb.K-1] = 1/13*100
     AtPct[pb.Al-1] = 1/13*100
     AtPct[pb.Si-1] = 3/13*100
-    print '\n\n-----------------------\n\n'
-    print 'Orthoclase: K Al Si3 O8:\n'
-    print AnalyzePhase(AtPct)
+    print('\n\n-----------------------\n\n')
+    print('Orthoclase: K Al Si3 O8:\n')
+    print(AnalyzePhase(AtPct))
 
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.O-1] = 61.34
@@ -114,6 +114,6 @@ if __name__ == '__main__':
     AtPct[pb.Na - 1] = 0.64
     AtPct[pb.Al-1] = 7.92
     AtPct[pb.Si-1] = 22.88
-    print '\n\n-----------------------\n\n'
-    print 'Lunar Sanidine: K Al Si3 O8:\n'
-    print AnalyzePhase(AtPct)
+    print('\n\n-----------------------\n\n')
+    print('Lunar Sanidine: K Al Si3 O8:\n')
+    print(AnalyzePhase(AtPct))

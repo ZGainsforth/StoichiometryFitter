@@ -28,7 +28,7 @@ def FormatQuantResults(Quant, ArbitraryAbsorptionCorrection=None,
     # Report on the parameters used in the fit.
     if ArbitraryAbsorptionCorrection is not None:
         ReportStr += 'Arbitrary Absorption Correction used: %s\n' % (ArbitraryAbsorptionCorrection)
-        print ArbitraryAbsorptionCorrection
+        print(ArbitraryAbsorptionCorrection)
 
     if kFactors is not None:
         ReportStr += 'k-factors used: %s\n' % (kFactors)
@@ -39,8 +39,8 @@ def FormatQuantResults(Quant, ArbitraryAbsorptionCorrection=None,
 
     if OByStoichiometry is not None:
         ReportStr += 'Oxygen determined by stoichiometry\n'
-        print OByStoichiometry
-        OStoich = map('{:8.3f}'.format, OByStoichiometry)
+        print(OByStoichiometry)
+        OStoich = list(map('{:8.3f}'.format, OByStoichiometry))
     else:
         OStoich =  ['{:>8s}'.format('n/a')]*len(Quant)
 
@@ -49,13 +49,13 @@ def FormatQuantResults(Quant, ArbitraryAbsorptionCorrection=None,
 # For every element that is in the sample (non-zero abundance), we are going to include it in the result.
 
     # Comprehend all the zero-abundance elements out.
-    Q = OrderedDict([(El, Abund) for (El, Abund) in Quant.iteritems() if Abund[0] > 0])
+    Q = OrderedDict([(El, Abund) for (El, Abund) in Quant.items() if Abund[0] > 0])
 
     # Now let's print out each element
     ReportStr += 'Quantification results:\n'.format()
     ReportStr += '{:<8s} {:>8s} {:>8s} {:>8s} {:>8s} {:>8s}\n'.format('Element', 'At%', 'Wt%', 'Ox Wt %', 'Valence', 'k-factor')
-    for El, Abund in Q.iteritems():
-        ElIndex = pb.ElementDict.keys().index(El)-1
+    for El, Abund in Q.items():
+        ElIndex = list(pb.ElementDict.keys()).index(El)-1
         if Abund[1] > 0.1:
             # Report straightforward percentages.
             ReportStr += '{:8s} {:8.3f} {:8.3f} {:8.3f} {:8s} {:8.3f}\n'.format(El, Abund[0], Abund[1], Abund[2], OStoich[ElIndex], Abund[3])
@@ -82,13 +82,13 @@ def FormatInputResults(Quant, InputType):
     # For every element that is in the sample (non-zero abundance), we are going to include it in the result.
 
     # Comprehend all the zero-abundance elements out.
-    Q = OrderedDict([(El, Abund) for (El, Abund) in Quant.iteritems() if Abund > 0])
+    Q = OrderedDict([(El, Abund) for (El, Abund) in Quant.items() if Abund > 0])
 
     # Now let's print out each element
     SumAbundance = 0
     ReportStr += 'Input data:\n'.format()
     ReportStr += '{:<8s} {:>15s}\n'.format('Element', InputType)
-    for El, Abund in Q.iteritems():
+    for El, Abund in Q.items():
         SumAbundance += Abund
         if Abund > 0.1:
             # Report straightforward percentages.
@@ -118,7 +118,7 @@ def FormatPhaseResults(FitResult, Residual, FitComposition):
 
     ReportStr += 'Phase fit results:\n'.format()
     ReportStr += '{:<30s} {:>5s}\n'.format('Phase', 'Molar %')
-    for Phase, Result in FitResult.iteritems():
+    for Phase, Result in FitResult.items():
         ReportStr += '{:30s} {:5.3f}%\n'.format(Phase, Result[1])
 
     ReportStr += '{:30s} {:g}\n'.format('Fit residual', Residual)
@@ -133,7 +133,7 @@ def FormatPhaseResults(FitResult, Residual, FitComposition):
     SumAbundance = 0
     ReportStr += 'Composition of phase fit:\n'.format()
     ReportStr += '{:<8s} {:>8s}\n'.format('Element', 'At %')
-    for El, Abund in Q.iteritems():
+    for El, Abund in Q.items():
         SumAbundance += Abund
         if Abund > 0.1:
             # Report straightforward percentages.
@@ -149,4 +149,4 @@ def FormatPhaseResults(FitResult, Residual, FitComposition):
     return ReportStr
 
 if __name__ == '__main__':
-    print FormatQuantResults.__doc__
+    print(FormatQuantResults.__doc__)
