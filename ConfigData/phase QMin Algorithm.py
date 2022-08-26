@@ -1,6 +1,9 @@
-__author__ = 'Michael Ofengenden'
-__copyright__ = 'Copyright 2022, Michael Ofengenden'
-__email__ = 'michaelofengend@gmail.com'
+__author1__ = 'Michael Ofengenden'
+__copyright1__ = 'Copyright 2022, Michael Ofengenden'
+__email1__ = 'michaelofengend@gmail.com'
+__author2__ = 'Zhenbang Yu'
+__copyright2__ = 'Copyright 2022, Zhenbang Yu'
+__email2__ = 'roger_yu@berkeley.edu'
 import csv
 import pandas as pd
 #import openpyxl
