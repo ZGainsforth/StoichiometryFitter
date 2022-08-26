@@ -68,7 +68,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     CompoVector[2] = InterAtPct*10
     CompoVector /= np.sum(CompoVector)
 
-    td = TernaryDiagram([f'Tetrahedral\n({", ".join(TetrahedralAtoms)})', f'Octahedral\n(Mg, Fe, ...)', f'Interstitial\n({", ".join(InterstitialAtoms)}) x 10'])
+    td = TernaryDiagram(['Tetrahedral', 'Octahedral', 'Interstitial x 10'])
     # Draw serpentine and saponite boundary lines on the ternary.
     td.scatter([norm([2,3,0])], marker='s', s=300, alpha=0.7, color='green')
     td.annotate('Serpentine', [norm([2,3,0])], ha='center', fontsize='large', color='green')
