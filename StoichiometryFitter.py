@@ -567,23 +567,12 @@ class MyFrame(wx.Frame):
             S = genfromtxt(dlg.GetPath(), skip_header=5, skip_footer=2, dtype=None)
             # Drop it into pandas and sort based on elemental Z.
             pdS = pd.DataFrame(S).sort_values('f1')
-            BrukerInput = pdS.to_numpy()[:, (0, 3)].T
+            BrukerInput = pdS.as_matrix()[:, (0, 3)].T
             # Make a structure like we expect to import from a StoichiometryFitter csv.  (All values are zero of course)
             InputDat = zeros(pb.MAXELEMENT, dtype=[('Counts', '<f8')])
             # For every entry in the Bruker file, update the respective element in our csv.
             for El,Cnts in [(BrukerInput[0,i], BrukerInput[1,i]) for i in range(BrukerInput.shape[1])]:
-                InputDat[pb.ElementDict[str(El,'utf-8')][0]-1][0] = Cnts
-        elif FirstLine.startswith('Hyperspy'):
-            # This is a fit generated from a hyperspy model, so let's read it in and convert it to an InputDat structure like we expect.
-            pdS = pd.read_csv(dlg.GetPath())
-            # Make a structure like we expect to import from a StoichiometryFitter csv.  (All values are zero of course)
-            InputDat = zeros(pb.MAXELEMENT, dtype=[('Counts', '<f8')])
-            # For every entry in the hyperspy fit csv, update the respective element in our memory.
-            for _, r in pdS.iterrows():
-                El,Line = r['Name'].split('_')
-                # For now we only handle K-shells.
-                if 'K' in Line:
-                    InputDat[pb.ElementDict[El][0]-1][0] += r['Area']
+                InputDat[pb.ElementDict[El][0]-1][0] = Cnts
         else:
             # It is not a Bruker format, so it should be a StoichiometryFitter format.
             InputDat = genfromtxt(dlg.GetPath(), dtype=float, delimiter=',', usecols=(1), autostrip=True, comments='#',
