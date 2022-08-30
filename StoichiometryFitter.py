@@ -198,6 +198,7 @@ class MyFrame(wx.Frame):
         sizer_13 = wx.BoxSizer(wx.VERTICAL)
         sizer_12 = wx.BoxSizer(wx.VERTICAL)
         sizer_5_copy = wx.StaticBoxSizer(wx.StaticBox(self.panel_1, wx.ID_ANY, _("Arbitrary absorption")), wx.HORIZONTAL)
+        print(sizer_5_copy)
         sizer_14 = wx.StaticBoxSizer(wx.StaticBox(self.panel_1, wx.ID_ANY, _("Phase Analysis")), wx.HORIZONTAL)
         sizer_11 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_6 = wx.FlexGridSizer(3, 1, 0, 0)
