@@ -14,6 +14,7 @@ __email__ = 'zsg@gainsforth.com'
 # TODO Output quant from minerals and delta.
 # TODO Subphase reporter.
 
+import pickle
 import wx
 from numpy import *
 import os
@@ -37,6 +38,14 @@ wx.SystemOptions.SetOption('mac.listctrl.always_use_generic', '1')
 # begin wxGlade: extracode
 from wx.lib.mixins.listctrl import TextEditMixin
 
+# The pickle filename that used to store the temporory data.
+PICKLE_FILE = 'save.dat'
+
+# Add an item to the pickle file.
+def add_to_pickle(path, item):
+    with open(path, 'ab') as file:
+        pickle.dump(item, file, pickle.HIGHEST_PROTOCOL)
+        
 class EditableTextListCtrl(wx.ListCtrl, TextEditMixin):
     def __init__(self, parent, ID, pos=wx.DefaultPosition,
                 size=wx.DefaultSize, style=0):
@@ -102,13 +111,16 @@ class MyFrame(wx.Frame):
         self.PhasesListCtrl = wx.ListCtrl(self.panel_5, wx.ID_ANY, style=wx.BORDER_SUNKEN | wx.LC_REPORT)
         self.panel_1 = wx.Panel(self, wx.ID_ANY)
         self.panel_2 = wx.Panel(self.panel_1, wx.ID_ANY)
-        self.chkPhaseAnalysis = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
-        self.cmbPhaseAnalysis = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_READONLY)
-        self.chkArbAbsCorrection = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
-        self.comboArbAbsCorrection = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_READONLY)
-        self.chkAbsCorr = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
-        self.txtAbsCorr = wx.TextCtrl(self.panel_1, wx.ID_ANY, "")
-        self.txtTakeoff = wx.TextCtrl(self.panel_1, wx.ID_ANY, _("18"))
+        # The following lines are the parts that need to be samed -- Roger
+        if os.path.exists(PICKLE_FILE):
+            print("FIXME")
+        self.chkPhaseAnalysis = wx.CheckBox(self.panel_1, wx.ID_ANY, "") #FIXME Phase Analysis Checkbox
+        self.cmbPhaseAnalysis = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_READONLY) #FIXME Phase Analysis drop box
+        self.chkArbAbsCorrection = wx.CheckBox(self.panel_1, wx.ID_ANY, "") #FIXME Arb abs Checkbox
+        self.comboArbAbsCorrection = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_READONLY) #FIXME Arb abs drop box
+        self.chkAbsCorr = wx.CheckBox(self.panel_1, wx.ID_ANY, "") #FIXME TEM Thickness Correction
+        self.txtAbsCorr = wx.TextCtrl(self.panel_1, wx.ID_ANY, "") #FIXME TEM Thickness Correction
+        self.txtTakeoff = wx.TextCtrl(self.panel_1, wx.ID_ANY, _("18")) #FIXME TEM Thickness Correction
         self.label_1 = wx.StaticText(self.panel_1, wx.ID_ANY, _("g/cm3 * nm"), style=wx.ALIGN_CENTER)
         self.label_1_copy = wx.StaticText(self.panel_1, wx.ID_ANY, _("takeoff in deg"), style=wx.ALIGN_CENTER)
         self.chkKfacs = wx.CheckBox(self.panel_1, wx.ID_ANY, "")
@@ -268,6 +280,18 @@ class MyFrame(wx.Frame):
         """InitControls(self):
         Fills in the Elements list, sets up checkboxes, and fills in the phases list.
         """
+        # Read in saved data if there is a pickle file in the directory -- Roger
+        if os.path.exists(PICKLE_FILE):
+            with open(PICKLE_FILE, 'rb') as file:
+                try:
+                    PhaseA = pickle.load(file)
+                    ArbitraryA = pickle.load(file)
+                    TEM1 = pickle.load(file)
+                    TEM2 = pickle.load(file)
+                    k_factor = pickle.load(file)
+                    stoich333 = pickle.load(file)
+                except EOFError:
+                    pass
 
         """ PHASES LIST CONTROL"""
         # Initialize the Phases list control.
@@ -286,6 +310,9 @@ class MyFrame(wx.Frame):
 
         # Make sure the column is wide enough to show everything.
         self.PhasesListCtrl.SetColumnWidth(0, 300)
+        if os.path.exists(PICKLE_FILE):
+            self.txtAbsCorr.SetValue(str(TEM1))
+            self.txtTakeoff.SetValue(str(TEM2))
 
         """ POPULATE KFACS PULLDOWN """
         for file in os.listdir('ConfigData'):
@@ -293,6 +320,8 @@ class MyFrame(wx.Frame):
                 kfacsname = file.split('kfacs ')[1].split('.csv')[0]
                 self.comboKfacs.Append(kfacsname)
         self.comboKfacs.Select(0)
+        if os.path.exists(PICKLE_FILE):
+            self.comboKfacs.SetValue(k_factor)
         # For counts we will want the kfactors.
         self.chkKfacs.SetValue(True)
 
@@ -302,6 +331,8 @@ class MyFrame(wx.Frame):
                 phasename = file.split('phase ')[1].split('.py')[0]
                 self.cmbPhaseAnalysis.Append(phasename)
         self.cmbPhaseAnalysis.Select(0)
+        if os.path.exists(PICKLE_FILE):
+            self.cmbPhaseAnalysis.SetValue(PhaseA)
         self.chkPhaseAnalysis.SetValue(False)
 
         """ POPULATE ARBITRARY ABSORPTION PULLDOWN """
@@ -310,6 +341,8 @@ class MyFrame(wx.Frame):
                 kfacsname = file.split('Absorption ')[1].split('.csv')[0]
                 self.comboArbAbsCorrection.Append(kfacsname)
         self.comboArbAbsCorrection.Select(0)
+        if os.path.exists(PICKLE_FILE):
+            self.comboArbAbsCorrection.SetValue(ArbitraryA)
         # The user will have to select if he wants an absorption correction.
         self.chkArbAbsCorrection.SetValue(False)
 
@@ -323,6 +356,8 @@ class MyFrame(wx.Frame):
                 stoichname = file.split('stoich ')[1].split('.csv')[0]
                 self.comboStoich.Append(stoichname)
         self.comboStoich.Select(0)
+        if os.path.exists(PICKLE_FILE):
+            self.comboStoich.SetValue(stoich333)
         # Default to using O by stoichiometry.
         self.chkOByStoichiometry.SetValue(True)
 
@@ -360,6 +395,10 @@ class MyFrame(wx.Frame):
         # Sometimes the person doesn't hit enter after editing a value in the ElementsListControl.  In this case,
         # we need to end his edit or the value doesn't get saved.
         self.ElementsListCtrl.CloseEditor(None)
+
+        # Remove the pickle file and make a new one later.
+        if os.path.exists(PICKLE_FILE):
+            os.remove(PICKLE_FILE)
 
         # Extract the counts vector out of the ElementsListControl.
         # Z-1 since H=1 is the first atom, and the list is zero based.
@@ -456,6 +495,20 @@ class MyFrame(wx.Frame):
             ReportStr = ReportResults.FormatPhaseResults(FitResult, Residual, FitComposition)
             print(ReportStr)
             self.txtOutput.AppendText(ReportStr)
+
+        # Saving the entry to the pickle file. Fixed by Roger
+        add_to_pickle(PICKLE_FILE, self.cmbPhaseAnalysis.StringSelection)
+        add_to_pickle(PICKLE_FILE, self.comboArbAbsCorrection.StringSelection)
+        add_to_pickle(PICKLE_FILE, self.txtAbsCorr.GetValue())
+        add_to_pickle(PICKLE_FILE, self.txtTakeoff.GetValue())
+        add_to_pickle(PICKLE_FILE, self.comboKfacs.StringSelection)
+        add_to_pickle(PICKLE_FILE, self.comboStoich.StringSelection)
+        print(self.cmbPhaseAnalysis.StringSelection)
+        print(self.comboArbAbsCorrection.StringSelection)
+        print(self.txtAbsCorr.GetValue())
+        print(self.txtTakeoff.GetValue())
+        print(self.comboKfacs.StringSelection)
+        print(self.comboStoich.StringSelection)
 
         """ DO CUSTOM PHASE ANALYSES """
         if self.chkPhaseAnalysis.IsChecked():
