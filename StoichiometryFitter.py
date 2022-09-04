@@ -290,8 +290,18 @@ class MyFrame(wx.Frame):
                     TEM2 = pickle.load(file)
                     k_factor = pickle.load(file)
                     stoich333 = pickle.load(file)
+
+                    k_factor_cb = pickle.load(file)
+                    PhaseA_cb = pickle.load(file)
+                    ArbitraryA_cb = pickle.load(file)
+                    TEM_cb = pickle.load(file)
+                    stoich333_cb = pickle.load(file)
                 except EOFError:
                     pass
+
+        # chkAbsCorr FIXME
+        if os.path.exists(PICKLE_FILE):
+            self.chkAbsCorr.SetValue(TEM_cb)
 
         """ PHASES LIST CONTROL"""
         # Initialize the Phases list control.
@@ -322,8 +332,11 @@ class MyFrame(wx.Frame):
         self.comboKfacs.Select(0)
         if os.path.exists(PICKLE_FILE):
             self.comboKfacs.SetValue(k_factor)
-        # For counts we will want the kfactors.
-        self.chkKfacs.SetValue(True)
+            # For counts we will want the kfactors.
+            self.chkKfacs.SetValue(k_factor_cb) #FIXME
+        else:
+            self.chkKfacs.SetValue(True)
+        
 
         """ POPULATE PHASE ANALYSIS PULLDOWN """
         for file in os.listdir('ConfigData'):
@@ -333,7 +346,9 @@ class MyFrame(wx.Frame):
         self.cmbPhaseAnalysis.Select(0)
         if os.path.exists(PICKLE_FILE):
             self.cmbPhaseAnalysis.SetValue(PhaseA)
-        self.chkPhaseAnalysis.SetValue(False)
+            self.chkPhaseAnalysis.SetValue(PhaseA_cb) # FIXME
+        else:
+            self.chkPhaseAnalysis.SetValue(False)
 
         """ POPULATE ARBITRARY ABSORPTION PULLDOWN """
         for file in os.listdir('ConfigData'):
@@ -343,8 +358,10 @@ class MyFrame(wx.Frame):
         self.comboArbAbsCorrection.Select(0)
         if os.path.exists(PICKLE_FILE):
             self.comboArbAbsCorrection.SetValue(ArbitraryA)
+            self.chkArbAbsCorrection.SetValue(ArbitraryA_cb) # FIXME
         # The user will have to select if he wants an absorption correction.
-        self.chkArbAbsCorrection.SetValue(False)
+        else:
+            self.chkArbAbsCorrection.SetValue(False) # FIXME
 
         """ POPULATE THE INPUT SOURCE """
         # Start with counts as the selected item.
@@ -358,8 +375,10 @@ class MyFrame(wx.Frame):
         self.comboStoich.Select(0)
         if os.path.exists(PICKLE_FILE):
             self.comboStoich.SetValue(stoich333)
+            self.chkOByStoichiometry.SetValue(stoich333_cb) #FIXME
         # Default to using O by stoichiometry.
-        self.chkOByStoichiometry.SetValue(True)
+        else:
+            self.chkOByStoichiometry.SetValue(True) #FIXME
 
         self.LoadStoichiometryFile()
 
@@ -503,6 +522,14 @@ class MyFrame(wx.Frame):
         add_to_pickle(PICKLE_FILE, self.txtTakeoff.GetValue())
         add_to_pickle(PICKLE_FILE, self.comboKfacs.StringSelection)
         add_to_pickle(PICKLE_FILE, self.comboStoich.StringSelection)
+
+        # Saving checkbox status to the pickle file. Fixed by Roger
+        add_to_pickle(PICKLE_FILE, self.chkKfacs.GetValue())
+        add_to_pickle(PICKLE_FILE, self.chkPhaseAnalysis.GetValue())
+        add_to_pickle(PICKLE_FILE, self.chkArbAbsCorrection.GetValue())
+        add_to_pickle(PICKLE_FILE, self.chkAbsCorr.GetValue())
+        add_to_pickle(PICKLE_FILE, self.chkOByStoichiometry.GetValue())
+
         print(self.cmbPhaseAnalysis.StringSelection)
         print(self.comboArbAbsCorrection.StringSelection)
         print(self.txtAbsCorr.GetValue())
