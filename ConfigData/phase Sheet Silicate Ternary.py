@@ -48,6 +48,9 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     CompoVector[2] = AtPct[pb.Mg-1]
     CompoVector /= np.sum(CompoVector)
 
+    plt.figure(1)
+    plt.cla()
+
     td = TernaryDiagram(['Si+Al', 'Fe', 'Mg'])
     # Draw serpentine and saponite boundary lines on the ternary.
     td.plot([norm([2,3,0]), norm([2,0,3])], color='green', linewidth=3, linestyle='dotted')
@@ -58,7 +61,8 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     td.scatter([ CompoVector ], marker='X', s=300, alpha=0.7, color='orange') #, annotations=['Experimental'])
 
     # --------------- Tetrahedrals, Octahedrals, Interstitial --------------- 
-    plt.figure()
+    plt.figure(2)
+    plt.cla()
 
     # Calculate the Tetrahedrals, Octahedrals, Interstitial.
     # TMs = transition metals.
