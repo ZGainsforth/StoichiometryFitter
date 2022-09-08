@@ -51,3 +51,5 @@ Temp/
 
 # On Macs we don't need metadata.
 .DS_Store
+
+qminFormat.csv
