@@ -113,6 +113,12 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
 
     return OutStr
     
+def SaveResults(FileRoot):
+    plt.figure(1)
+    plt.savefig(FileRoot + '_Ternary_SiAl_Fe_Mg.png', dpi=300)
+    plt.figure(2)
+    plt.savefig(FileRoot + '_Ternary_Tet_Oct_Inter.png', dpi=300)
+
 if __name__ == '__main__':
 
     import imp
@@ -141,6 +147,7 @@ if __name__ == '__main__':
     # AtPct[pb.Mg-1] = 0.5*3
     # AtPct[pb.Na-1] = 0.7*0.3
     # AtPct[pb.Al-1] = 1
+
     # AtPct[pb.Si-1] = 3
     # AtPct[pb.Ca-1] = 0.5*0.3
     # AtPct[pb.Fe-1] = 0.3*3
