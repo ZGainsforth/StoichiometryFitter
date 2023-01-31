@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- This is a debugging HTML File. -->
+    <!-- Created on 21:14 Nov 14, 2022 -->
+    <title>Practice AJAX</title>
+    <script type="text/javascript">
+      function do_ajax1() {
+        var req = new XMLHttpRequest();
+        var result = document.getElementById('result');
+        req.onreadystatechange = function()
+        {
+          if(this.readyState == 4 && this.status == 200) {
+            result.innerHTML = this.responseText;
+          } else {
+            result.innerHTML = "処理中...";
+          }
+        }
+
+        req.open('POST', '/', true);
+        req.setRequestHeader('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+        req.send("name=" + document.getElementById('btn-post1').value);
+      }
+      function do_ajax2() {
+        var req = new XMLHttpRequest();
+        var result = document.getElementById('result');
+        req.onreadystatechange = function()
+        {
+          if(this.readyState == 4 && this.status == 200) {
+            result.innerHTML = this.responseText;
+          } else {
+            result.innerHTML = "処理中...";
+          }
+        }
+
+        req.open('POST', '/', true);
+        req.setRequestHeader('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+        req.send("name=" + document.getElementById('btn-post2').value);
+      }
+      function do_ajax3() {
+        localStorage.setItem("a", "LALALALA");
+        location.reload();
+        var req = new XMLHttpRequest();
+        var result = document.getElementById('result');
+        req.onreadystatechange = function()
+        {
+          if(this.readyState == 4 && this.status == 200) {
+            result.innerHTML = this.responseText;
+          } else {
+            result.innerHTML = "処理中...";
+          }
+        }
+
+        req.open('POST', '/', true);
+        req.setRequestHeader('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+        req.send("name=" + document.getElementById('btn-post3').value);
+      }
+    </script>
+    
+  </head>
+  <body>
+    
+    <form action="" method="post">
+      <label>Name:<input type="text" id="name" value="" /></label>
+      <!-- <button type="button" id="btn-post" onclick="do_ajax();">Click</button> -->
+      <input type="radio" id="btn-post1" name="btn-post" value="1" onclick="do_ajax1();">
+      <input type="radio" id="btn-post2" name="btn-post" value="2" onclick="do_ajax2();">
+      <input type="radio" id="btn-post3" name="btn-post" value="3" onclick="do_ajax3();">
+        <h1 id="message">a</h1>
+      <div id="result"></div>
+    </form>
+    <script>
+        
+        if (localStorage.getItem("a") != null) {
+            var t = localStorage.getItem("a");
+        } else {
+            var t = "ABC";
+        }
+        document.getElementById('message').innerHTML = t;
+    </script>
+  </body>
+</html>

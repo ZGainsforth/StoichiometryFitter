@@ -1,0 +1,33 @@
+{% extends "login.html" %}
+
+{# This is a comment ---- Django template #}
+
+{% block content3 %}
+    <!-- Display all the result in monospace font-->
+    <tt>{{ Result | safe}}</tt>
+    
+    <script>
+        // Display the results.
+        document.getElementById("all-result").style.display = "block";
+    </script>
+{% endblock %}
+
+{% block graph %}
+    {% if fig1 %}
+        <script>
+            // Display the graphs if there is any.
+            document.getElementById("graphics").style.display = "block";
+
+            // Change the design of the divs when there are graphs.
+            document.getElementById("all-result").style.marginLeft = "10%";
+            document.getElementById("all-result").style.width = "40%";
+            document.getElementById("all-result").style.textAlign = "left";
+        </script>
+
+        {# Display the two figure #}
+        {{fig1 | safe}}
+        {{fig2 | safe}}
+    {% else %}
+    // statements
+    {% endif %}
+{% endblock %}

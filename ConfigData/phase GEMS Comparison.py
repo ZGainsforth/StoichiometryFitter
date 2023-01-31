@@ -1,9 +1,14 @@
 
 __author__ = 'Zack Gainsforth'
+__author2__ = 'Zhenbang Yu'
 __copyright__ = 'Copyright 2015, Zack Gainsforth'
+__copyright2__ = 'Copyright 2022 Zhenbang Yu'
 __email__ = 'zsg@gainsforth.com'
+__email2__ = 'roger_yu@berkeley.edu'
 
+import mpld3
 import matplotlib
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from numpy import *
 import os
@@ -15,6 +20,10 @@ except:
     ternary = None
 if __name__ != '__main__':
     import PhysicsBasics as pb
+
+# Temporary Buffer for saving image
+import base64
+from io import BytesIO
 
 ### Tweak the matplotlib settings to make a nice looking plot.
 # Set the bold level.
@@ -133,13 +142,14 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     ProtosolarToFe /= ProtosolarToFe[pb.Fe-1]
     ProtosolarChondricity = ProtosolarToFe
 
-    GEMSAtPct, GEMSAtPctSD = GEMSPlot(AtPct, ProtosolarToSi)
+    GEMSAtPct, GEMSAtPctSD, plot1 = GEMSPlot(AtPct, ProtosolarToSi)
 
     #PrintTernary(AtPct, GEMSAtPct, GEMSAtPctSD)
 
-    Chondricity, ElementSigma, GEMSChiSqRed, DOF = GEMSChiPlot(AtPct, Protosolar)
+    Chondricity, ElementSigma, GEMSChiSqRed, DOF, plot2 = GEMSChiPlot(AtPct, Protosolar)
 
-    ShowLastPos(plt)
+    # FIXME
+    # ShowLastPos(plt)
 
     # Print out the abundances normalized to protosolar.
     Ratios = list() # Keep track of the ratios, so at the end we can compute standard deviations.
@@ -176,7 +186,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
               '    Keller, L. P., & Messenger, S. (2011). On the origins of GEMS grains. Geochimica Et Cosmochimica Acta, 75(18), 5336-5365. ' \
               'http://doi.org/10.1016/j.gca.2011.06.040'
 
-    return OutStr
+    return OutStr, plot1, plot2
 
 def GEMSChiPlot(AtPct, Protosolar):
     AtPct = copy(AtPct[:len(Protosolar)]) # We have to truncate the AtPct vector so it has the same elements as the Protosolar list.
@@ -239,12 +249,60 @@ def GEMSChiPlot(AtPct, Protosolar):
     # print('xmean: ', xmean)
     # print('Chi Squared result from scipy:', ScipyChiSquare)
 
+    # FIXME
+    # TODO Approach that using mpld3, failed.
+    # fig = Figure(figsize=(5,4))
+    # ax = fig.subplots()
+    # IncludedZ = where(~isnan(Chondricity))[0]+1
+    # TickLabels = [El for Z, El in enumerate(pb.ElementalSymbols) if Z in IncludedZ]
+    # TickInds = list(range(len(TickLabels)))
+    # ax.scatter(TickInds, Chondricity[IncludedZ-1], marker='o', color='red', s=150, alpha=0.5, label='Chondricity')
+    # ax.scatter(TickInds, ElementSigma[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='Elemental sigmas from mean')
+    # ax.set_xticks(TickInds, TickLabels, rotation='vertical')
+    # ax.axhline(0, 0, 92, color='green', linewidth=3, label='Chondritic/GEMSitic')
+    # ax.legend()
+    # ax.set_ylabel('Chondricity:\nlog$_{10}$(At%/Chondritic)\nVariation from GEMS ($\sigma$)', fontsize=FontSizeBasis)
+    # fig.tight_layout()
+    # mpld3.save_html(fig, "templates/b.html")
 
-    plt.figure(3)
-    plt.clf()
+
+    fig = Figure(figsize=(6,4.5))
+    ax = fig.subplots()
     IncludedZ = where(~isnan(Chondricity))[0]+1
     TickLabels = [El for Z, El in enumerate(pb.ElementalSymbols) if Z in IncludedZ]
     TickInds = list(range(len(TickLabels)))
+<<<<<<< HEAD
+    ax.scatter(TickInds, Chondricity[IncludedZ-1], marker='o', color='red', s=150, alpha=0.5, label='Chondricity')
+    ax.scatter(TickInds, ElementSigma[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='Elemental sigmas from mean')
+    ax.set_xticks(TickInds, TickLabels, rotation='vertical')
+    ax.axhline(0, 0, 92, color='green', linewidth=3, label='Chondritic/GEMSitic')
+    ax.legend()
+    ax.set_ylabel('Chondricity:\nlog$_{10}$(At%/Chondritic)\nVariation from GEMS ($\sigma$)', fontsize=FontSizeBasis)
+    fig.tight_layout()
+
+    # Save it to a temporary buffer.
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    # Embed the result in the html output.
+    data = base64.b64encode(buf.getbuffer()).decode("ascii")
+    plot2 = f"<img src='data:image/png;base64,{data}'/>"
+
+    return Chondricity, ElementSigma, GEMSChiSqRed, DOF, plot2
+
+    # This is the original one
+    # plt.figure(3)
+    # plt.clf()
+    # IncludedZ = where(~isnan(Chondricity))[0]+1
+    # TickLabels = [El for Z, El in enumerate(pb.ElementalSymbols) if Z in IncludedZ]
+    # TickInds = list(range(len(TickLabels)))
+    # plt.scatter(TickInds, Chondricity[IncludedZ-1], marker='o', color='red', s=150, alpha=0.5, label='Chondricity')
+    # plt.scatter(TickInds, ElementSigma[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='Elemental sigmas from mean')
+    # plt.xticks(TickInds, TickLabels, rotation='vertical')
+    # plt.axhline(0, 0, 92, color='green', linewidth=3, label='Chondritic/GEMSitic')
+    # plt.legend()
+    # plt.ylabel('Chondricity:\nlog$_{10}$(At%/Chondritic)\nVariation from GEMS ($\sigma$)', fontsize=FontSizeBasis)
+    # plt.tight_layout()
+=======
     plt.scatter(TickInds, Chondricity[IncludedZ-1], marker='o', color='red', s=150, alpha=0.5, label='Chondricity')
     plt.scatter(TickInds, ElementSigma[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='Elemental sigmas from mean')
     plt.xticks(TickInds, TickLabels, rotation='vertical')
@@ -252,6 +310,7 @@ def GEMSChiPlot(AtPct, Protosolar):
     plt.legend()
     plt.ylabel('Chondricity:\nlog$_{10}$(At%/Chondritic)\nVariation from GEMS ($\sigma$)', fontsize=FontSizeBasis)
     plt.tight_layout()
+>>>>>>> 81178a34cf9f6a3c67d1f348dd9ac2a531a9fdb8
     # print(plt.get_backend())
 
     # print('Chondricity values: ', Chondricity[IncludedZ-1])
@@ -346,25 +405,82 @@ def GEMSPlot(AtPct, ProtosolarToSi):
         #     ChondriticInds.append(TickLabels.index(pb.ElementalSymbols[Zminus1+1]))
         #     ChondriticVals.append(ProtosolarToSi[Zminus1])
     # We will be plotting so clear the plot that may already be plotted.
-    plt.figure(1)
-    plt.clf()
+
+
+    # FIXME
+    # TODO Using mpld3 to convert matplotlib codes to HTML. 
+    # mpld3 has bugs of converting set_yscale('log'). I can use the ax.plot to solve that but the axhline and errorbar is not abel to be resolved.
+
+    # fig = Figure(figsize = (6,4.5))
+    # ax = fig.subplots()
+    # ax.plot(GEMSInds, GEMSVals, marker='o', color='red', markersize = 15, alpha=0.5, linestyle='', label=RefStr)
+    # ax.plot(SpectrumInds, SpectrumVals, marker='v', color='blue', markersize = 15, alpha=0.5, linestyle='', label='This Spectrum')
+    # # Chondritic
+    # # ax.axhline(1, 0, 92, color='green', linewidth=3, label='Chondritic')
+    # ax.plot(GEMSInds, [1,1,1,1,1,1,1,1,1],color='green', linewidth=3, label='Chondritic')
+    # ax.set_xticklabels(TickLabels)
+    # ax.set_yscale('log')
+    # ax.legend()
+    # # plt.legend(['Ishii et al., 2008', 'This Spectrum', 'Chondritic'])
+    # ax.set_ylabel('Element/Si/chondritic, At%', fontsize=FontSizeBasis)
+    # ax.set_ylim([3e-2, 30])
+    # fig.tight_layout()
+    # mpld3.save_html(fig, "templates/a.html")
+    # return GEMSAtPct, GEMSAtPctSD
+
+    print("-----------------------------------TEST-----------------------------------------")
+    print(TickLabels)
+    print(TickInds)
+    print("-----------------------------------TEST-----------------------------------------")
+    fig = Figure(figsize = (6,4.5))
+    ax = fig.subplots()
     # GEMS plot
-    plt.scatter(GEMSInds, GEMSVals, marker='o', color='red', s=150, alpha=0.5, label=RefStr)
-    # plt.errorbar(GEMSInds, GEMSVals, yerr=GEMSErrs, fmt='none', elinewidth=3, capsize=7, capthick=3, ecolor='red')
-    plt.errorbar(GEMSInds, GEMSVals, yerr=GEMSErrs, fmt='none', alpha=0.5, elinewidth=5, capsize=0, capthick=3, ecolor='red')
+    ax.scatter(GEMSInds, GEMSVals, marker='o', color='red', s=150, alpha=0.5, label=RefStr)
+    # Errorbar
+    ax.errorbar(GEMSInds, GEMSVals, yerr=GEMSErrs, fmt='none', alpha=0.5, elinewidth=5, capsize=0, capthick=3, ecolor='red')
     # This spectrum.
-    plt.scatter(SpectrumInds, SpectrumVals, marker='v', color='blue', s=150, alpha=0.5, label='This Spectrum')
+    ax.scatter(SpectrumInds, SpectrumVals, marker='v', color='blue', s=150, alpha=0.5, label='This Spectrum')
     # Chondritic
-    # plt.scatter(ChondriticInds, ChondriticVals, marker='s', color='green', s=200,alpha=0.5)
-    plt.axhline(1, 0, 92, color='green', linewidth=3, label='Chondritic')
-    plt.xticks(TickInds, TickLabels, rotation='vertical')
-    plt.gca().set_yscale('log')
-    plt.legend()
+    ax.axhline(1, 0, 92, color='green', linewidth=3, label='Chondritic')
+    # ax.set_xticklabels(TickLabels)
+    ax.set_xticks(TickInds, TickLabels, rotation='vertical')
+    ax.set_yscale('log')
+    ax.legend()
     # plt.legend(['Ishii et al., 2008', 'This Spectrum', 'Chondritic'])
-    plt.ylabel('Element/Si/chondritic, At%', fontsize=FontSizeBasis)
-    plt.gca().set_ylim([3e-2, 30])
-    plt.tight_layout()
-    return GEMSAtPct, GEMSAtPctSD
+    ax.set_ylabel('Element/Si/chondritic, At%', fontsize=FontSizeBasis)
+    ax.set_ylim([3e-2, 30])
+    fig.tight_layout()
+    
+    # Save it to a temporary buffer.
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    # Embed the result in the html output.
+    data = base64.b64encode(buf.getbuffer()).decode("ascii")
+    plot1 = f"<img src='data:image/png;base64,{data}'/>"
+    return GEMSAtPct, GEMSAtPctSD, plot1
+
+
+    # This is the original implementation.
+    # However, plt is not working in flaks since matplotlib is not a thread free.
+    # plt.figure(1)
+    # plt.clf()
+    # # GEMS plot
+    # plt.scatter(GEMSInds, GEMSVals, marker='o', color='red', s=150, alpha=0.5, label=RefStr)
+    # # plt.errorbar(GEMSInds, GEMSVals, yerr=GEMSErrs, fmt='none', elinewidth=3, capsize=7, capthick=3, ecolor='red')
+    # plt.errorbar(GEMSInds, GEMSVals, yerr=GEMSErrs, fmt='none', alpha=0.5, elinewidth=5, capsize=0, capthick=3, ecolor='red')
+    # # This spectrum.
+    # plt.scatter(SpectrumInds, SpectrumVals, marker='v', color='blue', s=150, alpha=0.5, label='This Spectrum')
+    # # Chondritic
+    # # plt.scatter(ChondriticInds, ChondriticVals, marker='s', color='green', s=200,alpha=0.5)
+    # plt.axhline(1, 0, 92, color='green', linewidth=3, label='Chondritic')
+    # plt.xticks(TickInds, TickLabels, rotation='vertical')
+    # plt.gca().set_yscale('log')
+    # plt.legend()
+    # # plt.legend(['Ishii et al., 2008', 'This Spectrum', 'Chondritic'])
+    # plt.ylabel('Element/Si/chondritic, At%', fontsize=FontSizeBasis)
+    # plt.gca().set_ylim([3e-2, 30])
+    # plt.tight_layout()
+    # return GEMSAtPct, GEMSAtPctSD
 
 
 def PrintTernary(AtPct, GEMSAtPct, GEMSAtPctSD):
