@@ -85,10 +85,19 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
 
     plt.show()
 
-
     OutStr += f'Tet/Oct atoms = {TetAtPct/OctAtPct:0.2f} \n'
-    OutStr += f'Tet/Oct atoms = 0.75 ideal\n\n'
+    OutStr += f'Tet/Oct atoms = 0.66 ideal serpentine\n'
+    OutStr += f'Tet/Oct atoms = 0.75 ideal saponite\n\n'
 
+    OutStr += f'Serpentine calculation:\n'
+    OutStr += f'Ideal formula: Oct6 Tet4 O18 H8.  H invisible so we consider 28 atoms.\n'
+    OutStr += f'Tet atoms = {TetAtPct:0.2f} at% (ideal 14.285\%)\n'
+    OutStr += f'Oct atoms = {OctAtPct:0.2f} at% (ideal 21.429\%)\n'
+    OutStr += f'Oxygen atoms = {AtPct[pb.O-1]:0.2f} at% (ideal 64.286\%)\n'
+    OutStr += '\n'
+
+
+    OutStr += f'Saponite calculation:\n'
     OutStr += f'Tet + Oct + Interstitial atoms = {TetAtPct+OctAtPct+InterAtPct:0.2f} at%\n'
     OutStr += f'O = {AtPct[pb.O-1]:0.2f} at%\n'
     OutStr += f'Unaccounted non-H atoms (100%-Tet+Oct+Inter+O) = {100-(TetAtPct+OctAtPct+InterAtPct+AtPct[pb.O-1]):0.2f} at%\n\n'
@@ -109,7 +118,11 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += f'However, since H is not visible, the effective formula is:\n'
     OutStr += f'    Inter0.25 Oct3 Tet4 O10 O2 nO\n'
     OutStr += f"With Stoichiometry turned on, H2O doesn't contribute to O, and OH only contributes one half O to produce the formula:\n"
-    OutStr += f'    Inter0.25 Oct3 Tet4 O10 O\n'
+    OutStr += f'    Inter0.25 Oct3 Tet4 O10 O\n\n'
+
+    OutStr += f'Assuming tetrahedral atoms are: {", ".join([a for a in TetrahedralAtoms])}. \n'
+    OutStr += f'Assuming octahdral atoms are: {", ".join([a for a in OctahedralAtoms])}. \n'
+    OutStr += f'Assuming interstitial atoms are: {", ".join([a for a in InterstitialAtoms])}. \n'
 
     return OutStr
     
