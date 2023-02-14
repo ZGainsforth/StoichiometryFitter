@@ -1,29 +1,19 @@
 
 __author__ = 'Zack Gainsforth'
-<<<<<<< HEAD
 __author2__ = 'Zhenbang Yu'
 __copyright__ = 'Copyright 2014, Zack Gainsforth'
 __copyright2__ = 'Copyright 2022, Zhenbang Yu'
 __email__ = 'zsg@gainsforth.com'
 __email2__ = 'roger_yu@berkeley.edu'
-=======
-__copyright__ = 'Copyright 2014, Zack Gainsforth'
-__email__ = 'zsg@gainsforth.com'
->>>>>>> 81178a34cf9f6a3c67d1f348dd9ac2a531a9fdb8
 
 import numpy as np
 if __name__ != '__main__':
     import PhysicsBasics as pb
 from ternary_diagram import TernaryDiagram
 import matplotlib.pyplot as plt
-<<<<<<< HEAD
-import mpld3
-
 # Temporary Buffer for saving image
 import base64
 from io import BytesIO
-=======
->>>>>>> 81178a34cf9f6a3c67d1f348dd9ac2a531a9fdb8
 
 def norm(x):
     return x / np.sum(x)
@@ -65,14 +55,6 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     CompoVector[2] = AtPct[pb.Mg-1]
     CompoVector /= np.sum(CompoVector)
 
-<<<<<<< HEAD
-    # plt.figure(1)
-    # plt.cla()
-=======
-    plt.figure(1)
-    plt.cla()
->>>>>>> 81178a34cf9f6a3c67d1f348dd9ac2a531a9fdb8
-
     td = TernaryDiagram(['Si+Al', 'Fe', 'Mg'])
     # Draw serpentine and saponite boundary lines on the ternary.
     td.plot([norm([2,3,0]), norm([2,0,3])], color='green', linewidth=3, linestyle='dotted')
@@ -81,7 +63,6 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     td.annotate('Saponite', [norm([4,1.6,1.4])], ha='center', fontsize='large', color='royalblue')
     # Now mark the user's point.
     td.scatter([ CompoVector ], marker='X', s=300, alpha=0.7, color='orange') #, annotations=['Experimental'])
-<<<<<<< HEAD
     
     # Save it to a temporary buffer.
     buf = BytesIO()
@@ -91,15 +72,6 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     plot1 = f"<img src='data:image/png;base64,{data}'/>"
 
     # --------------- Tetrahedrals, Octahedrals, Interstitial --------------- 
-    # plt.figure(2)
-    # plt.cla()
-=======
-
-    # --------------- Tetrahedrals, Octahedrals, Interstitial --------------- 
-    plt.figure(2)
-    plt.cla()
->>>>>>> 81178a34cf9f6a3c67d1f348dd9ac2a531a9fdb8
-
     # Calculate the Tetrahedrals, Octahedrals, Interstitial.
     # TMs = transition metals.
     CompoVector = [0,0,0] # Tets, Octs, O
@@ -117,22 +89,13 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     # Now mark the user's point.
     td.scatter([ CompoVector ], marker='d', s=300, alpha=0.7, color='orange') #, annotations=['Experimental'])
 
-<<<<<<< HEAD
-    # mpld3.save_html(td.fig, "Fig2.html")
-
     # Save it to a temporary buffer.
     buf = BytesIO()
     td.fig.savefig(buf, format="png")
+
     # Embed the result in the html output.
     data = base64.b64encode(buf.getbuffer()).decode("ascii")
     plot2 = f"<img src='data:image/png;base64,{data}'/>"
-
-    # plt.show()
-=======
-
-    plt.show()
->>>>>>> 81178a34cf9f6a3c67d1f348dd9ac2a531a9fdb8
-
 
     OutStr += f'Tet/Oct atoms = {TetAtPct/OctAtPct:0.2f} \n'
     OutStr += f'Tet/Oct atoms = 0.75 ideal\n\n'
@@ -159,11 +122,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += f"With Stoichiometry turned on, H2O doesn't contribute to O, and OH only contributes one half O to produce the formula:\n"
     OutStr += f'    Inter0.25 Oct3 Tet4 O10 O\n'
 
-<<<<<<< HEAD
     return OutStr, plot1, plot2
-=======
-    return OutStr
->>>>>>> 81178a34cf9f6a3c67d1f348dd9ac2a531a9fdb8
     
 def SaveResults(FileRoot):
     plt.figure(1)
@@ -205,7 +164,3 @@ if __name__ == '__main__':
     # AtPct[pb.Fe-1] = 0.3*3
     # print('Saponite: (Na0.5,Ca0.5)0.3 (Fe0.3,Mg0.7)3 (Si0.75,Al0.25)4 O10 (OH)2 4H2O:\n')
     # print(AnalyzePhase(AtPct))
-<<<<<<< HEAD
-=======
-
->>>>>>> 81178a34cf9f6a3c67d1f348dd9ac2a531a9fdb8
