@@ -148,9 +148,6 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
 
     Chondricity, ElementSigma, GEMSChiSqRed, DOF, plot2 = GEMSChiPlot(AtPct, Protosolar)
 
-    # FIXME
-    # ShowLastPos(plt)
-
     # Print out the abundances normalized to protosolar.
     Ratios = list() # Keep track of the ratios, so at the end we can compute standard deviations.
     OutStr += "Abundances ratioed to protosolar and normalized to:\n"
@@ -239,39 +236,11 @@ def GEMSChiPlot(AtPct, Protosolar):
     # And the reduced chisquared value.
     GEMSChiSqRed = nansum(ElementChiSq)/DOF
 
-    # # Also compute this using scipy stats for kicks.
-    # x = AtPctTrimmed
-    # xmean = GEMSAtPct
-    # x = x[~isnan(x)]
-    # xmean = xmean[~isnan(xmean)]
-    # ScipyChiSquare = chisquare(x, xmean)
-    # print('x: ', x)
-    # print('xmean: ', xmean)
-    # print('Chi Squared result from scipy:', ScipyChiSquare)
-
-    # FIXME
-    # TODO Approach that using mpld3, failed.
-    # fig = Figure(figsize=(5,4))
-    # ax = fig.subplots()
-    # IncludedZ = where(~isnan(Chondricity))[0]+1
-    # TickLabels = [El for Z, El in enumerate(pb.ElementalSymbols) if Z in IncludedZ]
-    # TickInds = list(range(len(TickLabels)))
-    # ax.scatter(TickInds, Chondricity[IncludedZ-1], marker='o', color='red', s=150, alpha=0.5, label='Chondricity')
-    # ax.scatter(TickInds, ElementSigma[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='Elemental sigmas from mean')
-    # ax.set_xticks(TickInds, TickLabels, rotation='vertical')
-    # ax.axhline(0, 0, 92, color='green', linewidth=3, label='Chondritic/GEMSitic')
-    # ax.legend()
-    # ax.set_ylabel('Chondricity:\nlog$_{10}$(At%/Chondritic)\nVariation from GEMS ($\sigma$)', fontsize=FontSizeBasis)
-    # fig.tight_layout()
-    # mpld3.save_html(fig, "templates/b.html")
-
-
     fig = Figure(figsize=(6,4.5))
     ax = fig.subplots()
     IncludedZ = where(~isnan(Chondricity))[0]+1
     TickLabels = [El for Z, El in enumerate(pb.ElementalSymbols) if Z in IncludedZ]
     TickInds = list(range(len(TickLabels)))
-<<<<<<< HEAD
     ax.scatter(TickInds, Chondricity[IncludedZ-1], marker='o', color='red', s=150, alpha=0.5, label='Chondricity')
     ax.scatter(TickInds, ElementSigma[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='Elemental sigmas from mean')
     ax.set_xticks(TickInds, TickLabels, rotation='vertical')
@@ -288,37 +257,6 @@ def GEMSChiPlot(AtPct, Protosolar):
     plot2 = f"<img src='data:image/png;base64,{data}'/>"
 
     return Chondricity, ElementSigma, GEMSChiSqRed, DOF, plot2
-
-    # This is the original one
-    # plt.figure(3)
-    # plt.clf()
-    # IncludedZ = where(~isnan(Chondricity))[0]+1
-    # TickLabels = [El for Z, El in enumerate(pb.ElementalSymbols) if Z in IncludedZ]
-    # TickInds = list(range(len(TickLabels)))
-    # plt.scatter(TickInds, Chondricity[IncludedZ-1], marker='o', color='red', s=150, alpha=0.5, label='Chondricity')
-    # plt.scatter(TickInds, ElementSigma[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='Elemental sigmas from mean')
-    # plt.xticks(TickInds, TickLabels, rotation='vertical')
-    # plt.axhline(0, 0, 92, color='green', linewidth=3, label='Chondritic/GEMSitic')
-    # plt.legend()
-    # plt.ylabel('Chondricity:\nlog$_{10}$(At%/Chondritic)\nVariation from GEMS ($\sigma$)', fontsize=FontSizeBasis)
-    # plt.tight_layout()
-=======
-    plt.scatter(TickInds, Chondricity[IncludedZ-1], marker='o', color='red', s=150, alpha=0.5, label='Chondricity')
-    plt.scatter(TickInds, ElementSigma[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='Elemental sigmas from mean')
-    plt.xticks(TickInds, TickLabels, rotation='vertical')
-    plt.axhline(0, 0, 92, color='green', linewidth=3, label='Chondritic/GEMSitic')
-    plt.legend()
-    plt.ylabel('Chondricity:\nlog$_{10}$(At%/Chondritic)\nVariation from GEMS ($\sigma$)', fontsize=FontSizeBasis)
-    plt.tight_layout()
->>>>>>> 81178a34cf9f6a3c67d1f348dd9ac2a531a9fdb8
-    # print(plt.get_backend())
-
-    # print('Chondricity values: ', Chondricity[IncludedZ-1])
-    # print('Chondricity mean: %g, Chondricity std: %g' % (nanmean(Chondricity), nanstd(Chondricity)))
-    # print('ElementSigma values: ', ElementSigma[IncludedZ-1])
-    # print('GEMSChiSqRed: %g' % GEMSChiSqRed)
-
-    return Chondricity, ElementSigma, GEMSChiSqRed, DOF
 
 
 def GetGEMSStandardVals(AtPctVectorLen, WhichRefs='KMMK'):
@@ -406,28 +344,6 @@ def GEMSPlot(AtPct, ProtosolarToSi):
         #     ChondriticVals.append(ProtosolarToSi[Zminus1])
     # We will be plotting so clear the plot that may already be plotted.
 
-
-    # FIXME
-    # TODO Using mpld3 to convert matplotlib codes to HTML. 
-    # mpld3 has bugs of converting set_yscale('log'). I can use the ax.plot to solve that but the axhline and errorbar is not abel to be resolved.
-
-    # fig = Figure(figsize = (6,4.5))
-    # ax = fig.subplots()
-    # ax.plot(GEMSInds, GEMSVals, marker='o', color='red', markersize = 15, alpha=0.5, linestyle='', label=RefStr)
-    # ax.plot(SpectrumInds, SpectrumVals, marker='v', color='blue', markersize = 15, alpha=0.5, linestyle='', label='This Spectrum')
-    # # Chondritic
-    # # ax.axhline(1, 0, 92, color='green', linewidth=3, label='Chondritic')
-    # ax.plot(GEMSInds, [1,1,1,1,1,1,1,1,1],color='green', linewidth=3, label='Chondritic')
-    # ax.set_xticklabels(TickLabels)
-    # ax.set_yscale('log')
-    # ax.legend()
-    # # plt.legend(['Ishii et al., 2008', 'This Spectrum', 'Chondritic'])
-    # ax.set_ylabel('Element/Si/chondritic, At%', fontsize=FontSizeBasis)
-    # ax.set_ylim([3e-2, 30])
-    # fig.tight_layout()
-    # mpld3.save_html(fig, "templates/a.html")
-    # return GEMSAtPct, GEMSAtPctSD
-
     print("-----------------------------------TEST-----------------------------------------")
     print(TickLabels)
     print(TickInds)
@@ -458,30 +374,6 @@ def GEMSPlot(AtPct, ProtosolarToSi):
     data = base64.b64encode(buf.getbuffer()).decode("ascii")
     plot1 = f"<img src='data:image/png;base64,{data}'/>"
     return GEMSAtPct, GEMSAtPctSD, plot1
-
-
-    # This is the original implementation.
-    # However, plt is not working in flaks since matplotlib is not a thread free.
-    # plt.figure(1)
-    # plt.clf()
-    # # GEMS plot
-    # plt.scatter(GEMSInds, GEMSVals, marker='o', color='red', s=150, alpha=0.5, label=RefStr)
-    # # plt.errorbar(GEMSInds, GEMSVals, yerr=GEMSErrs, fmt='none', elinewidth=3, capsize=7, capthick=3, ecolor='red')
-    # plt.errorbar(GEMSInds, GEMSVals, yerr=GEMSErrs, fmt='none', alpha=0.5, elinewidth=5, capsize=0, capthick=3, ecolor='red')
-    # # This spectrum.
-    # plt.scatter(SpectrumInds, SpectrumVals, marker='v', color='blue', s=150, alpha=0.5, label='This Spectrum')
-    # # Chondritic
-    # # plt.scatter(ChondriticInds, ChondriticVals, marker='s', color='green', s=200,alpha=0.5)
-    # plt.axhline(1, 0, 92, color='green', linewidth=3, label='Chondritic')
-    # plt.xticks(TickInds, TickLabels, rotation='vertical')
-    # plt.gca().set_yscale('log')
-    # plt.legend()
-    # # plt.legend(['Ishii et al., 2008', 'This Spectrum', 'Chondritic'])
-    # plt.ylabel('Element/Si/chondritic, At%', fontsize=FontSizeBasis)
-    # plt.gca().set_ylim([3e-2, 30])
-    # plt.tight_layout()
-    # return GEMSAtPct, GEMSAtPctSD
-
 
 def PrintTernary(AtPct, GEMSAtPct, GEMSAtPctSD):
 
@@ -533,84 +425,6 @@ if __name__ == '__main__':
     import imp
     pb = imp.load_source('PhysicsBasics', 'PhysicsBasics.py')
 
-    # AtPct = zeros(pb.MAXELEMENT)
-    # AtPct[pb.O-1] = 61.9
-    # AtPct[pb.Mg-1] = 2.9
-    # AtPct[pb.Al-1] = 0.8
-    # AtPct[pb.Si-1] = 16.9
-    # AtPct[pb.S-1] = 6.1
-    # AtPct[pb.Cr-1] = 0.3
-    # AtPct[pb.Fe-1] = 11.1
-    # print 'Planetary Materials Page 2-54 (Rietmeijer: Interplanetary Dust Particles): Table 23, Line 1\n'
-    # print AnalyzePhase(AtPct)
-    #
-    # # Bradley, J. P. (2007). 1.26 - Interplanetary Dust Particles. In A. M. Davis (Ed.), Treatise on Geochemistry, Vol. 1, Meteorites, Comets, and Planets (pp. 689-711). Oxford: Pergamon. http://doi.org/10.1016/B0-08-043751-6/01152-X
-    # AtPct = zeros(pb.MAXELEMENT)
-    # AtPct[pb.C-1] = 1.75
-    # AtPct[pb.O-1] = 4.173
-    # AtPct[pb.Na-1] = 0.052
-    # AtPct[pb.Mg-1] = 0.980
-    # AtPct[pb.Al-1] = 0.075
-    # AtPct[pb.Si-1] = 1
-    # AtPct[pb.S-1] = 0.356
-    # AtPct[pb.Ca-1] = 0.052
-    # AtPct[pb.Cr-1] = 0.015
-    # AtPct[pb.Fe-1] = 0.697
-    # AtPct[pb.Ni-1] = 0.027
-    # print 'Chondritic IDPs bulk\n'
-    # print AnalyzePhase(AtPct)
-    #
-    # # Protosolar abundances: Planetary Scientists Handbook, Chapter 2.1, Table 2.1, column 1.
-    # AtPct = zeros(pb.MAXELEMENT)
-    # AtPct[pb.C-1] = 1*10**(8.55)
-    # AtPct[pb.O-1] = 1*10**(8.87)
-    # AtPct[pb.Na-1] = 1*10**(6.31)
-    # AtPct[pb.Mg-1] = 1*10**(7.56)
-    # AtPct[pb.Al-1] = 1*10**(6.48)
-    # AtPct[pb.Si-1] = 1*10**(7.55)
-    # AtPct[pb.S-1] = 1*10**(7.20)
-    # AtPct[pb.Ca-1] = 1*10**(6.36)
-    # AtPct[pb.Cr-1] = 1*10**(5.68)
-    # AtPct[pb.Fe-1] = 1*10**(7.50)
-    # AtPct[pb.Ni-1] = 1*10**(6.25)
-    # print 'Protosolar values\n'
-    # print AnalyzePhase(AtPct)
-
-    # # GEMS mean from Ishii's science paper in 2008.
-    # AtPct = zeros(pb.MAXELEMENT)
-    # AtPct[pb.O - 1] = 66.71;
-    # AtPct[pb.Mg - 1] = 9.37;
-    # AtPct[pb.Al - 1] = 1.62;
-    # AtPct[pb.Si - 1] = 14.40;
-    # AtPct[pb.S - 1] = 3.69;
-    # AtPct[pb.Ca - 1] = 0.82;
-    # AtPct[pb.Cr - 1] = 0.12;
-    # AtPct[pb.Mn - 1] = 0.02;
-    # AtPct[pb.Fe - 1] = 6.39;
-    # AtPct[pb.Ni - 1] = 0.40;
-    # print 'Ishii GEMS mean values\n'
-    # print AnalyzePhase(AtPct)
-
-    # # Protosolar abundances: Planetary Scientists Handbook, Chapter 2.1, Table 2.1, column 1.
-    # # With wild K.
-    # AtPct = zeros(pb.MAXELEMENT)
-    # AtPct[pb.C-1] = 1*10**(8.55)
-    # AtPct[pb.O-1] = 1*10**(8.87)
-    # AtPct[pb.Na-1] = 1*10**(6.31)
-    # AtPct[pb.Mg-1] = 1*10**(7.56)
-    # AtPct[pb.Al-1] = 1*10**(6.48)
-    # AtPct[pb.Si-1] = 1*10**(7.55)
-    # AtPct[pb.S-1] = 1*10**(7.20)
-    # AtPct[pb.K-1] = 10*10**(5.12)
-    # AtPct[pb.Ca-1] = 1*10**(6.36)
-    # AtPct[pb.Cr-1] = 1*10**(5.68)
-    # AtPct[pb.Fe-1] = 1*10**(7.50)
-    # AtPct[pb.Ni-1] = 1*10**(6.25)
-    # print 'Protosolar values\n'
-    # print AnalyzePhase(AtPct)
-
-    # Protosolar abundances from Lodders
-    # With wild K.
     AtPct = zeros(pb.MAXELEMENT)
     AtPct[pb.C-1] = 288.40315031266118
     AtPct[pb.O-1] = 575.43993733715661
