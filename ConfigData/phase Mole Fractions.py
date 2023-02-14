@@ -66,7 +66,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     AtPct = AtPct/sum(AtPct)*100
 
     # This analysis only knows about these elements:
-    KnownElements = ['O', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'K', 'Ca', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Ni']
+    KnownElements = ['C', 'O', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'K', 'Ca', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Ni']
 
     # Report oxide mole fractions
     if OByStoich is not None:
@@ -111,11 +111,13 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     # Report number of cations per various numbers of oxygens.
     OutStr += '\n--- Cations per N oxygens Analysis ---\n'
 
-    OutStr += CatsPerNOxygens(AtPct, KnownElements, 4)
-    OutStr += CatsPerNOxygens(AtPct, KnownElements, 6)
-    OutStr += CatsPerNOxygens(AtPct, KnownElements, 8)
-    OutStr += CatsPerNOxygens(AtPct, KnownElements, 10)
-    OutStr += CatsPerNOxygens(AtPct, KnownElements, 18)
+    for n in range(4,20):
+        OutStr += CatsPerNOxygens(AtPct, KnownElements, n)
+    # OutStr += CatsPerNOxygens(AtPct, KnownElements, 6)
+    # OutStr += CatsPerNOxygens(AtPct, KnownElements, 8)
+    # OutStr += CatsPerNOxygens(AtPct, KnownElements, 10)
+    # OutStr += CatsPerNOxygens(AtPct, KnownElements, 14)
+    # OutStr += CatsPerNOxygens(AtPct, KnownElements, 18)
 
     return OutStr
 
