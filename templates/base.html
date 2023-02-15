@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" type = "text/css" href="{{ url_for('static', filename = 'Bootstrap.css') }}">
+    <!-- Font Awesome Icons(Just for fun:))) -->
+    <link rel="stylesheet" type = "text/css" href="{{ url_for('static', filename = 'style1.css') }}">
+    <script src="/static/utils.js"></script>
+  </head>
+<body>
+  <h1 style="margin-top: 20px;" id="t"> 
+    <a href="https://en.wikipedia.org/wiki/String_theory"><i class="fa fa-linux" aria-hidden="true"></i></a>
+    <a href="https://en.wikipedia.org/wiki/Quantum_mechanics"><i class="fa fa-github" aria-hidden="true"></i></a>
+    <i style="color: brown;" class="fa fa-paw" aria-hidden="true"></i> 
+    StoichiometryFitter 
+    <i style="color: brown;" class="fa fa-paw" aria-hidden="true"></i>
+    <a href="https://en.wikipedia.org/wiki/Quantum_field_theory"><i class="fa fa-weixin" aria-hidden="true"></i></a>
+    <a href="https://en.wikipedia.org/wiki/Albert_Einstein"><i class="fa fa-linux" aria-hidden="true"></i></a>
+  </h1>
+  <hr>
+  <div class="all-content">
+    <form action="" method="post" onSubmit="saveAll()">
+      <!-- ElementListControl -->
+      <div id="element-list">
+        <div id="content"> 
+          {% block content %}
+          {% endblock %}
+        </div>
+      </div>
+
+      <!-- Input Manual -->
+      <div id="input-list">
+        <div id="content">
+          {% block content2 %}
+          {% endblock %}
+        </div>
+        <p><input type="reset" value="Reset"></p>
+        <p><input type="submit" name="GO" id="GO" value= "Go!"></p>
+      </div>
+
+      <!-- Results -->
+      <div id="all-result">
+        <div id="result-content">
+          <h2>Result: </h2>
+          {% block content3 %}
+          {% endblock %}
+        </div>
+      </div>
+      
+      <!-- Graphs -->
+      <div id="graphics">
+        <div id="content">
+          <h2><p>Graphics:</p></h2>
+          {% block graph %}
+          {% endblock %}
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Use SessionStorage to store all the input at the end. -->
+  <script src="/static/sessionStorage.js"></script>
+</body>
+</html>

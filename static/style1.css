@@ -1,0 +1,168 @@
+body {
+    /* color: blueviolet; */
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.all-content::after {
+  content: "";
+  clear: both;
+  display: table;
+}
+
+table input {
+    width: 80px;
+}
+
+p {
+  line-height: 1;
+}
+
+p input {
+  width: 280px;
+  text-align: center;
+}
+
+select {
+  width: 250px;
+}
+input {
+    width: 60px;
+}
+td {
+    width: 200px;
+    text-align: center;
+    /* min-width: 200px; */
+}
+th {
+    text-align: center;
+    /* min-width: 200px; */
+}
+
+body {
+  background-color: white;
+}
+
+#element-list {
+  float: left;
+  /* background-color: blue; */
+  padding: 10px;
+  /* border: 5px solid black; */
+  /* width: 300px; */
+  width: 25%;
+  height: 640px;
+  margin-top: 10px;
+  overflow: auto;
+  margin-right: 5%;
+  margin-left: 20%;
+  margin-bottom: 30px;
+  overflow-x: scroll;
+  /* min-width: 400px; */
+}
+
+#input-list {
+  float: left;
+    /* background-color: blueviolet; */
+    padding: 10px;
+    /* border: 5px solid black; */
+    width: 30%;
+    height: 640px;
+    margin-top: 10px;
+    overflow: auto;
+    margin-bottom: 30px;
+    /* margin-right: 10px; */
+    /* margin-bottom: 100px; */
+    /* clear: left; */
+    /* position: absolute; */
+    /* right: 600px; */
+    /* top: 68px; */
+  }
+
+#all-result {
+  float: left;
+  /* background-color: purple; */
+  padding: 10px;
+  /* border: 5px solid black; */
+  width: 40%;
+  height: 600px;
+  margin-top: 10px;
+  margin-left: 10%;
+  overflow: auto;
+  margin-right: 0%;
+  margin-bottom: 100px;
+  word-wrap: break-word;
+  /* position: absolute;
+  right: 80px;
+  top: 68px; */
+  overflow-x: scroll;
+
+  display: none;
+
+  margin-left: 20%;
+  width: 60%;
+  text-align: center;
+}
+
+#graphics {
+  float: left;
+  padding: 10px;
+  /* border: 5px solid black; */
+  width: 45%;
+  height: 600px;
+  margin-top: 10px;
+  overflow: auto;
+  margin-right: 5px;
+  margin-bottom: 100px;
+  /* position: absolute;
+  right: 80px;
+  top: 68px; */
+
+  display: none;
+}
+
+
+#result-content {
+  /* background-color: #90EE90; */
+}
+
+h1 {
+  margin-bottom: 30px;
+}
+
+#t {
+    text-align: center;
+    /* color: orchid; */
+}
+
+.infotext {
+  visibility: hidden;
+  width: 120px;
+  color:black;
+  background-color:yellow;
+  width: fit-content;
+  border-radius: 6px;
+  padding: 5px 0;
+  position:fixed;
+}
+
+#info:hover .infotext {
+  visibility: visible;
+}
+
+#scaled-frame {
+  width: 1470px;
+  height: 1000px;
+  border: 0px;
+}
+
+#scaled-frame {
+  transform-origin: left top;
+  transform: scale(0.55);
+  margin-bottom:-450px;
+  margin-right:-2000px;
+  margin-left: 0px;
+}
