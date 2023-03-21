@@ -6,7 +6,6 @@ __copyright__ = 'Copyright 2014, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
 
 from numpy import *
-import MyPython as mp
 import PhysicsBasics as pb
 import re
 from collections import *
