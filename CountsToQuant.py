@@ -9,7 +9,6 @@ from collections import OrderedDict
 import linecache
 from fractions import Fraction
 
-import MyPython as mp
 import PhysicsBasics as pb
 import CharacteristicEmission as ce
 import AbsorptionCorrection as abs
