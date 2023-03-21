@@ -8,7 +8,6 @@ __email__ = 'zsg@gainsforth.com'
 from numpy import *
 from collections import OrderedDict
 
-import MyPython as mp
 import PhysicsBasics as pb
 
 def FormatQuantResults(Quant, ArbitraryAbsorptionCorrection=None,
