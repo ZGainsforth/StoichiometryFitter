@@ -4,3 +4,4 @@ astropy==4.3.1
 numpy==1.21.5
 plotly==5.9.0
 flask==2.0.3
+gunicorn
