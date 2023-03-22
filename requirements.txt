@@ -9,4 +9,4 @@ pandas
 matplotlib
 selenium
 chromedriver-autoinstaller
-
+wxpython
