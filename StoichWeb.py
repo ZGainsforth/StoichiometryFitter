@@ -19,7 +19,6 @@ import os
 from collections import OrderedDict
 import pandas as pd
 from matplotlib.figure import Figure
-import mpld3
 
 # import useful packages in original StoichiometryFitter
 import ReportResults
