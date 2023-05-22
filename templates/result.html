@@ -24,6 +24,12 @@
             document.getElementById("all-result").style.textAlign = "left";
         </script>
 
+        <!-- <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+        <script type='text/javascript'>
+            var graphs = {{fig1 | safe}};
+            Plotly.plot('chart',graphs,{});
+        </script> -->
+
         {# Display the two figure #}
         {{fig1 | safe}}
         {{fig2 | safe}}
