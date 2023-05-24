@@ -166,3 +166,16 @@ h1 {
   margin-right:-2000px;
   margin-left: 0px;
 }
+
+#loadingImage {
+  background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent background */
+  height: 100%; /* Full screen height */
+  width: 100%; /* Full screen width */
+  position: fixed; /* Fixed position */
+  z-index: 100; /* Above everything else */
+  top: 0;
+  left: 0;
+  display: flex; /* Flexbox to center the image */
+  align-items: center; /* Vertical center alignment */
+  justify-content: center; /* Horizontal center alignment */
+}
