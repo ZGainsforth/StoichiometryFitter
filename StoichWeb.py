@@ -1,4 +1,4 @@
-__author__ = 'Zhenbang Yu'
+_author__ = 'Zhenbang Yu'
 __copyright__ = 'Copyright 2022, Zhenbang Yu'
 __email__ = 'roger_yu@berkeley.edu'
 
@@ -9,7 +9,7 @@ __email__ = 'roger_yu@berkeley.edu'
 # TODO: Implement Open Input
 
 # import flask relevant packages.
-from flask import Flask, url_for, render_template, redirect, request
+from flask import Flask, url_for, render_template, redirect, request, jsonify, session
 
 # import useful packages
 import json
@@ -26,6 +26,12 @@ import imp
 import PhysicsBasics as pb
 import CountsToQuant
 import PhaseFit
+from threading import Timer
+from flask_session import Session 
+from flask_socketio import SocketIO
+
+import eventlet
+import eventlet.wsgi
 
 from ternary_diagram import TernaryDiagram
 
@@ -33,9 +39,16 @@ from ternary_diagram import TernaryDiagram
 Stoich = np.genfromtxt('ConfigData/stoich Silicates.csv', dtype=None, comments='#', delimiter=',', skip_header=1, converters={1: lambda s: float(s)})
 
 # initiate flask app
+
+from flask_cors import CORS
+
+
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret'
 
 # Everything in here.
+
+
 @app.route('/', methods = ["POST","GET"])
 def login():
     if request.method == "POST":
@@ -126,11 +139,19 @@ def login():
                     ReportStr3, Fig1, Fig2 = a.AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich)
                 elif PhaseFile == "ConfigData/phase Sheet Silicate Ternary.py":
                     ReportStr3, Fig1, Fig2 = a.AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich)
+                elif PhaseFile == "ConfigData/phase QMin Algorithm.py":   
+                    ReportStr3 = a.AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich)
                 else:
                     ReportStr3 = a.AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich)
+
+                
             else:
                 ReportStr3 = ""
             
+
+            # Get HTML to say process is done and hide loading gif from right here
+
+
             # Generate final String
             FinalReport = ReportStr1 + ReportStr2 + ReportStr3
             # Change all the python new line to html new line.
@@ -148,6 +169,8 @@ def login():
         # Reload if no POST request received.
         return render_template('login.html')
 
-# Run
+
+
+
 if __name__ == '__main__':
-    app.run(debug = True)
+    app.run(app, debug=True)
