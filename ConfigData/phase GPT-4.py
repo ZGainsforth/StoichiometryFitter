@@ -9,7 +9,6 @@ from collections import *
 import os
 import openai
 from openai.embeddings_utils import get_embedding
-from getpass import getpass
 import requests
 import json
 

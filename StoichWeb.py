@@ -27,9 +27,7 @@ import imp
 import PhysicsBasics as pb
 import CountsToQuant
 import PhaseFit
-from threading import Timer
 from flask_session import Session 
-from flask_socketio import SocketIO
 
 import eventlet
 import eventlet.wsgi
@@ -40,9 +38,6 @@ from ternary_diagram import TernaryDiagram
 Stoich = np.genfromtxt('ConfigData/stoich Silicates.csv', dtype=None, comments='#', delimiter=',', skip_header=1, converters={1: lambda s: float(s)})
 
 # initiate flask app
-
-from flask_cors import CORS
-
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'NotToBeKnownByOthers'
@@ -192,4 +187,4 @@ def login():
 
 
 if __name__ == '__main__':
-    app.run(app, debug=True)
+    app.run(debug=True)
