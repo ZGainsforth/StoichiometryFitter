@@ -46,14 +46,15 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
         wr.writerow(frstRow)
         wr.writerow(scndRow)
     QminAlgo()
-    return(OutStr)
+    return OutStr, None
    
 def QminAlgo():
     global OutStr
     try:
         chromedriver_autoinstaller.install()
         chrome_options = Options()
-        chrome_options.add_experimental_option("detach", True)
+        chrome_options.add_argument("--headless")
+        #chrome_options.add_experimental_option("detach", True)
         driver = webdriver.Chrome(chrome_options=chrome_options)
     except:
         OutStr = "\n\nUser must install Chrome to use this method of QMin Analysis."

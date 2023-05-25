@@ -97,7 +97,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Total Atoms', CationSum)
 
 
-    return OutStr
+    return OutStr, None
     
 if __name__ == '__main__':
 

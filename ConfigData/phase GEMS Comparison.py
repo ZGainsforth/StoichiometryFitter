@@ -176,7 +176,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
               '    Keller, L. P., & Messenger, S. (2011). On the origins of GEMS grains. Geochimica Et Cosmochimica Acta, 75(18), 5336-5365. ' \
               'http://doi.org/10.1016/j.gca.2011.06.040'
 
-    return OutStr
+    return OutStr, None
 
 def GEMSChiPlot(AtPct, Protosolar):
     AtPct = copy(AtPct[:len(Protosolar)]) # We have to truncate the AtPct vector so it has the same elements as the Protosolar list.

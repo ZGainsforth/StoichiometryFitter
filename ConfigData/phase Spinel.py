@@ -214,7 +214,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += 'Note, the cations should ideally be 3 for spinel.\n'
     OutStr += '\n'
 
-    return OutStr
+    return OutStr, None
 
 
 if __name__ == '__main__':

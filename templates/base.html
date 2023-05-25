@@ -28,12 +28,23 @@
   </h1>
   <hr>
 
-  
-  
-
-
   <div class="all-content">
     <form action="" method="post" onSubmit="saveAll()" id="analysisForm">
+
+      {% if show_api_input %}
+      <div class="overlay">
+        <div id="api-input-modal">
+          <div id="api-input-container">
+              <form action="" method="post">
+                  <input type="text" name="api_key" placeholder="Enter API Key">
+                  <input type="submit" name="submit_api_key" value="Submit">
+              </form>
+          </div>
+      </div>
+    </div>
+        
+      {% endif %}
+
       <!-- ElementListControl -->
       <div id="element-list">
         <div id="content"> 
