@@ -19,9 +19,9 @@ if __name__ != '__main__':
 
 
 
-def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None, APIkey=None):
+def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None, APIkey=None, Model="text-davinci-003"):
     AtPct = AtPct/sum(AtPct)*100
-    OutStr = '--- GPT-4 Analysis ---\n\n'
+    OutStr = '--- GPT Analysis ---\n'
     #KnownElements = ['O', 'Na', 'Mg', 'Al', '
     # Si', 'P', 'S', 'K', 'Ca', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Ni']    
     #Pop up personal GPT-4 API login 
@@ -30,7 +30,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None, APIkey=No
 
 
 
-    def generate_chat_completion(message, model="gpt-4", temperature=0.8, max_tokens=None):
+    def generate_chat_completion(message, model, temperature=0.8, max_tokens=None):
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {API_KEY}"
@@ -50,7 +50,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None, APIkey=No
     
 
     if APIkey:
-        OutStr += "INPUT DATA:\n"
+        OutStr += f"Model {Model} Output:\n\n"
         GPTInput = "Given the following atomic weight percentages, what is the most likely mineral?\n\n"
         for Element in pb.ElementalSymbols[1:]:
             atomic= eval('AtPct[pb.%s-1]'%Element)
@@ -58,11 +58,10 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None, APIkey=No
                 # OutStr += f"{Element}: {atomic} \n"
                 GPTInput += f"{Element}: {atomic} \n"
         message = [
-            {"role": "system", "content": "You are an expert in mineralogy. You will give an elaborate response of mineral analysis "},
+            {"role": "system", "content": "Act as if you are an expert in mineralogy. You will give an elaborate response of mineral analysis "},
             {"role": "user", "content": GPTInput},
         ]
-
-        reponse_text = generate_chat_completion(message)
+        reponse_text = generate_chat_completion(message, model=Model)
         OutStr += reponse_text
     
     else:

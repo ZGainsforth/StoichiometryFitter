@@ -138,11 +138,14 @@ def login():
             if request.form.get("phaseAnalysis"):
                 # Construct the name of the py file containing the analysis function.
                 PhaseFile = request.form["phase"]
-                PhaseFile = 'ConfigData/phase ' + PhaseFile + '.py'
+                PhaseFile = "ConfigData/phase " + PhaseFile + ".py"
+                if PhaseFile.__contains__("gpt"):
+                    Model = request.form["phase"]
+                    PhaseFile = "ConfigData/phase GPT-4.py"
+                    print("Model:", Model)
                 # import it and run it.
                 a = imp.load_source('AnalyzePhase', PhaseFile)
                 # Pass in different parameters based on the input.
-
                 if PhaseFile == "ConfigData/phase GPT-4.py":
                     # SHow APi text loging and ASK for API key 
                     # IF API key is correct; then run the code below
@@ -153,7 +156,7 @@ def login():
                     else:
                         global arricot
                         apikey = arricot
-                    ReportStr3, figs= a.AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich, apikey)
+                    ReportStr3, figs= a.AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich, apikey, Model)
                         
                 else:
                     figs = []

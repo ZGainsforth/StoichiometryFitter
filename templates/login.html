@@ -47,7 +47,7 @@
     // When the phase analysis select box changes
     $('#phase').on('change', function() {
       // If the selected phase analysis is the one that requires an API key
-      if ($('#phase').val() === 'GPT-4') {
+      if ($('#phase').val() === 'gpt-4' || $('#phase').val() === 'gpt-3.5-turbo') {
         // Ask the user for the API key
         var apiKey = prompt('Please enter your OPEN API key');
   
@@ -92,7 +92,8 @@
       <select name="phase" id="phase">
         <option value="Feldspar">Feldspar</option>
         <option value="QMin Algorithm">QMin Algorithm</option>
-        <option value="GPT-4"> GPT-4</option>
+        <option value="gpt-4">gpt-4</option>
+        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
         <option value="Sulfide">Sulfide</option>
         <option value="Mole Fractions">Mole Fractions</option>
         <option value="Carbon">Carbon</option>
