@@ -74,7 +74,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += 'Ideal number of cats is 5.'
 
 
-    return OutStr
+    return OutStr, None
 
 if __name__ == '__main__':
 

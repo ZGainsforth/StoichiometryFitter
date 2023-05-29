@@ -126,7 +126,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += 'Tet is Al or Si, occasionally Fe can be included (not considered here)\n'
     OutStr += 'All other cations go in the octahedral sites.\n'
 
-    return OutStr
+    return OutStr, None
     
 if __name__ == '__main__':
 

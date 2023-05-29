@@ -119,7 +119,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     # OutStr += CatsPerNOxygens(AtPct, KnownElements, 14)
     # OutStr += CatsPerNOxygens(AtPct, KnownElements, 18)
 
-    return OutStr
+    return OutStr, None
 
 if __name__ == '__main__':
 

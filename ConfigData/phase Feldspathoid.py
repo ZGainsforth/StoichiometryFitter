@@ -91,7 +91,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += 'Ref: Stoichiometry calculation based on Nepheline solid solution compositions:  stoichiometry revisited, reviewed, clarified and rationalized (2020). C. Michael B. Henderson, Mineralogical Magazine, 84, 813-838, doi:10.1180/mgm.2020.78'
 
 
-    return OutStr
+    return OutStr, None
 
 if __name__ == '__main__':
 

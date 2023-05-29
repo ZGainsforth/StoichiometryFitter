@@ -12,6 +12,11 @@
     <script src="/static/utils.js"></script>
   </head>
 <body>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+
+
+
   <h1 style="margin-top: 20px;" id="t"> 
     <a href="https://en.wikipedia.org/wiki/String_theory"><i class="fa fa-linux" aria-hidden="true"></i></a>
     <a href="https://en.wikipedia.org/wiki/Quantum_mechanics"><i class="fa fa-github" aria-hidden="true"></i></a>
@@ -22,8 +27,24 @@
     <a href="https://en.wikipedia.org/wiki/Albert_Einstein"><i class="fa fa-linux" aria-hidden="true"></i></a>
   </h1>
   <hr>
+
   <div class="all-content">
-    <form action="" method="post" onSubmit="saveAll()">
+    <form action="" method="post" onSubmit="saveAll()" id="analysisForm">
+
+      {% if show_api_input %}
+      <div class="overlay">
+        <div id="api-input-modal">
+          <div id="api-input-container">
+              <form action="" method="post">
+                  <input type="text" name="api_key" placeholder="Enter API Key">
+                  <input type="submit" name="submit_api_key" value="Submit">
+              </form>
+          </div>
+      </div>
+    </div>
+        
+      {% endif %}
+
       <!-- ElementListControl -->
       <div id="element-list">
         <div id="content"> 
@@ -31,6 +52,11 @@
           {% endblock %}
         </div>
       </div>
+
+      <div id="loadingImage" style="display: none">
+        <img src="{{ url_for('static', filename='loading.gif') }}" alt="loading...">
+      </div>
+
 
       <!-- Input Manual -->
       <div id="input-list">
@@ -64,5 +90,17 @@
 
   <!-- Use SessionStorage to store all the input at the end. -->
   <script src="/static/sessionStorage.js"></script>
+  <script>
+    $(document).ready(function() {
+      $('#analysisForm').submit(function(e) {
+        $('#loadingImage').show(); // Show the loading gif
+        setTimeout(function() {
+          $('#loadingImage').hide();
+        }, 60000); // Change the timer as needed
+      });
+    });
+  </script>
+
+
 </body>
 </html>

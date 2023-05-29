@@ -2,6 +2,20 @@
 {% block title %} StoichiometryFitter {% endblock %}
 
 {% block content %}
+
+{% if show_api_input %}
+<div class="overlay">
+  <div id="api-input-modal">
+    <div id="api-input-container">
+      <form action="/api_key_submit" method="post">
+          <input type="text" name="api_key" placeholder="Enter API key here">
+          <input type="submit" value="Submit API key">
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endif %}
 <script language="javascript" type="text/javascript">
   // Check InputType.  
   if (sessionStorage.getItem("inputType") != null) {
@@ -26,6 +40,43 @@
   document.write("</form>");
   document.write("</table>");
 </script>
+
+
+<script>
+  $(document).ready(function() {
+    // When the phase analysis select box changes
+    $('#phase').on('change', function() {
+      // If the selected phase analysis is the one that requires an API key
+      if ($('#phase').val() === 'GPT-4') {
+        // Ask the user for the API key
+        var apiKey = prompt('Please enter your OPEN API key');
+  
+        // If the user didn't enter anything, don't let them select this option
+        if (!apiKey) {
+          alert('You must enter an API key to use this phase analysis');
+          $('#phase').val($('#phase option:first').val());
+        }
+        // Otherwise, store the API key in a hidden input
+        else {
+          $.ajax({
+          url: '/print_api_key',
+          type: 'POST',
+          data: { api_key: apiKey },
+          success: function(response) {
+            console.log(response);
+          }
+        });
+        $('#api-key').val(apiKey);
+        }
+      }
+    });
+  });
+  </script>
+  
+  <!-- Add a hidden input for the API key -->
+  <input type="hidden" id="api-key" name="api_key">
+
+
 {% endblock %}
 
 {% block content2 %}
@@ -41,6 +92,7 @@
       <select name="phase" id="phase">
         <option value="Feldspar">Feldspar</option>
         <option value="QMin Algorithm">QMin Algorithm</option>
+        <option value="GPT-4"> GPT-4</option>
         <option value="Sulfide">Sulfide</option>
         <option value="Mole Fractions">Mole Fractions</option>
         <option value="Carbon">Carbon</option>

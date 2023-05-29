@@ -31,7 +31,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     if OtherCations > 20:
         OutStr += 'More than 10% of the atomic abundance is comprised by atoms other than: ' + ' '.join(KnownElements) + '.'
         OutStr += '\nCannot analyze.'
-        return OutStr
+        return OutStr, None
 
     # Report elemental ratios.
     OutStr += 'C/O = %0.3f\n' % (AtPct[pb.C-1]/AtPct[pb.O-1])
@@ -39,7 +39,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += 'O/S = %0.3f\n' % (AtPct[pb.O-1]/AtPct[pb.S-1])
     OutStr += 'O/Si = %0.3f\n' % (AtPct[pb.O-1]/AtPct[pb.Si-1])
 
-    return OutStr
+    return OutStr, None
 
 if __name__ == '__main__':
 

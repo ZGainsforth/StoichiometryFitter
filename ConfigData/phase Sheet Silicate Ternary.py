@@ -124,7 +124,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += f'Assuming octahdral atoms are: {", ".join([a for a in OctahedralAtoms])}. \n'
     OutStr += f'Assuming interstitial atoms are: {", ".join([a for a in InterstitialAtoms])}. \n'
 
-    return OutStr
+    return OutStr, None
     
 def SaveResults(FileRoot):
     plt.figure(1)
