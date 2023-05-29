@@ -26,15 +26,18 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr = '--- QMin Mineral Analysis ---\n\n'
     #KnownElements = ['O', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'K', 'Ca', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Ni']
     Known2lements = ['Si', 'Ti', 'Al', 'Fe', 'Mn', 'Mg', 'Ca', 'Ba', 'Sr', 'Pb', 'Na', 'K', 'Rb']
+    Known2lements2 = ['SiO2', 'TiO2', 'Al2O3', 'FeOT', 'MnO', 'MgO', 'CaO', 'BaO', 'SrO', 'PbO', 'Na2O', 'K2O', 'Rb2O']
     E = dict()
     frstRow = ['Point', 'SiO2', 'TiO2', 'Al2O3', 'FeOT', 'MnO', 'MgO', 'CaO', 'BaO', 'SrO', 'PbO', 'Na2O', 'K2O', 'Rb2O', 'Total']
     print(frstRow)
     scndRow = ['1']
     OutStr += "INPUT DATA:\n"
     for Element in Known2lements:
+        i = 0
         x = round(eval('OxWtPct[pb.%s-1]'%(Element)), 4)
         E[Element] = x
-        OutStr += f"{Element}, {x} \n"
+        OutStr += f"{Known2lements2[i]}, {x} \n"
+        i+=1
         scndRow.append(f'{x}')
     summmm = 0
     for x in list(E.values()):
