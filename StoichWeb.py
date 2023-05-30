@@ -10,7 +10,7 @@ __email__ = 'roger_yu@berkeley.edu'
 # TODO: Implement Open Input
 
 # import flask relevant packages.
-from flask import Flask, url_for, render_template, redirect, request, jsonify, session
+from flask import Flask, url_for, render_template, redirect, request, session
 
 # import useful packages
 import json
@@ -27,10 +27,6 @@ import imp
 import PhysicsBasics as pb
 import CountsToQuant
 import PhaseFit
-from flask_session import Session 
-
-import eventlet
-import eventlet.wsgi
 
 from ternary_diagram import TernaryDiagram
 
@@ -42,18 +38,17 @@ Stoich = np.genfromtxt('ConfigData/stoich Silicates.csv', dtype=None, comments='
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'NotToBeKnownByOthers'
 app.config['SESSION_TYPE'] = 'filesystem'
-Session(app)
 
 # Everything in here.
 
-arricot = None
+key = None
 @app.route('/print_api_key', methods=['POST'])
 def print_api_key():
-    global arricot
-    arricot = request.form.get('api_key')
-    session['api_key'] = arricot
-    print("User API Key:", arricot)
-    return arricot
+    global key
+    key = request.form.get('api_key')
+    session['api_key'] = key
+    print("User API Key:", key)
+    return key
 
 @app.route('/', methods = ["POST","GET"])
 def login():
@@ -154,8 +149,8 @@ def login():
                     if 'api_key' in session: 
                         apikey = session['api_key']
                     else:
-                        global arricot
-                        apikey = arricot
+                        global key
+                        apikey = key
                     ReportStr3, figs= a.AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich, apikey, Model)
                         
                 else:
