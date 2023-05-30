@@ -10,11 +10,7 @@ __email__ = 'roger_yu@berkeley.edu'
 # TODO: Implement Open Input
 
 # import flask relevant packages.
-<<<<<<< HEAD
 from flask import Flask, url_for, render_template, redirect, request, session
-=======
-from flask import Flask, url_for, render_template, redirect, request, jsonify, session
->>>>>>> upstream/main
 
 # import useful packages
 import json
@@ -31,11 +27,6 @@ import imp
 import PhysicsBasics as pb
 import CountsToQuant
 import PhaseFit
-from flask_session import Session 
-
-import eventlet
-import eventlet.wsgi
-
 from ternary_diagram import TernaryDiagram
 
 # Stoich = pd.read_csv("ConfigData/stoich Silicates.csv")
@@ -46,7 +37,6 @@ Stoich = np.genfromtxt('ConfigData/stoich Silicates.csv', dtype=None, comments='
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'NotToBeKnownByOthers'
 app.config['SESSION_TYPE'] = 'filesystem'
-<<<<<<< HEAD
 
 # Everything in here.
 
@@ -58,20 +48,6 @@ def print_api_key():
     session['api_key'] = key
     print("User API Key:", key)
     return key
-=======
-Session(app)
-
-# Everything in here.
-
-arricot = None
-@app.route('/print_api_key', methods=['POST'])
-def print_api_key():
-    global arricot
-    arricot = request.form.get('api_key')
-    session['api_key'] = arricot
-    print("User API Key:", arricot)
-    return arricot
->>>>>>> upstream/main
 
 @app.route('/', methods = ["POST","GET"])
 def login():
@@ -164,10 +140,6 @@ def login():
                 # import it and run it.
                 a = imp.load_source('AnalyzePhase', PhaseFile)
                 # Pass in different parameters based on the input.
-<<<<<<< HEAD
-=======
-
->>>>>>> upstream/main
                 if PhaseFile == "ConfigData/phase GPT-4.py":
                     # SHow APi text loging and ASK for API key 
                     # IF API key is correct; then run the code below
@@ -176,15 +148,9 @@ def login():
                     if 'api_key' in session: 
                         apikey = session['api_key']
                     else:
-<<<<<<< HEAD
                         global key
                         apikey = key
                     ReportStr3, figs= a.AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich, apikey, Model)
-=======
-                        global arricot
-                        apikey = arricot
-                    ReportStr3, figs= a.AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich, apikey)
->>>>>>> upstream/main
                         
                 else:
                     figs = []

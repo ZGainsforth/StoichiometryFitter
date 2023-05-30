@@ -19,15 +19,9 @@ if __name__ != '__main__':
 
 
 
-<<<<<<< HEAD
-def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None, APIkey=None, Model="text-davinci-003"):
+def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None, APIkey=None, Model="gpt-3.5-turbo"):
     AtPct = AtPct/sum(AtPct)*100
     OutStr = '--- GPT Analysis ---\n'
-=======
-def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None, APIkey=None):
-    AtPct = AtPct/sum(AtPct)*100
-    OutStr = '--- GPT-4 Analysis ---\n\n'
->>>>>>> upstream/main
     #KnownElements = ['O', 'Na', 'Mg', 'Al', '
     # Si', 'P', 'S', 'K', 'Ca', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Ni']    
     #Pop up personal GPT-4 API login 
@@ -36,11 +30,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None, APIkey=No
 
 
 
-<<<<<<< HEAD
     def generate_chat_completion(message, model, temperature=0.8, max_tokens=None):
-=======
-    def generate_chat_completion(message, model="gpt-4", temperature=0.8, max_tokens=None):
->>>>>>> upstream/main
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {API_KEY}"
@@ -60,11 +50,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None, APIkey=No
     
 
     if APIkey:
-<<<<<<< HEAD
         OutStr += f"Model {Model} Output:\n\n"
-=======
-        OutStr += "INPUT DATA:\n"
->>>>>>> upstream/main
         GPTInput = "Given the following atomic weight percentages, what is the most likely mineral?\n\n"
         for Element in pb.ElementalSymbols[1:]:
             atomic= eval('AtPct[pb.%s-1]'%Element)
@@ -72,18 +58,10 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None, APIkey=No
                 # OutStr += f"{Element}: {atomic} \n"
                 GPTInput += f"{Element}: {atomic} \n"
         message = [
-<<<<<<< HEAD
             {"role": "system", "content": "Act as if you are an expert in mineralogy. You will give an elaborate response of mineral analysis "},
             {"role": "user", "content": GPTInput},
         ]
         reponse_text = generate_chat_completion(message, model=Model)
-=======
-            {"role": "system", "content": "You are an expert in mineralogy. You will give an elaborate response of mineral analysis "},
-            {"role": "user", "content": GPTInput},
-        ]
-
-        reponse_text = generate_chat_completion(message)
->>>>>>> upstream/main
         OutStr += reponse_text
     
     else:
