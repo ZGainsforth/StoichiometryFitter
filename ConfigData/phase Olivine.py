@@ -79,7 +79,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Total Cats', CationSum)
 
 
-    return OutStr
+    return OutStr, None
     
 if __name__ == '__main__':
 

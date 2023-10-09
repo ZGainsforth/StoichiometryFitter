@@ -21,7 +21,7 @@ import os
 import ReportResults
 from collections import OrderedDict
 import MyPython
-import imp
+import importlib
 
 # begin wxGlade: dependencies
 import gettext
@@ -33,6 +33,13 @@ import CountsToQuant
 import PhaseFit
 import pandas as pd
 
+def import_function_from_path(function_name, path):
+    spec = importlib.util.spec_from_file_location("module_name", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return getattr(module, function_name)
+
+# Usage
 wx.SystemOptions.SetOption('mac.listctrl.always_use_generic', '1')
 
 # begin wxGlade: extracode
@@ -369,8 +376,8 @@ class MyFrame(wx.Frame):
 
         """ POPULATE THE STOICHIOMETRY FITTER """
         for file in os.listdir('ConfigData'):
-            if file.startswith('stoich') and file.endswith('.csv'):
-                stoichname = file.split('stoich ')[1].split('.csv')[0]
+            if file.startswith('Stoich') and file.endswith('.csv'):
+                stoichname = file.split('Stoich ')[1].split('.csv')[0]
                 self.comboStoich.Append(stoichname)
         self.comboStoich.Select(0)
         if os.path.exists(PICKLE_FILE):
@@ -544,13 +551,12 @@ class MyFrame(wx.Frame):
             PhaseFile = 'ConfigData/phase ' + PhaseFile + '.py'
 
             # import it and run it.
-            a = imp.load_source('AnalyzePhase', PhaseFile)
-            ReportStr = a.AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich)
+            AnalyzePhase = import_function_from_path("AnalyzePhase", PhaseFile)
+            # a = importlib.load_source('AnalyzePhase', PhaseFile)
+            ReportStr, Figs = AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich)
 
-            # Report it by printing to console and put it in the output text box.
-            print(ReportStr)
             self.txtOutput.AppendText(ReportStr)
-
+            print(Figs)
 
             event.Skip()
 
@@ -774,9 +780,10 @@ class MyFrame(wx.Frame):
             PhaseFile = 'ConfigData/phase ' + PhaseFile + '.py'
 
             # import it and call the save function (if it exists).
-            a = imp.load_source('SaveResults', PhaseFile)
+            SaveResults = import_function_from_path("SaveResults", PhaseFile)
+            # a = importlib.load_source('SaveResults', PhaseFile)
             try:
-                a.SaveResults(FileRoot)
+                SaveResults(FileRoot)
             except:
                 # We won't worry if there is no save option.
                 pass
