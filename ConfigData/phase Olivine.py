@@ -31,13 +31,13 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     if OtherCations > 2:
         OutStr += 'More than 2% of the atomic abundance is comprised by atoms other than: ' + ' '.join(KnownElements) + '.'
         OutStr += '\nCannot analyze.'
-        return OutStr
+        return OutStr, None
 
     # If the cation/O ratio is off by more than 2%, then we can't analyze it.
     if (abs(AtPct[pb.O-1] - 4/7*100) > 2) or (abs((sum(AtPct)-AtPct[pb.O-1]) - 3/7*100) > 2):
         OutStr += 'Cation/Anion ratio is not within 2% of 3/4.'
         OutStr += '\nCannot analyze.'
-        return OutStr
+        return OutStr, None
 
     E = dict()
 
