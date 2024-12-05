@@ -10,8 +10,6 @@ matplotlib==3.2.2
 selenium
 chromedriver-autoinstaller
 ternary-diagram==2.1.2
-flask_session
 openai
 requests
-json
 eventlet
