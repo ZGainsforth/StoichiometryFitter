@@ -87,7 +87,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
 
     OutStr += f'Tet/Oct atoms = {TetAtPct/OctAtPct:0.2f} \n'
     OutStr += f'Tet/Oct atoms = 0.66 ideal serpentine\n'
-    OutStr += f'Tet/Oct atoms = 0.75 ideal saponite\n\n'
+    OutStr += f'Tet/Oct atoms = 1.33 ideal saponite\n\n'
 
     OutStr += f'Serpentine calculation:\n'
     OutStr += f'Ideal formula: Oct6 Tet4 O18 H8.  H invisible so we consider 28 atoms.\n'
@@ -137,23 +137,23 @@ if __name__ == '__main__':
     import imp
     pb = imp.load_source('PhysicsBasics', '../PhysicsBasics.py')
 
-    # AtPct = np.zeros(pb.MAXELEMENT)
-    # AtPct[pb.H-1] = 4
-    # AtPct[pb.O-1] = 9
-    # AtPct[pb.Mg-1] = 3
-    # AtPct[pb.Si-1] = 2
-    # print('Serpentine: Mg3 Si2 O5 (OH)4:\n')
-    # print(AnalyzePhase(AtPct))
-
     AtPct = np.zeros(pb.MAXELEMENT)
-    AtPct[pb.O-1] = 12
-    AtPct[pb.Mg-1] = 0.7*3
-    AtPct[pb.Al-1] = 1
-    AtPct[pb.Si-1] = 3
-    AtPct[pb.Ca-1] = 0.25
-    AtPct[pb.Fe-1] = 0.3*3
-    print('Saponite: Ca0.25 (Fe0.3,Mg0.7)3 (Si0.75,Al0.25)4 O10 (OH)2 0H2O:\n')
+    AtPct[pb.H-1] = 4
+    AtPct[pb.O-1] = 9
+    AtPct[pb.Mg-1] = 3
+    AtPct[pb.Si-1] = 2
+    print('Serpentine: Mg3 Si2 O5 (OH)4:\n')
     print(AnalyzePhase(AtPct))
+
+    # AtPct = np.zeros(pb.MAXELEMENT)
+    # AtPct[pb.O-1] = 12
+    # AtPct[pb.Mg-1] = 0.7*3
+    # AtPct[pb.Al-1] = 1
+    # AtPct[pb.Si-1] = 3
+    # AtPct[pb.Ca-1] = 0.25
+    # AtPct[pb.Fe-1] = 0.3*3
+    # print('Saponite: Ca0.25 (Fe0.3,Mg0.7)3 (Si0.75,Al0.25)4 O10 (OH)2 0H2O:\n')
+    # print(AnalyzePhase(AtPct))
 
     # AtPct = np.zeros(pb.MAXELEMENT)
     # AtPct[pb.O-1] = 12 + 4
