@@ -176,6 +176,6 @@ if __name__ == '__main__':
     AbsorptionCurve05 = AbsorptionCurve * sin(0.1*pi/180)
     Iv = nan_to_num(Iv*exp(-1/(AbsorptionCurve*TakeoffCoeff))*(AbsorptionCurve*TakeoffCoeff))
     loglog(Ev,AbsorptionCurve90, Ev,AbsorptionCurve30, Ev,AbsorptionCurve05, Ev, Iv)
-    legend(['90$^{\circ}$', '30$^{\circ}$', '0.1$^{\circ}$', '$I_v$'], loc='best')
+    legend([r'90$^{\circ}$', r'30$^{\circ}$', r'0.1$^{\circ}$', '$I_v$'], loc='best')
     show()
     #DoAbsorption(E, Iin, WtPct, rho, AbsorptionLength, Takeoff=90)

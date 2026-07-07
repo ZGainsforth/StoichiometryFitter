@@ -10,6 +10,89 @@ from collections import OrderedDict
 
 import PhysicsBasics as pb
 
+def BuildInputTable(Quant, InputType):
+    """Build a structured table for input data."""
+    rows = []
+    SumAbundance = 0
+    for El, Abund in OrderedDict([(El, Abund) for (El, Abund) in Quant.items() if Abund > 0]).items():
+        SumAbundance += Abund
+        rows.append({'element': El, InputType: float(Abund)})
+    return {
+        'name': 'input',
+        'title': 'Input Data',
+        'columns': ['element', InputType],
+        'rows': rows,
+        'metadata': {'total': float(SumAbundance), 'input_type': InputType},
+        'description': 'Non-zero element values supplied to the calculation.',
+    }
+
+def BuildQuantTable(Quant, OByStoichiometry=None):
+    """Build a structured table for quantification results."""
+    rows = []
+    if OByStoichiometry is None:
+        OStoich = [None] * len(Quant)
+    else:
+        OStoich = list(map(float, OByStoichiometry))
+
+    Q = OrderedDict([(El, Abund) for (El, Abund) in Quant.items() if Abund[0] > 0])
+    for El, Abund in Q.items():
+        ElIndex = pb.ElementalSymbols.index(El)-1
+        rows.append({
+            'element': El,
+            'at_pct': float(Abund[0]),
+            'wt_pct': float(Abund[1]),
+            'oxide_wt_pct': float(Abund[2]),
+            'valence': OStoich[ElIndex],
+            'k_factor': float(Abund[3]),
+        })
+    return {
+        'name': 'quantification',
+        'title': 'Quantification Results',
+        'columns': ['element', 'at_pct', 'wt_pct', 'oxide_wt_pct', 'valence', 'k_factor'],
+        'rows': rows,
+        'metadata': {},
+        'description': 'Elemental abundances calculated from the supplied input data and correction options.',
+    }
+
+def BuildPhaseTables(FitResult, Residual, FitComposition):
+    """Build structured tables for phase fit results."""
+    phase_rows = []
+    for Phase, Result in FitResult.items():
+        phase_rows.append({
+            'phase': Phase,
+            'formula': Result[0],
+            'molar_pct': float(Result[1]),
+        })
+
+    composition_rows = []
+    Q = OrderedDict([(El, Abund) for (El, Abund) in enumerate(FitComposition) if Abund > 0])
+    SumAbundance = 0
+    for El, Abund in Q.items():
+        SumAbundance += Abund
+        composition_rows.append({
+            'element': pb.ElementalSymbols[El+1],
+            'at_pct': float(Abund),
+        })
+
+    return [
+        {
+            'name': 'phase_fit',
+            'title': 'Phase Fit Results',
+            'columns': ['phase', 'formula', 'molar_pct'],
+            'rows': phase_rows,
+            'metadata': {'residual': float(Residual)},
+            'description': 'Non-negative least-squares phase abundances for the selected phase set.',
+        },
+        {
+            'name': 'phase_fit_composition',
+            'title': 'Composition Of Phase Fit',
+            'columns': ['element', 'at_pct'],
+            'rows': composition_rows,
+            'metadata': {'total': float(SumAbundance)},
+            'description': 'Elemental composition reconstructed from the phase fit.',
+        },
+    ]
+
 def FormatQuantResults(Quant, ArbitraryAbsorptionCorrection=None,
                        AbsorptionCorrection=None,
                        Takeoff=90,

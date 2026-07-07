@@ -95,8 +95,8 @@ def DoArbitraryAbsorptionCorrection(ArbitraryAbsorptionCorrection, Counts):
         (s, ArbAbsRho) = linecache.getline(ArbAbsFileName, 2).strip().split('=')
         assert (s == '#rho')
         ArbAbsRho = float(ArbAbsRho)
-    except:
-        mp.ReportError('Could not read Arbitrary Absorption Correction file.')
+    except Exception as exc:
+        raise RuntimeError('Could not read Arbitrary Absorption Correction file.') from exc
 
     # Use negative Tau to correct for absorption, not add absorption.
     Counts = AbsorptionUsingWtPct(ArbAbsRho, -ArbAbsTau, ArbAbsWtPct, Counts)
@@ -235,8 +235,8 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', Arbitrar
             # Skip one header line, skip comments, and be tolerant of missing entries (using the converter.)
             try:
                 kfacs = genfromtxt('ConfigData/kfacs ' + kfacsfile + '.csv', dtype=None, comments='#', skip_header=1, delimiter=',', converters={1:floatme, 2:floatme, 3:floatme})
-            except:
-                mp.ReportError('Could not read k-factor file.')
+            except Exception as exc:
+                raise RuntimeError('Could not read k-factor file.') from exc
 
             # Now we want a single array of the k-factors for quanting each element.  For now, we only implement K-shell.
             # TODO implement L, M shells.

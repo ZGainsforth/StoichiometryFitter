@@ -32,6 +32,7 @@ from MyPython import *
 import CountsToQuant
 import PhaseFit
 import pandas as pd
+import StoichiometryCore
 
 def import_function_from_path(function_name, path):
     spec = importlib.util.spec_from_file_location("module_name", path)
@@ -322,7 +323,7 @@ class MyFrame(wx.Frame):
         # Now loop through each one, and add it to the phases list box.
         i = 0
         for Phase, Formula in self.Phases:
-            self.PhasesListCtrl.InsertStringItem(i, Phase)
+            self.PhasesListCtrl.InsertItem(i, Phase)
             i += 1
 
         # Make sure the column is wide enough to show everything.
@@ -398,8 +399,8 @@ class MyFrame(wx.Frame):
         self.ElementsListCtrl.InsertColumn(2, 'Charge') # Used for stoichiometry calculation.
         self.ElementsListCtrl.SetColumnWidth(2, 60)
         for Z in range(1, pb.MAXELEMENT + 1):
-            self.ElementsListCtrl.InsertStringItem(Z - 1, pb.ElementalSymbols[Z])
-            self.ElementsListCtrl.SetStringItem(Z - 1, 1, '0')
+            self.ElementsListCtrl.InsertItem(Z - 1, pb.ElementalSymbols[Z])
+            self.ElementsListCtrl.SetItem(Z - 1, 1, '0')
         # The stoichometry column is separately populated by this function...
         self.OnStoichSelect(None)
 
@@ -414,7 +415,7 @@ class MyFrame(wx.Frame):
         self.ElementsListCtrl.CloseEditor(None)
 
         for Z in range(1, pb.MAXELEMENT + 1):
-            self.ElementsListCtrl.SetStringItem(Z - 1, 1, '0')
+            self.ElementsListCtrl.SetItem(Z - 1, 1, '0')
         event.Skip()
 
     def OnGo(self, event):  # wxGlade: MyFrame.<event_handler>
@@ -426,11 +427,11 @@ class MyFrame(wx.Frame):
         if os.path.exists(PICKLE_FILE):
             os.remove(PICKLE_FILE)
 
-        # Extract the counts vector out of the ElementsListControl.
+        # Extract the input vector out of the ElementsListControl.
         # Z-1 since H=1 is the first atom, and the list is zero based.
-        self.Counts = zeros(pb.MAXELEMENT)
+        Counts = zeros(pb.MAXELEMENT)
         for Z in range(1, pb.MAXELEMENT + 1):
-            self.Counts[Z-1] = float(self.ElementsListCtrl.GetItem(Z - 1,1).GetText())
+            Counts[Z-1] = float(self.ElementsListCtrl.GetItem(Z - 1,1).GetText())
 
         # Extract the stoichiometry vector out of the ElementsListControl.
         # Z-1 since H=1 is the first atom, and the list is zero based.
@@ -439,13 +440,6 @@ class MyFrame(wx.Frame):
                 break
             self.Stoich[Z-1][1] = float(self.ElementsListCtrl.GetItem(Z - 1,2).GetText())
 
-        # Make the input human readable and output it for reference.
-        InputDat = OrderedDict(list(zip(pb.ElementalSymbols[1:], self.Counts)))
-        ReportStr = ReportResults.FormatInputResults(InputDat, self.rdioInputType.StringSelection)
-        # Report it by printing to console and put it in the output text box.
-        print ("ReportStr")
-        self.txtOutput.SetValue(ReportStr)
-        
         # Find out if there is a k-factor file to use.
         if self.chkKfacs.IsChecked():
             kfacsfile = self.comboKfacs.StringSelection
@@ -481,46 +475,39 @@ class MyFrame(wx.Frame):
         else:
             OByStoich = None
 
-        # Stuff the user entered data into a black box and get out At%, Wt% results.
-        Quant = CountsToQuant.GetAbundancesFromCounts(self.Counts, kfacsfile=kfacsfile, InputType=self.rdioInputType \
-                                                      .StringSelection, ArbitraryAbsorptionCorrection=DetectorFile,
-                                                      AbsorptionCorrection=AbsorptionCorrection,
-                                                      Takeoff=Takeoff,
-                                                      OByStoichiometry=OByStoich)
-
-        QuantNumbers = [a[1] for a in list(Quant.items())]
-        AtPct, WtPct, OxWtPct, kfactors = list(zip(*QuantNumbers))
-
-        # Make it human readable.
-        ReportStr = ReportResults.FormatQuantResults(Quant, ArbitraryAbsorptionCorrection=DetectorFile,
-                                                     AbsorptionCorrection=AbsorptionCorrection,
-                                                     Takeoff=Takeoff,
-                                                     OByStoichiometry=OByStoich,
-                                                     kFactors=kfacsfile)
-
-        # Report it by printing to console and put it in the output text box.
-        print ("ReportStr")
-        self.txtOutput.AppendText(ReportStr)
-
-        """ FIT PHASES """
         SelectedPhases = GetSelectedItemsFromListCtrl(self.PhasesListCtrl)
 
-        if SelectedPhases == None:
-            # NoFitStr = '\n\nNo phases selected for linear fitting.'.format()
-            # print NoFitStr
-            # self.txtOutput.AppendText(NoFitStr)
-            pass
+        if self.chkPhaseAnalysis.IsChecked():
+            PhaseAnalysis = self.cmbPhaseAnalysis.StringSelection
         else:
-            # Generate a list of phases with just the ones the user selected to fit.
-            PhasesToFit = [PhasesToFit for PhasesToFit in self.Phases if PhasesToFit[0] in SelectedPhases]
+            PhaseAnalysis = None
 
-            # Do a linear least squares fit for the best set of phases to represent this composition.
-            FitResult, Residual, FitComposition = PhaseFit.FitPhases(Quant, PhasesToFit)
+        InputDat = StoichiometryCore.vector_to_element_dict(Counts)
+        AnalysisInput = StoichiometryCore.AnalysisInput(
+            values=dict(InputDat),
+            input_type=self.rdioInputType.StringSelection,
+            stoichiometry=None if OByStoich is None else list(map(float, OByStoich)),
+            stoichiometry_name=self.comboStoich.StringSelection,
+        )
+        AnalysisOptions = StoichiometryCore.AnalysisOptions(
+            kfactors=kfacsfile,
+            arbitrary_absorption=DetectorFile,
+            absorption_correction=AbsorptionCorrection,
+            takeoff=Takeoff,
+            selected_phases=SelectedPhases,
+            phase_analysis=PhaseAnalysis,
+        )
 
-            # Report it to console and output text box.
-            ReportStr = ReportResults.FormatPhaseResults(FitResult, Residual, FitComposition)
-            print(ReportStr)
-            self.txtOutput.AppendText(ReportStr)
+        try:
+            self.LastAnalysisResult = StoichiometryCore.run_analysis(AnalysisInput, options=AnalysisOptions)
+        except Exception as exc:
+            wx.MessageBox(str(exc), 'Analysis failed', style=wx.OK)
+            return
+
+        self.Counts = Counts
+        self.txtOutput.SetValue(self.LastAnalysisResult.report_text)
+        for warning in self.LastAnalysisResult.warnings:
+            self.txtOutput.AppendText('\nWarning: %s\n' % warning)
 
         # Saving the entry to the pickle file. Fixed by Roger
         add_to_pickle(PICKLE_FILE, self.cmbPhaseAnalysis.StringSelection)
@@ -544,20 +531,7 @@ class MyFrame(wx.Frame):
         print(self.comboKfacs.StringSelection)
         print(self.comboStoich.StringSelection)
 
-        """ DO CUSTOM PHASE ANALYSES """
-        if self.chkPhaseAnalysis.IsChecked():
-            # Construct the name of the py file containing the analysis function.
-            PhaseFile = self.cmbPhaseAnalysis.StringSelection
-            PhaseFile = 'ConfigData/phase ' + PhaseFile + '.py'
-
-            # import it and run it.
-            AnalyzePhase = import_function_from_path("AnalyzePhase", PhaseFile)
-            # a = importlib.load_source('AnalyzePhase', PhaseFile)
-            ReportStr, Figs = AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich)
-
-            self.txtOutput.AppendText(ReportStr)
-            print(Figs)
-
+        if event is not None:
             event.Skip()
 
     def UpdateInputType(self, InputType=None):
@@ -620,7 +594,7 @@ class MyFrame(wx.Frame):
         # If we are not using oxygen by stoichometry, then mark out the stoichiometry column.
         if self.chkOByStoichiometry.IsChecked() == False:
             for Z in range(1, pb.MAXELEMENT + 1):
-                self.ElementsListCtrl.SetStringItem(Z-1, 2, 'n/a')
+                self.ElementsListCtrl.SetItem(Z-1, 2, 'n/a')
             # Make sure the user can only edit the counts column.
             self.ElementsListCtrl.SetEditableColumns((1, ))
         else:
@@ -628,7 +602,7 @@ class MyFrame(wx.Frame):
             # Since that was a csv, we have a list of tuples like [('H', 1), ('He', 2), ...]  So index to the right tuple
             # [Z-1] and then into the tuple [Z-1][1]
             for Z in range(1, pb.MAXELEMENT + 1):
-                self.ElementsListCtrl.SetStringItem(Z-1, 2, str(self.Stoich[Z-1][1]))
+                self.ElementsListCtrl.SetItem(Z-1, 2, str(self.Stoich[Z-1][1]))
             # The user can edit the counts column and the stoichiometry column.
             self.ElementsListCtrl.SetEditableColumns((1,2))
 
@@ -706,7 +680,7 @@ class MyFrame(wx.Frame):
 
         # Now populate it with the numbers from the input file.
         for Z in range(1, pb.MAXELEMENT + 1):
-            self.ElementsListCtrl.SetStringItem(Z-1, 1, str(InputDat[Z-1][0]))
+            self.ElementsListCtrl.SetItem(Z-1, 1, str(InputDat[Z-1][0]))
         return
 
     def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
@@ -721,6 +695,9 @@ class MyFrame(wx.Frame):
         return
 
     def DoSaveInputs(self, FileName):
+        if hasattr(self, 'LastAnalysisResult'):
+            StoichiometryCore.save_input_csv(self.LastAnalysisResult.input, FileName)
+            return
 
         if self.rdioInputType.GetSelection() == 0:
             SavStr = 'Element,Counts\n'
@@ -753,9 +730,13 @@ class MyFrame(wx.Frame):
         return
 
     def DoSaveResults(self, FileName):
+        if hasattr(self, 'LastAnalysisResult'):
+            ReportText = self.LastAnalysisResult.report_text
+        else:
+            ReportText = self.txtOutput.GetValue()
 
         fid = open(FileName, 'w')
-        fid.write(self.txtOutput.GetValue())
+        fid.write(ReportText)
         fid.close()
 
         return
@@ -769,24 +750,14 @@ class MyFrame(wx.Frame):
 
         FileRoot = dlg.GetPath()
 
-        # Save the input and output files
-        self.DoSaveInputs(FileRoot + '.csv')
-        self.DoSaveResults(FileRoot + '.txt')
-
-        # If there is a custom phase analysis, then tell it to save (not all have save.)
-        if self.chkPhaseAnalysis.IsChecked():
-            # Construct the name of the py file containing the analysis function.
-            PhaseFile = self.cmbPhaseAnalysis.StringSelection
-            PhaseFile = 'ConfigData/phase ' + PhaseFile + '.py'
-
-            # import it and call the save function (if it exists).
-            SaveResults = import_function_from_path("SaveResults", PhaseFile)
-            # a = importlib.load_source('SaveResults', PhaseFile)
-            try:
-                SaveResults(FileRoot)
-            except:
-                # We won't worry if there is no save option.
-                pass
+        if hasattr(self, 'LastAnalysisResult'):
+            OutputDir = os.path.dirname(FileRoot) or '.'
+            BaseName = os.path.basename(FileRoot)
+            StoichiometryCore.save_analysis(self.LastAnalysisResult, OutputDir, basename=BaseName)
+        else:
+            # Save the input and output files for pre-compute compatibility.
+            self.DoSaveInputs(FileRoot + '.csv')
+            self.DoSaveResults(FileRoot + '.txt')
 
         return
 
@@ -805,13 +776,8 @@ class MyFrame(wx.Frame):
 if __name__ == "__main__":
     gettext.install("app")  # replace with the appropriate catalog name
 
-    print('showing')
     app = wx.App()
-    print('showing')
-    wx.InitAllImageHandlers()
-    print('showing')
     frame_1 = MyFrame(None, wx.ID_ANY, "")
-    print('showing')
     app.SetTopWindow(frame_1)
     frame_1.Show()
     app.MainLoop()

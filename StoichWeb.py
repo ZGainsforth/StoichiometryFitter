@@ -27,6 +27,7 @@ import imp
 import PhysicsBasics as pb
 import CountsToQuant
 import PhaseFit
+import StoichiometryCore
 from flask_session import Session 
 
 import eventlet
@@ -78,10 +79,6 @@ def login():
             for i in range(len(element)):
                 Counts[i] = request.form[element[i]+"1"]
 
-            # Make the input human readable.
-            InputDat = OrderedDict(list(zip(element, Counts)))
-            ReportStr1 = ReportResults.FormatInputResults(InputDat, inputType)
-
             # Find out if there is a k-factor file to use.
             # TODO Add feature --- Allow user to upload their own k-factors file.
             if request.form.get("k-factor"):
@@ -123,27 +120,11 @@ def login():
             else:
                 OByStoich = None
 
-            # Stuff the user entered data into a black box and get out At%, Wt% results.
-            Quant = CountsToQuant.GetAbundancesFromCounts(Counts, kfacsfile=kfacsfile, InputType= inputType, ArbitraryAbsorptionCorrection=DetectorFile, AbsorptionCorrection=AbsorptionCorrection, Takeoff=Takeoff, OByStoichiometry=OByStoich)
-                                                            
-            QuantNumbers = [a[1] for a in list(Quant.items())]
-            AtPct, WtPct, OxWtPct, kfactors = list(zip(*QuantNumbers))
-
-            # Make it human readable.
-            ReportStr2 = ReportResults.FormatQuantResults(Quant, ArbitraryAbsorptionCorrection=DetectorFile, AbsorptionCorrection=AbsorptionCorrection,Takeoff=Takeoff,OByStoichiometry=OByStoich,kFactors=kfacsfile)
-
-            # TODO: Error Handling
-
-            """ DO CUSTOM PHASE ANALYSES """
+            PhaseAnalysis = None
+            PhaseAnalysisKwargs = {}
             if request.form.get("phaseAnalysis"):
-                # Construct the name of the py file containing the analysis function.
-                PhaseFile = request.form["phase"]
-                PhaseFile = 'ConfigData/phase ' + PhaseFile + '.py'
-                # import it and run it.
-                a = imp.load_source('AnalyzePhase', PhaseFile)
-                # Pass in different parameters based on the input.
-
-                if PhaseFile == "ConfigData/phase GPT-4.py":
+                PhaseAnalysis = request.form["phase"]
+                if PhaseAnalysis == "GPT-4":
                     # SHow APi text loging and ASK for API key 
                     # IF API key is correct; then run the code below
                     # set apiKey to the input text
@@ -153,21 +134,33 @@ def login():
                     else:
                         global arricot
                         apikey = arricot
-                    ReportStr3, figs= a.AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich, apikey)
-                        
-                else:
-                    figs = []
-                    ReportStr3, figs = a.AnalyzePhase(AtPct, WtPct, OxWtPct, OByStoich)
-                    
-            else:
-                ReportStr3 = ""
-            
+                    PhaseAnalysisKwargs['APIkey'] = apikey
+
+            AnalysisInput = StoichiometryCore.AnalysisInput(
+                values=dict(StoichiometryCore.vector_to_element_dict(Counts)),
+                input_type=inputType,
+                stoichiometry=None if OByStoich is None else list(map(float, OByStoich)),
+                stoichiometry_name='Silicates' if OByStoich is not None else None,
+            )
+            AnalysisOptions = StoichiometryCore.AnalysisOptions(
+                kfactors=kfacsfile,
+                arbitrary_absorption=DetectorFile,
+                absorption_correction=AbsorptionCorrection,
+                takeoff=Takeoff,
+                phase_analysis=PhaseAnalysis,
+                phase_analysis_kwargs=PhaseAnalysisKwargs,
+            )
+
+            try:
+                Result = StoichiometryCore.run_analysis(AnalysisInput, options=AnalysisOptions)
+            except Exception as exc:
+                print(exc)
+                return render_template('login.html')
 
             # Get HTML to say process is done and hide loading gif from right here
 
-            print(ReportStr3)
             # Generate final String
-            FinalReport = ReportStr1 + ReportStr2 + ReportStr3
+            FinalReport = Result.report_text
             # Change all the python new line to html new line.
             FinalReport = FinalReport.replace("\n", "<br>")
             # Change all the python space to html space
