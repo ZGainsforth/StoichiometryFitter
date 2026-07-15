@@ -34,7 +34,9 @@ def BuildQuantTable(Quant, OByStoichiometry=None):
     else:
         OStoich = list(map(float, OByStoichiometry))
 
-    Q = OrderedDict([(El, Abund) for (El, Abund) in Quant.items() if Abund[0] > 0])
+    # Include elements that had non-zero user input even if their abundance is zero.
+    nonzero_input = set(Quant.get('_nonzero_input_', []))
+    Q = OrderedDict([(El, Abund) for (El, Abund) in Quant.items() if El not in ('_nonzero_input_', '_zero_kfactor_') and (Abund[0] > 0 or El in nonzero_input)])
     for El, Abund in Q.items():
         ElIndex = pb.ElementalSymbols.index(El)-1
         rows.append({
@@ -128,10 +130,15 @@ def FormatQuantResults(Quant, ArbitraryAbsorptionCorrection=None,
 
     ReportStr += '\n'
 
-# For every element that is in the sample (non-zero abundance), we are going to include it in the result.
+    # Warn about elements with non-zero input but zero k-factor.
+    zero_kfactor = Quant.get('_zero_kfactor_', [])
+    if zero_kfactor:
+        ReportStr += 'Warning: The following elements have zero k-factors and will appear with 0%% abundance:\n'
+        ReportStr += ', '.join(zero_kfactor) + '\n\n'
 
-    # Comprehend all the zero-abundance elements out.
-    Q = OrderedDict([(El, Abund) for (El, Abund) in Quant.items() if Abund[0] > 0])
+    # Include elements that had non-zero user input in the output.
+    nonzero_input = set(Quant.get('_nonzero_input_', []))
+    Q = OrderedDict([(El, Abund) for (El, Abund) in Quant.items() if El not in ('_nonzero_input_', '_zero_kfactor_') and (Abund[0] > 0 or El in nonzero_input)])
 
     # Now let's print out each element
     ReportStr += 'Quantification results:\n'.format()

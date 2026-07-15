@@ -301,7 +301,7 @@ def quant_to_dict(quant) -> Dict[str, Dict[str, float]]:
         'wt_pct': float(values[1]),
         'oxide_wt_pct': float(values[2]),
         'k_factor': float(values[3]),
-    }) for el, values in quant.items())
+    }) for el, values in quant.items() if el not in ('_nonzero_input_', '_zero_kfactor_'))
 
 
 def run_analysis(input_data: Any, input_type: str = 'Counts', options: Optional[Any] = None,
@@ -343,7 +343,7 @@ def run_analysis(input_data: Any, input_type: str = 'Counts', options: Optional[
     ))
 
     tables = [input_table, quant_table]
-    quant_numbers = [a[1] for a in list(quant.items())]
+    quant_numbers = [a[1] for a in list(quant.items()) if a[0] not in ('_nonzero_input_', '_zero_kfactor_')]
     at_pct, wt_pct, ox_wt_pct, _ = list(zip(*quant_numbers))
 
     if analysis_options.selected_phases:
@@ -359,6 +359,11 @@ def run_analysis(input_data: Any, input_type: str = 'Counts', options: Optional[
     phase_payload = None
     figures = []
     warnings = []
+
+    # Extract zero k-factor warnings for GUI display.
+    zero_kfactor = quant.get('_zero_kfactor_', [])
+    for el in zero_kfactor:
+        warnings.append(f'Element {el} has zero k-factor in "{analysis_options.kfactors}" — appears with 0% abundance.')
     if analysis_options.phase_analysis:
         try:
             phase_report, phase_tables, figures, phase_payload = _run_phase_analysis(

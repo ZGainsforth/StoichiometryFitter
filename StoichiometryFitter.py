@@ -431,7 +431,8 @@ class MyFrame(wx.Frame):
         # Z-1 since H=1 is the first atom, and the list is zero based.
         Counts = zeros(pb.MAXELEMENT)
         for Z in range(1, pb.MAXELEMENT + 1):
-            Counts[Z-1] = float(self.ElementsListCtrl.GetItem(Z - 1,1).GetText())
+            text = self.ElementsListCtrl.GetItem(Z - 1,1).GetText()
+            Counts[Z-1] = float(text) if text else 0.0
 
         # Extract the stoichiometry vector out of the ElementsListControl.
         # Z-1 since H=1 is the first atom, and the list is zero based.

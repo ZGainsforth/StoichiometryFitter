@@ -8,6 +8,7 @@ from numpy import *
 from collections import OrderedDict
 import linecache
 from fractions import Fraction
+import math
 
 import PhysicsBasics as pb
 import CharacteristicEmission as ce
@@ -218,7 +219,15 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', Arbitrar
     AbsorptionCorrection=0 (float) is the thin film thickness to apply an absorption correction for.
     OByStoichiometry=None if we are not computing oxygen by stoichiometry.  Vector of element charge if we are.
     :param Takeoff:
+    :raises ValueError: If input counts contain NaN or negative values, or if the output wt% sum is invalid.
     """
+
+    # Input validation: reject NaN and negative counts
+    for i, c in enumerate(Counts):
+        if math.isnan(c):
+            raise ValueError(f"Input counts contain NaN at index {i} (element {pb.ElementalSymbols[i + 1]})")
+        if c < 0:
+            raise ValueError(f"Input counts contain negative value ({c}) at index {i} (element {pb.ElementalSymbols[i + 1]})")
 
     # Start with default k-factors.  Ones means that if this is multiplied, it doesn't change anything.
     kfactors = ones(pb.MAXELEMENT)
@@ -227,6 +236,7 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', Arbitrar
     # the absorption corrections and convert to all the requested formats.
 
     # First let's handle conversion by counts.
+    ZeroKFactorElements = []
     if InputType == 'Counts':
         # If we're using k-factors, get them and multiply them now.
         if kfacsfile is not None:
@@ -246,6 +256,11 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', Arbitrar
 
             # Now multiply by the k-factors.
             WtPct = Counts*kfactors
+
+            # Track elements with non-zero counts but zero k-factor for warning.
+            for i, (count, kfac) in enumerate(zip(Counts, kfactors)):
+                if count > 0 and kfac == 0:
+                    ZeroKFactorElements.append(pb.ElementalSymbols[i+1])
         else:
             # If we have counts input, but no k-factors, counts are expected to be proportional to wt %
             WtPct = Counts
@@ -296,7 +311,24 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', Arbitrar
     # And now we have a stoichiometry and absorption corrected wt %, get all the rest.
     AtPct, WtPct, OxWtPct = WtPctToEverything(WtPct, OByStoichiometry)
 
+    # Output validation: sanity check wt% sum
+    wt_sum = sum(WtPct)
+    if math.isnan(wt_sum) or wt_sum < 0:
+        raise ValueError(f"Invalid wt% sum: {wt_sum}")
+
     Quant = OrderedDict(list(zip(pb.ElementalSymbols[1:], list(zip(AtPct, WtPct, OxWtPct, kfactors)))))
+
+    # Track which elements had non-zero input counts so they appear in output even with zero k-factor.
+    NonZeroInputElements = set()
+    for i, count in enumerate(Counts):
+        if count > 0:
+            NonZeroInputElements.add(pb.ElementalSymbols[i+1])
+    Quant['_nonzero_input_'] = list(NonZeroInputElements)
+
+    # Track elements with zero k-factor for warning display.
+    if ZeroKFactorElements:
+        Quant['_zero_kfactor_'] = ZeroKFactorElements
+
     return Quant
 
 if __name__ == '__main__':
