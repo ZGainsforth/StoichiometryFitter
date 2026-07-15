@@ -14,6 +14,19 @@ For a quick overview of what the program does, download [the video](https://www.
 
 Is there a feature that would be very useful to you?  Contact me at xraysoftware@ssl.berkeley.edu.
 
+## K-Factor Data
+
+The K-factors in `ConfigData/kfacs Titan 80 keV.csv` are **dimensionless** relative sensitivity factors calibrated against Silicon (Si K = 1.0). Values represent the ratio of counts expected per unit weight percent for each element, relative to Silicon.
+
+- **K, L, M** columns correspond to K-shell, L-shell, and M-shell fluorescence lines.
+- Elements with **K = 0.0** have K-shell excitation cross-sections near zero at 80 keV.
+- The CSV is ordered by atomic number (H = 1 through Uuo = 118).
+
+## Elemental Weights
+
+`PhysicsBasics.py` `ElementalWeights` uses natural abundance atomic weights (IUPAC standard, dimensionless).
+Source: https://physics.nist.gov/cgi-bin/Compositions/standard_asp.cgi
+
 ##Todo:
 ====================
 
