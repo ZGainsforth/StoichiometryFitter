@@ -19,6 +19,7 @@ import ReportResults
 
 
 CONFIG_DIR = 'ConfigData'
+PHASE_ANALYSIS_DIR = 'PhaseAnalysis'
 
 
 @dataclass
@@ -125,8 +126,14 @@ def load_phases(config_dir: str = CONFIG_DIR):
                          delimiter=',', converters={1: lambda s: str(s).lstrip()})
 
 
-def list_config_options(config_dir: str = CONFIG_DIR) -> Dict[str, List[str]]:
+def phase_analysis_path(name: str, phase_analysis_dir: str = PHASE_ANALYSIS_DIR) -> str:
+    return os.path.join(phase_analysis_dir, name + '.py')
+
+
+def list_config_options(config_dir: str = CONFIG_DIR,
+                        phase_analysis_dir: str = PHASE_ANALYSIS_DIR) -> Dict[str, List[str]]:
     files = os.listdir(config_dir)
+    phase_files = os.listdir(phase_analysis_dir)
     return {
         'kfactors': sorted(f.split('kfacs ')[1].split('.csv')[0] for f in files
                            if f.startswith('kfacs ') and f.endswith('.csv')),
@@ -134,8 +141,8 @@ def list_config_options(config_dir: str = CONFIG_DIR) -> Dict[str, List[str]]:
                                 if f.startswith('Stoich ') and f.endswith('.csv')),
         'arbitrary_absorption': sorted(f.split('Absorption ')[1].split('.csv')[0] for f in files
                                        if f.startswith('Absorption ') and f.endswith('.csv')),
-        'phase_analysis': sorted(f.split('phase ')[1].split('.py')[0] for f in files
-                                 if f.startswith('phase ') and f.endswith('.py')),
+        'phase_analysis': sorted(os.path.splitext(f)[0] for f in phase_files
+                                 if f.endswith('.py') and f not in ('__init__.py', 'ternary_diagram.py')),
     }
 
 
@@ -272,8 +279,9 @@ def _legacy_phase_tables(name: str, report_text: str) -> List[ResultTable]:
     return tables
 
 
-def _run_phase_analysis(name: str, at_pct, wt_pct, ox_wt_pct, stoich, kwargs, config_dir: str):
-    path = os.path.join(config_dir, 'phase ' + name + '.py')
+def _run_phase_analysis(name: str, at_pct, wt_pct, ox_wt_pct, stoich, kwargs,
+                        phase_analysis_dir: str):
+    path = phase_analysis_path(name, phase_analysis_dir)
     analyze_phase = _import_function_from_path('AnalyzePhase', path)
     output = analyze_phase(at_pct, wt_pct, ox_wt_pct, stoich, **kwargs)
 
@@ -306,7 +314,8 @@ def quant_to_dict(quant) -> Dict[str, Dict[str, float]]:
 
 def run_analysis(input_data: Any, input_type: str = 'Counts', options: Optional[Any] = None,
                  save_dir: Optional[str] = None, basename: str = 'analysis',
-                 config_dir: str = CONFIG_DIR) -> AnalysisResult:
+                 config_dir: str = CONFIG_DIR,
+                 phase_analysis_dir: str = PHASE_ANALYSIS_DIR) -> AnalysisResult:
     analysis_input = _coerce_input(input_data, input_type)
     analysis_options = _coerce_options(options)
 
@@ -373,7 +382,7 @@ def run_analysis(input_data: Any, input_type: str = 'Counts', options: Optional[
                 np.array(ox_wt_pct, dtype=float),
                 stoich_array,
                 analysis_options.phase_analysis_kwargs,
-                config_dir,
+                phase_analysis_dir,
             )
             if phase_report:
                 report_parts.append(phase_report)
@@ -393,7 +402,8 @@ def run_analysis(input_data: Any, input_type: str = 'Counts', options: Optional[
     )
 
     if save_dir is not None:
-        saved = save_analysis(result, save_dir, basename=basename, config_dir=config_dir)
+        saved = save_analysis(result, save_dir, basename=basename, config_dir=config_dir,
+                              phase_analysis_dir=phase_analysis_dir)
         result.files = asdict(saved)
 
     return result
@@ -435,11 +445,13 @@ def load_analysis_json(path: str) -> Tuple[AnalysisInput, AnalysisOptions]:
 
 def rerun_analysis_from_json(path: str, save_dir: Optional[str] = None,
                              basename: str = 'analysis',
-                             config_dir: str = CONFIG_DIR) -> AnalysisResult:
+                             config_dir: str = CONFIG_DIR,
+                             phase_analysis_dir: str = PHASE_ANALYSIS_DIR) -> AnalysisResult:
     """Reproduce an analysis from a saved JSON file."""
     analysis_input, analysis_options = load_analysis_json(path)
     return run_analysis(analysis_input, options=analysis_options, save_dir=save_dir,
-                        basename=basename, config_dir=config_dir)
+                        basename=basename, config_dir=config_dir,
+                        phase_analysis_dir=phase_analysis_dir)
 
 
 def save_input_csv(analysis_input: AnalysisInput, path: str) -> None:
@@ -459,7 +471,8 @@ def save_input_csv(analysis_input: AnalysisInput, path: str) -> None:
 
 
 def save_analysis(result: AnalysisResult, output_dir: str, basename: str = 'analysis',
-                  config_dir: str = CONFIG_DIR) -> SavedFiles:
+                  config_dir: str = CONFIG_DIR,
+                  phase_analysis_dir: str = PHASE_ANALYSIS_DIR) -> SavedFiles:
     os.makedirs(output_dir, exist_ok=True)
     input_csv = os.path.join(output_dir, basename + '.csv')
     report_txt = os.path.join(output_dir, basename + '.txt')
@@ -478,7 +491,7 @@ def save_analysis(result: AnalysisResult, output_dir: str, basename: str = 'anal
 
     legacy_phase_files = []
     if result.options.phase_analysis:
-        phase_path = os.path.join(config_dir, 'phase ' + result.options.phase_analysis + '.py')
+        phase_path = phase_analysis_path(result.options.phase_analysis, phase_analysis_dir)
         try:
             save_results = _import_function_from_path('SaveResults', phase_path)
             before = set(os.listdir(output_dir))

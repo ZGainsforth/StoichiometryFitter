@@ -347,9 +347,9 @@ class MyFrame(wx.Frame):
         
 
         """ POPULATE PHASE ANALYSIS PULLDOWN """
-        for file in os.listdir('ConfigData'):
-            if file.startswith('phase') and file.endswith('.py'):
-                phasename = file.split('phase ')[1].split('.py')[0]
+        for file in os.listdir(StoichiometryCore.PHASE_ANALYSIS_DIR):
+            if file.endswith('.py') and file not in ('__init__.py', 'ternary_diagram.py'):
+                phasename = os.path.splitext(file)[0]
                 self.cmbPhaseAnalysis.Append(phasename)
         self.cmbPhaseAnalysis.Select(0)
         if os.path.exists(PICKLE_FILE):

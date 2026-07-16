@@ -33,8 +33,6 @@ from flask_session import Session
 import eventlet
 import eventlet.wsgi
 
-from ternary_diagram import TernaryDiagram
-
 # Stoich = pd.read_csv("ConfigData/stoich Silicates.csv")
 Stoich = np.genfromtxt('ConfigData/stoich Silicates.csv', dtype=None, comments='#', delimiter=',', skip_header=1, converters={1: lambda s: float(s)})
 

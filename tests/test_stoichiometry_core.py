@@ -3,6 +3,14 @@ import json
 import StoichiometryCore as core
 
 
+def test_phase_analyses_are_discovered_outside_config_data():
+    options = core.list_config_options()
+
+    assert 'Olivine' in options['phase_analysis']
+    assert 'Sheet Silicate Ternary' in options['phase_analysis']
+    assert core.phase_analysis_path('Olivine') == 'PhaseAnalysis/Olivine.py'
+
+
 def test_run_analysis_returns_structured_quantification():
     analysis_input = core.load_input_csv('ConfigData/ExampleInput.csv')
     analysis_input.stoichiometry = core.load_stoichiometry('Silicates')

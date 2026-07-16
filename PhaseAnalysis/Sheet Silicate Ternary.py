@@ -6,7 +6,7 @@ __email__ = 'zsg@gainsforth.com'
 import numpy as np
 if __name__ != '__main__':
     import PhysicsBasics as pb
-from ternary_diagram import TernaryDiagram
+from PhaseAnalysis.ternary_diagram import TernaryDiagram
 import matplotlib.pyplot as plt
 
 def norm(x):
@@ -166,4 +166,3 @@ if __name__ == '__main__':
     # AtPct[pb.Fe-1] = 0.3*3
     # print('Saponite: (Na0.5,Ca0.5)0.3 (Fe0.3,Mg0.7)3 (Si0.75,Al0.25)4 O10 (OH)2 4H2O:\n')
     # print(AnalyzePhase(AtPct))
-
