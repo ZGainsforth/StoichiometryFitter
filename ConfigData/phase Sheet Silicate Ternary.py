@@ -91,9 +91,9 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
 
     OutStr += f'Serpentine calculation:\n'
     OutStr += f'Ideal formula: Oct6 Tet4 O18 H8.  H invisible so we consider 28 atoms.\n'
-    OutStr += f'Tet atoms = {TetAtPct:0.2f} at% (ideal 14.285\%)\n'
-    OutStr += f'Oct atoms = {OctAtPct:0.2f} at% (ideal 21.429\%)\n'
-    OutStr += f'Oxygen atoms = {AtPct[pb.O-1]:0.2f} at% (ideal 64.286\%)\n'
+    OutStr += f'Tet atoms = {TetAtPct:0.2f} at% (ideal 14.285%)\n'
+    OutStr += f'Oct atoms = {OctAtPct:0.2f} at% (ideal 21.429%)\n'
+    OutStr += f'Oxygen atoms = {AtPct[pb.O-1]:0.2f} at% (ideal 64.286%)\n'
     OutStr += '\n'
 
 
@@ -102,7 +102,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += f'O = {AtPct[pb.O-1]:0.2f} at%\n'
     OutStr += f'Unaccounted non-H atoms (100%-Tet+Oct+Inter+O) = {100-(TetAtPct+OctAtPct+InterAtPct+AtPct[pb.O-1]):0.2f} at%\n\n'
 
-    OutStr += f'Oxygen At\% for variable interstitial H2O:\n'
+    OutStr += f'Oxygen At% for variable interstitial H2O:\n'
     OxyIdeal = np.array([11,12,13,14,15,16])
     CatIdeal = 7.25; 
     # print(OxyIdeal/(CatIdeal+OxyIdeal)*100)
