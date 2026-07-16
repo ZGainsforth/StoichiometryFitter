@@ -55,9 +55,11 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     td = TernaryDiagram(['Si+Al', 'Fe', 'Mg'])
     # Draw serpentine and saponite boundary lines on the ternary.
     td.plot([norm([2,3,0]), norm([2,0,3])], color='green', linewidth=3, linestyle='dotted')
-    td.annotate('Serpentine', [norm([1.5,1.6,1.4])], ha='center', fontsize='large',color='green')
+    td.annotate('Serpentine', [norm([1.5,1.6,1.4])], ha='center', fontsize='large', color='green',
+                offset_points=(0, 12))
     td.plot([norm([4,3,0]), norm([4,0,3])], color='royalblue', linewidth=3, linestyle='dotted')
-    td.annotate('Saponite', [norm([4,1.6,1.4])], ha='center', fontsize='large', color='royalblue')
+    td.annotate('Saponite', [norm([4,1.6,1.4])], ha='center', fontsize='large', color='royalblue',
+                offset_points=(0, 12))
     # Now mark the user's point.
     td.scatter([ CompoVector ], marker='X', s=300, alpha=0.7, color='orange') #, annotations=['Experimental'])
 
