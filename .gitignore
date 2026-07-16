@@ -54,3 +54,8 @@ Temp/
 
 qminFormat.csv
 save.dat
+
+# Ignore any dot directories.
+.*/*
+
+notebooks/.ipynb_checkpoints/*
