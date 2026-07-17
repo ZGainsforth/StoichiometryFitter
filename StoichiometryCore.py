@@ -22,8 +22,9 @@ import ReportResults
 from PhaseAnalysis.contract import ImageArtifact, svg_artifact
 
 
-CONFIG_DIR = 'ConfigData'
-PHASE_ANALYSIS_DIR = 'PhaseAnalysis'
+APPLICATION_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_DIR = os.path.join(APPLICATION_DIR, 'ConfigData')
+PHASE_ANALYSIS_DIR = os.path.join(APPLICATION_DIR, 'PhaseAnalysis')
 APPLICATION_VERSION = '3.0-project-packages'
 
 
@@ -186,12 +187,12 @@ def resolve_resources(analysis_input: AnalysisInput, options: AnalysisOptions,
                       phase_analysis_dir: str = PHASE_ANALYSIS_DIR) -> ResolvedResources:
     """Resolve named configuration once, before running any calculation."""
     resources = ResolvedResources()
-    if analysis_input.stoichiometry is not None:
-        resources.stoichiometry = [float(value) for value in analysis_input.stoichiometry]
-    elif analysis_input.stoichiometry_name:
+    if analysis_input.stoichiometry_name:
         path = os.path.join(config_dir, 'Stoich ' + analysis_input.stoichiometry_name + '.csv')
         resources.stoichiometry = load_stoichiometry(analysis_input.stoichiometry_name, config_dir)
         resources.hashes['stoichiometry'] = _sha256(_read_bytes(path))
+    elif analysis_input.stoichiometry is not None:
+        resources.stoichiometry = [float(value) for value in analysis_input.stoichiometry]
 
     if options.kfactors:
         path = os.path.join(config_dir, 'kfacs ' + options.kfactors + '.csv')
@@ -276,6 +277,48 @@ def list_config_options(config_dir: str = CONFIG_DIR,
                                  if f.endswith('.py') and f not in ('__init__.py', 'contract.py',
                                                                      'ternary_diagram.py')),
     }
+
+
+def list_resource_options(config_dir: str = CONFIG_DIR,
+                          phase_analysis_dir: str = PHASE_ANALYSIS_DIR) -> Dict[str, List[str]]:
+    """Return every installed, user-selectable scientific resource.
+
+    Names from this catalog are display labels, not filenames supplied by a
+    caller.  Keeping the catalog explicit prevents configuration values from
+    becoming path fragments when a project is loaded from an untrusted source.
+    """
+    options = list_config_options(config_dir, phase_analysis_dir)
+    phase_rows = load_phases(config_dir)
+    options['selected_phases'] = sorted(
+        phase.decode() if isinstance(phase, bytes) else str(phase)
+        for phase, _ in phase_rows
+    )
+    return options
+
+
+def validate_resource_selections(analysis_input: AnalysisInput, options: AnalysisOptions,
+                                 config_dir: str = CONFIG_DIR,
+                                 phase_analysis_dir: str = PHASE_ANALYSIS_DIR) -> None:
+    """Require configured resources to be installed, known selections.
+
+    This validation is intentionally performed before resolving resources and
+    again before an analysis runs.  In particular, it prevents a project file
+    from using a phase-analysis name as a path to import server-side code.
+    """
+    catalog = list_resource_options(config_dir, phase_analysis_dir)
+
+    def require_known(label: str, value: Optional[str], category: str) -> None:
+        if value is not None and value not in catalog[category]:
+            raise ValueError('Unknown %s selection: %s' % (label, value))
+
+    require_known('stoichiometry', analysis_input.stoichiometry_name, 'stoichiometry')
+    require_known('k-factor', options.kfactors, 'kfactors')
+    require_known('arbitrary absorption', options.arbitrary_absorption,
+                  'arbitrary_absorption')
+    require_known('phase analysis', options.phase_analysis, 'phase_analysis')
+    unknown_phases = set(options.selected_phases or []).difference(catalog['selected_phases'])
+    if unknown_phases:
+        raise ValueError('Unknown selected phase(s): %s' % ', '.join(sorted(unknown_phases)))
 
 
 def load_input_csv(path: str) -> AnalysisInput:
@@ -495,6 +538,15 @@ def run_analysis(input_data: Any, input_type: str = 'Counts', options: Optional[
                  resolved_resources: Optional[Any] = None) -> AnalysisResult:
     analysis_input = _coerce_input(input_data, input_type)
     analysis_options = _coerce_options(options)
+    # Archived resources permit reproducible reruns even when callers provide
+    # a deliberately empty resource directory.  Their selection labels must
+    # nevertheless be known built-ins, so validate them against the installed
+    # catalog rather than treating a supplied path as authoritative.
+    catalog_config_dir = config_dir if resolved_resources is None else CONFIG_DIR
+    catalog_phase_analysis_dir = (phase_analysis_dir if resolved_resources is None
+                                  else PHASE_ANALYSIS_DIR)
+    validate_resource_selections(analysis_input, analysis_options, catalog_config_dir,
+                                 catalog_phase_analysis_dir)
     if resolved_resources is None:
         resources = resolve_resources(analysis_input, analysis_options, config_dir,
                                       phase_analysis_dir)

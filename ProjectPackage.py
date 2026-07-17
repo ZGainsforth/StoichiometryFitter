@@ -18,6 +18,7 @@ import math
 import os
 from pathlib import PurePosixPath
 import re
+import stat
 import shutil
 import tempfile
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
@@ -37,6 +38,7 @@ MEDIA_TYPE = 'application/vnd.stoichiometry-fitter.project+zip'
 MAX_ARCHIVE_SIZE = 100 * 1024 * 1024
 MAX_ENTRY_SIZE = 25 * 1024 * 1024
 MAX_ENTRIES = 1000
+MAX_COMPRESSION_RATIO = 100
 HTML_PROJECT_ID_RE = re.compile(
     rb'<meta\s+name=["\']stoichiometry-fitter-project-id["\']\s+content=["\']([^"\']+)["\']',
     re.IGNORECASE)
@@ -332,17 +334,76 @@ def export_table_csv_bytes(table: core.ResultTable) -> bytes:
 def export_svg_bytes(figure: ImageArtifact) -> bytes:
     if figure.mime_type != 'image/svg+xml' or not isinstance(figure.payload, str):
         raise ProjectError('Only SVG image artifacts can be exported.')
-    if '<svg' not in figure.payload.lower():
+    return validate_svg_payload(figure.payload).encode('utf-8')
+
+
+def _svg_name(value: str) -> str:
+    return value.rsplit('}', 1)[-1].lower()
+
+
+def _safe_svg_reference(value: str) -> bool:
+    """Allow only local SVG fragment references such as ``url(#clip)``."""
+    text = str(value).strip()
+    lowered = text.lower()
+    if any(token in lowered for token in ('javascript:', 'data:', 'file:', 'http:', 'https:', '@import', 'expression(')):
+        return False
+    for match in re.finditer(r'url\(\s*([^)]*?)\s*\)', text, flags=re.I):
+        target = match.group(1).strip().strip('\"\'')
+        if not target.startswith('#'):
+            return False
+    return True
+
+
+def validate_svg_payload(payload: str) -> str:
+    """Validate SVG for inert browser display and download.
+
+    Project packages may be received from another machine, so figure SVG is
+    treated as untrusted even though installed phase analyses normally produce
+    it.  The accepted subset permits ordinary Matplotlib SVG (including local
+    clip-path references) but excludes executable and externally loaded nodes.
+    """
+    if not isinstance(payload, str):
         raise ProjectError('Invalid SVG artifact.')
-    if '<!ENTITY' in figure.payload.upper():
+    if re.search(r'<!\s*entity\b', payload, flags=re.I):
         raise ProjectError('SVG entities are not permitted.')
+    doctype = re.search(r'<!\s*doctype\b([^>]|\[[\s\S]*?\])*?>', payload, flags=re.I)
+    if doctype:
+        if '[' in doctype.group(0):
+            raise ProjectError('SVG internal declarations are not permitted.')
+        # Matplotlib emits a harmless SVG 1.1 public doctype.  Drop it so no
+        # renderer has a reason to resolve the declared external DTD.
+        payload = payload[:doctype.start()] + payload[doctype.end():]
     try:
-        root = ElementTree.fromstring(figure.payload)
+        root = ElementTree.fromstring(payload)
     except ElementTree.ParseError as exc:
         raise ProjectError('Invalid SVG artifact.') from exc
-    if root.tag.split('}')[-1].lower() != 'svg':
+    if _svg_name(root.tag) != 'svg':
         raise ProjectError('Image artifact root must be SVG.')
-    return figure.payload.encode('utf-8')
+    # Matplotlib records Dublin Core metadata with external namespace URLs.
+    # It is not needed to display the figure, so omit metadata instead of
+    # permitting external-looking references from an uploaded artifact.
+    for parent in root.iter():
+        for child in list(parent):
+            if _svg_name(child.tag) == 'metadata':
+                parent.remove(child)
+    blocked_tags = {'script', 'foreignobject', 'iframe', 'object', 'embed', 'image',
+                    'audio', 'video', 'animate', 'animatecolor', 'animatemotion',
+                    'animatetransform', 'set', 'mpath'}
+    for element in root.iter():
+        tag = _svg_name(element.tag)
+        if tag in blocked_tags:
+            raise ProjectError('SVG contains unsafe element: %s.' % tag)
+        if tag == 'style' and not _safe_svg_reference(element.text or ''):
+            raise ProjectError('SVG contains an unsafe style reference.')
+        for attribute, value in element.attrib.items():
+            name = _svg_name(attribute)
+            if name.startswith('on') or name in ('base', 'src'):
+                raise ProjectError('SVG contains an unsafe attribute: %s.' % name)
+            if name == 'href' and not str(value).strip().startswith('#'):
+                raise ProjectError('SVG contains an external reference.')
+            if not _safe_svg_reference(value):
+                raise ProjectError('SVG contains an unsafe reference.')
+    return ElementTree.tostring(root, encoding='unicode')
 
 
 def export_input_csv(analysis_input: core.AnalysisInput, path: str) -> None:
@@ -583,14 +644,7 @@ html{font-family:system-ui,-apple-system,sans-serif;color:#202124;background:#ff
 
 
 def _sanitize_svg(payload: str) -> str:
-    if not isinstance(payload, str) or '<svg' not in payload.lower():
-        raise ProjectError('Invalid SVG figure.')
-    value = re.sub(r'<\?xml\b.*?\?>', '', payload, flags=re.I | re.S)
-    value = re.sub(r'<!DOCTYPE\b.*?>', '', value, flags=re.I | re.S)
-    value = re.sub(r'<script\b[^>]*>.*?</script\s*>', '', value, flags=re.I | re.S)
-    value = re.sub(r'\s(?:on[a-z]+)\s*=\s*(?:"[^"]*"|\'[^\']*\')', '', value, flags=re.I)
-    value = re.sub(r'\s(?:href|xlink:href)\s*=\s*(["\'])\s*(?:https?:|javascript:|data:text/html)[^"\']*\1', '', value, flags=re.I)
-    return value
+    return validate_svg_payload(payload)
 
 
 def _build_entries(project: Project) -> Dict[str, bytes]:
@@ -636,6 +690,8 @@ def validate_project(project: Project) -> None:
     validate_analysis_input(project.input)
     validate_options(project.options)
     validate_resources(project.resources)
+    if project.original_source is not None:
+        validate_original_source(project.original_source)
     _validate_json_value(project.metadata, 'Project metadata')
     _validate_json_value(project.calculation_fingerprint, 'Calculation fingerprint')
     if project.result:
@@ -749,6 +805,23 @@ def _safe_zip_path(name: str) -> bool:
     return not any(part in ('', '.', '..') for part in path.parts)
 
 
+def _safe_zip_member(info: zipfile.ZipInfo) -> bool:
+    """Return whether a ZIP member is a regular, bounded, readable file."""
+    if not _safe_zip_path(info.filename) or info.is_dir() or info.flag_bits & 0x1:
+        return False
+    mode = (info.external_attr >> 16) & 0xffff
+    file_type = stat.S_IFMT(mode)
+    if file_type and file_type != stat.S_IFREG:
+        return False
+    if info.file_size > MAX_ENTRY_SIZE:
+        return False
+    if info.file_size and not info.compress_size:
+        return False
+    if (info.compress_size and info.file_size / info.compress_size > MAX_COMPRESSION_RATIO):
+        return False
+    return True
+
+
 def _read_archive(data: bytes) -> Tuple[Dict[str, bytes], Dict[str, Any]]:
     if len(data) > MAX_ARCHIVE_SIZE:
         raise ProjectError('Project package exceeds the maximum archive size.')
@@ -765,10 +838,11 @@ def _read_archive(data: bytes) -> Tuple[Dict[str, bytes], Dict[str, Any]]:
             raise ProjectError('Project package contains duplicate ZIP members.')
         total = 0
         for info in infos:
-            if not _safe_zip_path(info.filename) or info.is_dir():
+            if not _safe_zip_path(info.filename):
                 raise ProjectError('Project package contains an unsafe ZIP path.')
-            if info.file_size > MAX_ENTRY_SIZE:
-                raise ProjectError('Project package entry is too large: %s' % info.filename)
+            if not _safe_zip_member(info):
+                raise ProjectError('Project package contains an unsafe ZIP member: %s' %
+                                   info.filename)
             total += info.file_size
         if total > MAX_ARCHIVE_SIZE:
             raise ProjectError('Expanded project package is too large.')
@@ -808,6 +882,8 @@ def _read_archive(data: bytes) -> Tuple[Dict[str, bytes], Dict[str, Any]]:
         if not isinstance(item.get('path'), str) or not isinstance(item.get('description'), str):
             raise ProjectError('Manifest entry path or description is invalid.')
         path = item['path']
+        if not _safe_zip_path(path):
+            raise ProjectError('Project package contains an unsafe ZIP path.')
         if path in listed:
             raise ProjectError('Manifest contains a duplicate inventory entry.')
         listed.add(path)
@@ -933,6 +1009,7 @@ def load_stf_bytes(data: bytes) -> Project:
                       result, source, fingerprint,
                       dict(payload.get('metadata', {})), payload.get('schema_version'))
     validate_project(project)
+    core.validate_resource_selections(project.input, project.options)
     expected_source_provenance = None
     if project.original_source:
         expected_source_provenance = {
@@ -947,21 +1024,14 @@ def load_stf_bytes(data: bytes) -> Project:
                            'original_source': expected_source_provenance}
     if manifest.get('provenance') != expected_provenance:
         raise ProjectError('Manifest provenance does not match project.json.')
-    if entries.get('data/inputs/input.csv') != export_input_csv_bytes(project.input):
-        raise ProjectError('Normalized input CSV does not match project.json.')
-    if entries.get('data/outputs/report.txt') != export_report_text_bytes(project):
-        raise ProjectError('Text report does not match project.json.')
-    if result_payload is not None:
-        for table, table_payload in zip(project.result.tables, result_payload['tables']):
-            if entries.get(table_payload.get('path')) != export_table_csv_bytes(table):
-                raise ProjectError('Archived table CSV does not match project.json.')
-        for figure, figure_payload in zip(project.result.figures, result_payload.get('figures', [])):
-            if entries.get(figure_payload.get('path')) != export_svg_bytes(figure):
-                raise ProjectError('Archived SVG does not match project.json.')
-    # The internal report is presentation only, but requiring an exact render
-    # prevents a stale or injected HTML member from accompanying valid data.
-    if entries.get('report.html') != render_html_report(project).encode('utf-8'):
-        raise ProjectError('Internal HTML report is missing, stale, or invalid.')
+    expected_entries = _build_entries(project)
+    actual_entries = {path: content for path, content in entries.items()
+                      if path != 'manifest.json'}
+    if set(actual_entries) != set(expected_entries):
+        raise ProjectError('Project package contains undeclared or missing members.')
+    for path, expected_content in expected_entries.items():
+        if actual_entries[path] != expected_content:
+            raise ProjectError('Project package member is stale or invalid: %s.' % path)
     return project
 
 
@@ -1113,6 +1183,11 @@ def rerun_project(project: Project, config_dir: str = core.CONFIG_DIR,
 
 Loader = Tuple[str, Callable[[bytes, str], bool], Callable[[bytes, str], core.AnalysisInput]]
 _LOADERS: List[Loader] = []
+LEGACY_ELEMENT_SYMBOLS = {
+    # IUPAC's temporary names appear in historic 118-row Stoichiometry Fitter
+    # CSV files.  Accept them on import while always exporting current names.
+    'Uut': 'Nh', 'Uup': 'Mc', 'Uus': 'Ts', 'Uuo': 'Og',
+}
 
 
 def register_input_loader(name: str, detector: Callable[[bytes, str], bool],
@@ -1164,7 +1239,7 @@ def _legacy_csv_load(data: bytes, filename: str) -> core.AnalysisInput:
     for row_number, row in enumerate(rows[1:], start=2):
         if len(row) < 2:
             raise ProjectError('CSV row %d has fewer than two columns.' % row_number)
-        element = row[0].strip()
+        element = LEGACY_ELEMENT_SYMBOLS.get(row[0].strip(), row[0].strip())
         if element not in values or element in seen:
             raise ProjectError('CSV contains an unknown or duplicate element: %s' % element)
         values[element] = _finite(row[1].strip(), 'CSV row %d' % row_number)
@@ -1244,6 +1319,21 @@ def detect_and_load_input_bytes(data: bytes, filename: str = 'input') -> Importe
             return ImportedInput(analysis_input,
                                  OriginalSource(filename, name, data))
     raise ProjectError('Unsupported input format. Expected Stoichiometry Fitter CSV, Bruker text, or HyperSpy CSV.')
+
+
+def validate_original_source(source: OriginalSource) -> None:
+    """Ensure archived source bytes are an actually supported measurement input.
+
+    A source file is retained for provenance only.  Re-detecting it here means
+    an STF cannot use that otherwise opaque member to carry arbitrary binary
+    payloads under a benign archive path.
+    """
+    try:
+        imported = detect_and_load_input_bytes(source.content, source.filename)
+    except (ProjectError, UnicodeDecodeError) as exc:
+        raise ProjectError('Archived original source is not a supported input file.') from exc
+    if imported.source.detected_format != source.detected_format:
+        raise ProjectError('Archived original source format does not match its metadata.')
 
 
 def detect_and_load_input_stream(stream, filename: str = 'input') -> ImportedInput:

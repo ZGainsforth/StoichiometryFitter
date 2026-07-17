@@ -1,0 +1,3 @@
+# Optional legacy wxPython desktop application
+-r requirements-core.txt
+wxPython>=4.2

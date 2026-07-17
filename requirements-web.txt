@@ -1,0 +1,2 @@
+# Browser service; install alongside requirements-core.txt
+nicegui>=2
