@@ -4,6 +4,7 @@ __copyright__ = 'Copyright 2014, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
 
 from numpy import *
+from PhaseAnalysis.contract import phase_output
 if __name__ != '__main__':
     import PhysicsBasics as pb
 from PhaseFit import FitPhases
@@ -75,9 +76,6 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     #Normalize our AtPct vector.
     AtPct = AtPct/sum(AtPct)*100
 
-    # This isn't fully implemented yet.  Intention is to compute free energies for spinel at some point based on Sack & Ghiorso.
-    GetThermodynamicPropertiesForSpinel(AtPct)
-
     # We output an output string which contains the analysis.
     OutStr = '--- Spinel Analysis ---\n\n'
 
@@ -94,13 +92,13 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     if OtherCations > 2:
         OutStr += 'More than 2% of the atomic abundance is comprised by atoms other than: ' + ' '.join(KnownElements) + '.'
         OutStr += '\nCannot analyze.'
-        return OutStr
+        return phase_output('Spinel', OutStr)
 
     # If the cation/O ratio is off by more than 2%, then we can't analyze it.
     if (abs(AtPct[pb.O-1] - 4/7*100) > 2) or (abs((sum(AtPct)-AtPct[pb.O-1]) - 3/7*100) > 2):
         OutStr += 'Cation/Anion ratio is not within 2% of 3/4.'
         OutStr += '\nCannot analyze.'
-        return OutStr
+        return phase_output('Spinel', OutStr)
 
     E = dict()
 
@@ -214,7 +212,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += 'Note, the cations should ideally be 3 for spinel.\n'
     OutStr += '\n'
 
-    return OutStr, None
+    return phase_output('Spinel', OutStr)
 
 
 if __name__ == '__main__':
@@ -259,4 +257,3 @@ if __name__ == '__main__':
     AtPct[pb.Si-1] = 0.005
     print('UC Chromite:\n')
     print(AnalyzePhase(AtPct))
-

@@ -4,6 +4,7 @@ __copyright__ = 'Copyright 2017, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
 
 from numpy import *
+from PhaseAnalysis.contract import phase_output
 if __name__ != '__main__':
     import PhysicsBasics as pb
 
@@ -91,7 +92,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += 'Ref: Stoichiometry calculation based on Nepheline solid solution compositions:  stoichiometry revisited, reviewed, clarified and rationalized (2020). C. Michael B. Henderson, Mineralogical Magazine, 84, 813-838, doi:10.1180/mgm.2020.78'
 
 
-    return OutStr, None
+    return phase_output('Feldspathoid', OutStr)
 
 if __name__ == '__main__':
 

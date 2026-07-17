@@ -4,6 +4,7 @@ __copyright__ = 'Copyright 2014, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
 
 from numpy import *
+from PhaseAnalysis.contract import phase_output
 if __name__ != '__main__':
     import PhysicsBasics as pb
 
@@ -31,13 +32,13 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     if OtherCations > 2:
         OutStr += 'More than 2% of the atomic abundance is comprised by atoms other than: ' + ' '.join(KnownElements) + '.'
         OutStr += '\nCannot analyze.'
-        return OutStr, None
+        return phase_output('Olivine', OutStr)
 
     # If the cation/O ratio is off by more than 2%, then we can't analyze it.
     if (abs(AtPct[pb.O-1] - 4/7*100) > 2) or (abs((sum(AtPct)-AtPct[pb.O-1]) - 3/7*100) > 2):
         OutStr += 'Cation/Anion ratio is not within 2% of 3/4.'
         OutStr += '\nCannot analyze.'
-        return OutStr, None
+        return phase_output('Olivine', OutStr)
 
     E = dict()
 
@@ -79,7 +80,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Total Cats', CationSum)
 
 
-    return OutStr, None
+    return phase_output('Olivine', OutStr)
     
 if __name__ == '__main__':
 
@@ -110,4 +111,3 @@ if __name__ == '__main__':
     AtPct[pb.Ni-1] = 0.074
     print('UC Fo87:\n')
     print(AnalyzePhase(AtPct))
-

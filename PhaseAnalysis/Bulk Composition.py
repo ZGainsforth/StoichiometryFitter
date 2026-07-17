@@ -3,23 +3,11 @@ __author__ = 'Zack Gainsforth'
 __copyright__ = 'Copyright 2015, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
 
-import matplotlib
-import matplotlib.pyplot as plt
 from numpy import *
 import os
+from PhaseAnalysis.contract import phase_output
 if __name__ != '__main__':
     import PhysicsBasics as pb
-
-# Set the bold level.
-boldlevel=3
-FontSizeBasis = (boldlevel+2)*4    # Fonts get bigger as boldlevel increases
-TickMajorBasis = boldlevel*4    # As fonts get bigger, they need a larger padding from the axis.
-# Increase the size of the tick label fonts.
-matplotlib.rc('xtick', labelsize=FontSizeBasis)
-matplotlib.rc('ytick', labelsize=FontSizeBasis)
-# Increase their padding.
-matplotlib.rc('xtick.major', pad=TickMajorBasis)
-matplotlib.rc('ytick.major', pad=TickMajorBasis)
 
 def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
 
@@ -84,7 +72,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
 
     OutStr += '\nRef:Lodders, K. (2003). Solar System Abundances and Condensation Temperatures of the Elements. The Astrophysical Journal, 591(2), 1220-1247. http://doi.org/10.1086/375492\n'
 
-    return OutStr, None
+    return phase_output('Bulk Composition', OutStr)
     
 if __name__ == '__main__':
 

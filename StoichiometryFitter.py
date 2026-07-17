@@ -16,6 +16,13 @@ __email__ = 'zsg@gainsforth.com'
 
 import pickle
 import wx
+import builtins
+from copy import deepcopy
+import xml.etree.ElementTree as ElementTree
+try:
+    import wx.svg as wxsvg
+except ImportError:
+    wxsvg = None
 from numpy import *
 import os
 import ReportResults
@@ -78,6 +85,172 @@ class EditableTextListCtrl(wx.ListCtrl, TextEditMixin):
             super(EditableTextListCtrl, self).OpenEditor(col, row)
 
 
+class SVGFigureFrame(wx.Frame):
+    """A resizable, zoomable wx viewer for one portable SVG artifact."""
+
+    def __init__(self, parent, title, svg_payload):
+        wx.Frame.__init__(self, parent, title='Phase Analysis Figure - ' + title, size=(1, 1))
+        self._svg_image = wxsvg.SVGimage.CreateFromBytes(svg_payload)
+        self._native_width = builtins.max(1, int(builtins.round(self._svg_image.width)))
+        self._native_height = builtins.max(1, int(builtins.round(self._svg_image.height)))
+        self._scale = 1.0
+        self._fit_mode = True
+        self._pixel_buffer = None
+        self._initial_layout = True
+        self._drag_start = None
+        self._drag_view_start = None
+
+        panel = wx.Panel(self)
+        self._viewer_panel = panel
+        outer_sizer = wx.BoxSizer(wx.VERTICAL)
+        controls = wx.BoxSizer(wx.HORIZONTAL)
+        zoom_out = wx.Button(panel, label='Zoom -')
+        zoom_in = wx.Button(panel, label='Zoom +')
+        fit = wx.Button(panel, label='Fit')
+        controls.Add(zoom_out, 0, wx.ALL, 4)
+        controls.Add(zoom_in, 0, wx.ALL, 4)
+        controls.Add(fit, 0, wx.ALL, 4)
+        controls.Add(wx.StaticText(panel, label='Mouse wheel zooms; left-drag or scrollbars pan.'),
+                     0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
+        self._controls = controls
+        outer_sizer.Add(controls, 0, wx.EXPAND)
+
+        self.scroller = wx.ScrolledWindow(panel)
+        self.scroller.SetScrollRate(1, 1)
+        self.scroller.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+        outer_sizer.Add(self.scroller, 1, wx.EXPAND)
+        panel.SetSizer(outer_sizer)
+        frame_sizer = wx.BoxSizer(wx.VERTICAL)
+        frame_sizer.Add(panel, 1, wx.EXPAND)
+        self.SetSizer(frame_sizer)
+
+        zoom_out.Bind(wx.EVT_BUTTON, lambda event: self._zoom(1 / 1.10))
+        zoom_in.Bind(wx.EVT_BUTTON, lambda event: self._zoom(1.10))
+        fit.Bind(wx.EVT_BUTTON, lambda event: self._fit_image())
+        self.scroller.Bind(wx.EVT_PAINT, self._on_paint)
+        self.scroller.Bind(wx.EVT_SCROLLWIN, self._on_scroll)
+        self.scroller.Bind(wx.EVT_MOUSEWHEEL, self._on_mouse_wheel)
+        self.scroller.Bind(wx.EVT_LEFT_DOWN, self._on_left_down)
+        self.scroller.Bind(wx.EVT_MOTION, self._on_mouse_motion)
+        self.scroller.Bind(wx.EVT_LEFT_UP, self._on_left_up)
+        self.Bind(wx.EVT_SIZE, self._on_size)
+        wx.CallAfter(self._size_to_native_image)
+
+    def _render(self):
+        width = builtins.max(1, int(builtins.round(self._native_width * self._scale)))
+        height = builtins.max(1, int(builtins.round(self._native_height * self._scale)))
+        self.scroller.SetVirtualSize((width, height))
+        self.scroller.Refresh(False)
+
+    def _on_paint(self, event):
+        """Rasterize only the visible SVG viewport, even at high zoom."""
+        client = self.scroller.GetClientSize()
+        width = builtins.max(1, client.width)
+        height = builtins.max(1, client.height)
+        units_x, units_y = self.scroller.GetScrollPixelsPerUnit()
+        view_x, view_y = self.scroller.GetViewStart()
+        offset_x = view_x * units_x
+        offset_y = view_y * units_y
+        self._pixel_buffer = bytearray(width * height * 4)
+        self._svg_image.RasterizeToBuffer(
+            self._pixel_buffer, tx=-offset_x, ty=-offset_y, scale=self._scale,
+            width=width, height=height, stride=width * 4)
+        bitmap = wx.Bitmap.FromBufferRGBA(width, height, self._pixel_buffer)
+        dc = wx.AutoBufferedPaintDC(self.scroller)
+        dc.SetBackground(wx.Brush(self.scroller.GetBackgroundColour()))
+        dc.Clear()
+        self.scroller.PrepareDC(dc)
+        dc.DrawBitmap(bitmap, offset_x, offset_y, True)
+
+    def _on_scroll(self, event):
+        event.Skip()
+        wx.CallAfter(self._render)
+
+    def _fit_image(self):
+        available = self.scroller.GetClientSize()
+        available_width = builtins.max(1, available.width - 12)
+        available_height = builtins.max(1, available.height - 12)
+        self._scale = builtins.max(0.05, builtins.min(
+            available_width / self._native_width, available_height / self._native_height))
+        self._fit_mode = True
+        self._render()
+
+    def _size_to_native_image(self):
+        """Open at the SVG's native size, including only the viewer controls."""
+        self._scale = 1.0
+        self._render()
+        controls_height = self._controls.CalcMin().height
+        self.SetClientSize((self._native_width + 12, self._native_height + controls_height + 12))
+        self._initial_layout = False
+
+    def _zoom(self, factor, focus=None):
+        old_scale = self._scale
+        old_width = self._native_width * old_scale
+        old_height = self._native_height * old_scale
+        if focus is None:
+            size = self.scroller.GetClientSize()
+            focus = wx.Point(size.width // 2, size.height // 2)
+        units_x, units_y = self.scroller.GetScrollPixelsPerUnit()
+        view_x, view_y = self.scroller.GetViewStart()
+        content_x = view_x * units_x + focus.x
+        content_y = view_y * units_y + focus.y
+        relative_x = content_x / old_width if old_width else 0
+        relative_y = content_y / old_height if old_height else 0
+        self._scale = builtins.max(0.05, builtins.min(24.0, old_scale * factor))
+        self._fit_mode = False
+        self._render()
+        new_x = relative_x * self._native_width * self._scale - focus.x
+        new_y = relative_y * self._native_height * self._scale - focus.y
+        self.scroller.Scroll(
+            int(builtins.max(0, new_x) / units_x) if units_x else 0,
+            int(builtins.max(0, new_y) / units_y) if units_y else 0,
+        )
+
+    def _event_position(self, event):
+        """Return an event position in the scroller's visible coordinates."""
+        return event.GetPosition()
+
+    def _on_mouse_wheel(self, event):
+        rotation = event.GetWheelRotation()
+        if rotation:
+            wheel_delta = event.GetWheelDelta() or 120
+            # Preserve fractional touchpad/wheel rotation.  A conventional
+            # wheel notch changes scale by only 10%, while smaller rotations
+            # produce correspondingly smaller scale steps.
+            factor = 1.10 ** (rotation / wheel_delta)
+            self._zoom(factor, self._event_position(event))
+
+    def _on_left_down(self, event):
+        self._drag_start = self._event_position(event)
+        self._drag_view_start = self.scroller.GetViewStart()
+        self.scroller.CaptureMouse()
+
+    def _on_mouse_motion(self, event):
+        if (self._drag_start is None or self._drag_view_start is None or
+                not event.Dragging() or not event.LeftIsDown()):
+            event.Skip()
+            return
+        current = self._event_position(event)
+        units_x, units_y = self.scroller.GetScrollPixelsPerUnit()
+        start_x, start_y = self._drag_view_start
+        self.scroller.Scroll(
+            builtins.max(0, int(start_x - (current.x - self._drag_start.x) / units_x)) if units_x else 0,
+            builtins.max(0, int(start_y - (current.y - self._drag_start.y) / units_y)) if units_y else 0,
+        )
+        self._render()
+
+    def _on_left_up(self, event):
+        if self.scroller.HasCapture():
+            self.scroller.ReleaseMouse()
+        self._drag_start = None
+        self._drag_view_start = None
+
+    def _on_size(self, event):
+        event.Skip()
+        if not self._initial_layout and self._fit_mode:
+            wx.CallAfter(self._fit_image)
+
+
 
 
 class MyMenuBar(wx.MenuBar):
@@ -120,8 +293,6 @@ class MyFrame(wx.Frame):
         self.panel_1 = wx.Panel(self, wx.ID_ANY)
         self.panel_2 = wx.Panel(self.panel_1, wx.ID_ANY)
         # The following lines are the parts that need to be samed -- Roger
-        if os.path.exists(PICKLE_FILE):
-            print("FIXME")
         self.chkPhaseAnalysis = wx.CheckBox(self.panel_1, wx.ID_ANY, "") #FIXME Phase Analysis Checkbox
         self.cmbPhaseAnalysis = wx.ComboBox(self.panel_1, wx.ID_ANY, choices=[], style=wx.CB_READONLY) #FIXME Phase Analysis drop box
         self.chkArbAbsCorrection = wx.CheckBox(self.panel_1, wx.ID_ANY, "") #FIXME Arb abs Checkbox
@@ -348,7 +519,7 @@ class MyFrame(wx.Frame):
 
         """ POPULATE PHASE ANALYSIS PULLDOWN """
         for file in os.listdir(StoichiometryCore.PHASE_ANALYSIS_DIR):
-            if file.endswith('.py') and file not in ('__init__.py', 'ternary_diagram.py'):
+            if file.endswith('.py') and file not in ('__init__.py', 'contract.py', 'ternary_diagram.py'):
                 phasename = os.path.splitext(file)[0]
                 self.cmbPhaseAnalysis.Append(phasename)
         self.cmbPhaseAnalysis.Select(0)
@@ -403,6 +574,7 @@ class MyFrame(wx.Frame):
             self.ElementsListCtrl.SetItem(Z - 1, 1, '0')
         # The stoichometry column is separately populated by this function...
         self.OnStoichSelect(None)
+        self.UpdateInputType('Counts')
 
 
     def OnReset(self, event):  # wxGlade: MyFrame.<event_handler>
@@ -509,6 +681,11 @@ class MyFrame(wx.Frame):
         self.txtOutput.SetValue(self.LastAnalysisResult.report_text)
         for warning in self.LastAnalysisResult.warnings:
             self.txtOutput.AppendText('\nWarning: %s\n' % warning)
+        if self.LastAnalysisResult.figures:
+            figure_warning = self.ShowPhaseAnalysisFigures(self.LastAnalysisResult.figures)
+            if figure_warning:
+                self.LastAnalysisResult.warnings.append(figure_warning)
+                self.txtOutput.AppendText('\nWarning: %s\n' % figure_warning)
 
         # Saving the entry to the pickle file. Fixed by Roger
         add_to_pickle(PICKLE_FILE, self.cmbPhaseAnalysis.StringSelection)
@@ -535,6 +712,69 @@ class MyFrame(wx.Frame):
         if event is not None:
             event.Skip()
 
+    def _svg_for_wx_rasterization(self, payload):
+        """Expand SVG ``use`` nodes that wx.svg's NanoSVG renderer omits.
+
+        Matplotlib stores marker and glyph paths in ``defs`` and references
+        them with ``use``.  The canonical SVG remains unchanged for saving and
+        browser/notebook use; this only prepares a renderer-compatible copy.
+        """
+        svg_namespace = '{http://www.w3.org/2000/svg}'
+        xlink_href = '{http://www.w3.org/1999/xlink}href'
+        root = ElementTree.fromstring(payload)
+        identifiers = {
+            node.attrib['id']: node for node in root.iter() if 'id' in node.attrib
+        }
+
+        def expand(parent):
+            for index, child in enumerate(list(parent)):
+                if child.tag != svg_namespace + 'use':
+                    expand(child)
+                    continue
+                href = child.get('href') or child.get(xlink_href)
+                target = identifiers.get(href[1:]) if href and href.startswith('#') else None
+                if target is None:
+                    continue
+                replacement = deepcopy(target)
+                replacement.attrib.pop('id', None)
+                transforms = []
+                x = child.get('x')
+                y = child.get('y')
+                if x or y:
+                    transforms.append('translate(%s %s)' % (x or '0', y or '0'))
+                if child.get('transform'):
+                    transforms.append(child.get('transform'))
+                if replacement.get('transform'):
+                    transforms.append(replacement.get('transform'))
+                if transforms:
+                    replacement.set('transform', ' '.join(transforms))
+                for key, value in child.attrib.items():
+                    if key not in ('href', xlink_href, 'x', 'y', 'transform'):
+                        replacement.set(key, value)
+                parent.remove(child)
+                parent.insert(index, replacement)
+                expand(replacement)
+
+        expand(root)
+        ElementTree.register_namespace('', 'http://www.w3.org/2000/svg')
+        ElementTree.register_namespace('xlink', 'http://www.w3.org/1999/xlink')
+        return ElementTree.tostring(root, encoding='utf-8', xml_declaration=True)
+
+    def ShowPhaseAnalysisFigures(self, figures):
+        """Display each returned SVG artifact in its own non-modal window."""
+        if wxsvg is None:
+            return 'SVG display support is unavailable; phase-analysis figures remain available for SVG export.'
+        try:
+            self._phase_figure_frames = [
+                SVGFigureFrame(self, artifact.title, self._svg_for_wx_rasterization(artifact.payload))
+                for artifact in figures
+            ]
+            for frame in self._phase_figure_frames:
+                frame.Show()
+        except Exception as exc:
+            return 'Could not display SVG phase-analysis figures (%s); they remain available for SVG export.' % exc
+        return None
+
     def UpdateInputType(self, InputType=None):
         # If InputType=None, then this is being called because the user changed the input type.
         # If it is 'Counts', 'At%' or 'Wt%' then we are being asked to update the type ourselves.
@@ -553,9 +793,7 @@ class MyFrame(wx.Frame):
         # We use kfacs and arbitrary absorption correction (optionally) for counts.  At% and Wt% don't, ever.
         if self.rdioInputType.GetSelection() == 0:
             self.chkKfacs.SetValue(True)  # By default we'll use kfacs.
-            # For now, the chkKfacs is permanently disabled.  If we ever provide an SEM
-            # algorithm, or something then it should be a radio box.
-            self.chkKfacs.Disable()
+            self.chkKfacs.Enable()
             self.comboKfacs.Enable()
         else:
             self.chkKfacs.SetValue(False)  # Uncheck it.

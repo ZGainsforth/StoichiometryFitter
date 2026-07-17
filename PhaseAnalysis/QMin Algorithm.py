@@ -4,49 +4,36 @@ __email1__ = 'michaelofengend@gmail.com'
 __author2__ = 'Zhenbang Yu'
 __copyright2__ = 'Copyright 2022, Zhenbang Yu'
 __email2__ = 'roger_yu@berkeley.edu'
-import csv
-import pandas as pd
-#import openpyxl
 from numpy import *
-from collections import *
-import os
-from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.webelement import WebElement
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
-import time
-import chromedriver_autoinstaller
+from PhaseAnalysis.contract import phase_output
 if __name__ != '__main__':
     import PhysicsBasics as pb
 
 def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
-    global OutStr
     OutStr = '--- QMin Mineral Analysis ---\n\n'
     #KnownElements = ['O', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'K', 'Ca', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Ni']
     Known2lements = ['Si', 'Ti', 'Al', 'Fe', 'Mn', 'Mg', 'Ca', 'Ba', 'Sr', 'Pb', 'Na', 'K', 'Rb']
     E = dict()
-    frstRow = ['Point', 'SiO2', 'TiO2', 'Al2O3', 'FeOT', 'MnO', 'MgO', 'CaO', 'BaO', 'SrO', 'PbO', 'Na2O', 'K2O', 'Rb2O', 'Total']
-    print(frstRow)
-    scndRow = ['1']
     OutStr += "INPUT DATA:\n"
     for Element in Known2lements:
         x = round(eval('OxWtPct[pb.%s-1]'%(Element)), 4)
         E[Element] = x
         OutStr += f"{Element}, {x} \n"
-        scndRow.append(f'{x}')
     summmm = 0
     for x in list(E.values()):
         summmm += x
-    scndRow.append(f'{summmm}')
-    print(scndRow)
-    with open('qminFormat.csv', 'w') as csvfile:
-        wr = csv.writer(csvfile)
-        wr.writerow(frstRow)
-        wr.writerow(scndRow)
-    QminAlgo()
-    return OutStr, None
+    OutStr += '\nQMin remote classification is not run automatically. Export these oxide values to the QMin service if desired.\n'
+    table = {
+        'name': 'phase_analysis_qmin_algorithm_input_oxides',
+        'title': 'QMin oxide input',
+        'columns': ['oxide', 'value'],
+        'rows': [{'oxide': element, 'value': value} for element, value in E.items()] +
+                [{'oxide': 'Total', 'value': summmm}],
+        'metadata': {'phase_analysis': 'QMin Algorithm'},
+        'description': 'Oxide values prepared for optional manual QMin submission.',
+    }
+    return phase_output('QMin Algorithm', OutStr, tables=[table],
+                        warnings=['QMin remote classification was not run; analysis does not write files or launch a browser.'])
    
 def QminAlgo():
     global OutStr

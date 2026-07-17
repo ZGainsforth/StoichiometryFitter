@@ -4,6 +4,7 @@ __copyright__ = 'Copyright 2014, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
 
 from numpy import *
+from PhaseAnalysis.contract import phase_output
 if __name__ != '__main__':
     import PhysicsBasics as pb
 
@@ -60,11 +61,12 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     # We can't measure H so we must infer it from F and Cl.
     E['H'] = 0.0
     E['H'] = 2 - (E['F'] + E['Cl'])
+    warnings = []
     # Handle the situation that the input quant is doesn't add up to a valid solid solution.
     if E['H'] < -0.1:
-        print('Warning: Computed H is negative by more than 1/10 site.  Quants may be in error.\n')
+        warnings.append('Computed H is negative by more than 1/10 site. Quants may be in error.')
     if E['H'] > 2.1:
-        print('Warning: Hydrogen is more abundant than allowed by > 1/10 site.  Quants may be in error.  Assuming 2 H.\n')
+        warnings.append('Hydrogen is more abundant than allowed by > 1/10 site. Assuming 2 H.')
         E['H'] = 2
     # And ignore rounding errors.
     if E['H'] < 1e-9:
@@ -97,7 +99,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += '{:>11s}:    {:<1.3f}\n'.format('Total Atoms', CationSum)
 
 
-    return OutStr, None
+    return phase_output('Apatite', OutStr, warnings=warnings)
     
 if __name__ == '__main__':
 
@@ -152,4 +154,3 @@ if __name__ == '__main__':
     AtPct[pb.Ca-1] = 10/42*100
     print('Chlorapatite: Ca10 (PO4)6 Cl3 (invalid):\n')
     print(AnalyzePhase(AtPct))
-

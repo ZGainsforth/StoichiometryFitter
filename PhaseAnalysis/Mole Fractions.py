@@ -4,6 +4,7 @@ __copyright__ = 'Copyright 2017, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
 
 from numpy import *
+from PhaseAnalysis.contract import phase_output
 if __name__ != '__main__':
     import PhysicsBasics as pb
     from fractions import Fraction
@@ -79,8 +80,6 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
         # Compute the mol fractions: just the oxide weight % / oxide weights.
         for Element in KnownElements:
             E[Element] = eval('OxWtPct[pb.%s-1]/OxWt[pb.%s-1]'%(Element, Element))
-        print(E)
-
         # Renormalize
         MolFracNorm = sum(array([e for e in list(E.values())])) - E['O']
 
@@ -119,7 +118,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     # OutStr += CatsPerNOxygens(AtPct, KnownElements, 14)
     # OutStr += CatsPerNOxygens(AtPct, KnownElements, 18)
 
-    return OutStr, None
+    return phase_output('Mole Fractions', OutStr)
 
 if __name__ == '__main__':
 
@@ -138,4 +137,3 @@ if __name__ == '__main__':
     print('\n\n-----------------------\n\n')
     print('Pyroxene En75Fs20Wo3\n')
     print(AnalyzePhase(AtPct))
-

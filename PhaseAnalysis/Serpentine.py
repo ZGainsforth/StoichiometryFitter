@@ -4,6 +4,7 @@ __copyright__ = 'Copyright 2014, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
 
 from numpy import *
+from PhaseAnalysis.contract import phase_output
 if __name__ != '__main__':
     import PhysicsBasics as pb
 
@@ -126,7 +127,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += 'Tet is Al or Si, occasionally Fe can be included (not considered here)\n'
     OutStr += 'All other cations go in the octahedral sites.\n'
 
-    return OutStr, None
+    return phase_output('Serpentine', OutStr)
     
 if __name__ == '__main__':
 
@@ -140,4 +141,3 @@ if __name__ == '__main__':
     AtPct[pb.Si-1] = 2
     print('Serpentine: Mg3 Si2 O5 (OH)4:\n')
     print(AnalyzePhase(AtPct))
-

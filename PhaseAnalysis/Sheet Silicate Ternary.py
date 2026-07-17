@@ -8,6 +8,7 @@ if __name__ != '__main__':
     import PhysicsBasics as pb
 from PhaseAnalysis.ternary_diagram import TernaryDiagram
 import matplotlib.pyplot as plt
+from PhaseAnalysis.contract import phase_output, svg_artifact
 
 def norm(x):
     return x / np.sum(x)
@@ -43,14 +44,14 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     # --------------- DIAGRAM 1 (Si+Al), Fe, Mg --------------- 
 
     # Calculate the (Si+Al), Fe, Mg diagram.
-    CompoVector = [0,0,0] # Si+Al, Fe, Mg
+    CompoVector = np.zeros(3) # Si+Al, Fe, Mg
     CompoVector[0] = AtPct[pb.Si-1] + AtPct[pb.Al-1]
     CompoVector[1] = AtPct[pb.Fe-1]
     CompoVector[2] = AtPct[pb.Mg-1]
     CompoVector /= np.sum(CompoVector)
 
-    plt.figure(1)
-    plt.cla()
+    fig_sial_fe_mg, ax_sial_fe_mg = plt.subplots(figsize=(6.4, 4.8))
+    plt.sca(ax_sial_fe_mg)
 
     td = TernaryDiagram(['Si+Al', 'Fe', 'Mg'])
     # Draw serpentine and saponite boundary lines on the ternary.
@@ -64,12 +65,12 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     td.scatter([ CompoVector ], marker='X', s=300, alpha=0.7, color='orange') #, annotations=['Experimental'])
 
     # --------------- Tetrahedrals, Octahedrals, Interstitial --------------- 
-    plt.figure(2)
-    plt.cla()
+    fig_tet_oct_inter, ax_tet_oct_inter = plt.subplots(figsize=(6.4, 4.8))
+    plt.sca(ax_tet_oct_inter)
 
     # Calculate the Tetrahedrals, Octahedrals, Interstitial.
     # TMs = transition metals.
-    CompoVector = [0,0,0] # Tets, Octs, O
+    CompoVector = np.zeros(3) # Tets, Octs, O
     CompoVector[0] = TetAtPct
     CompoVector[1] = OctAtPct 
     CompoVector[2] = InterAtPct*10
@@ -83,9 +84,6 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     td.annotate('Saponite', [norm([3.5,3.5,5])], rotation=-35, ha='center', fontsize='large', color='royalblue')
     # Now mark the user's point.
     td.scatter([ CompoVector ], marker='d', s=300, alpha=0.7, color='orange') #, annotations=['Experimental'])
-
-
-    plt.show()
 
     OutStr += f'Tet/Oct atoms = {TetAtPct/OctAtPct:0.2f} \n'
     OutStr += f'Tet/Oct atoms = 0.66 ideal serpentine\n'
@@ -126,13 +124,17 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += f'Assuming octahdral atoms are: {", ".join([a for a in OctahedralAtoms])}. \n'
     OutStr += f'Assuming interstitial atoms are: {", ".join([a for a in InterstitialAtoms])}. \n'
 
-    return OutStr, None
-    
-def SaveResults(FileRoot):
-    plt.figure(1)
-    plt.savefig(FileRoot + '_Ternary_SiAl_Fe_Mg.png', dpi=300)
-    plt.figure(2)
-    plt.savefig(FileRoot + '_Ternary_Tet_Oct_Inter.png', dpi=300)
+    figures = [
+        svg_artifact(fig_sial_fe_mg, 'sheet_silicate_sial_fe_mg',
+                     'Sheet silicate Si+Al–Fe–Mg ternary',
+                     'Ternary diagram of Si+Al, Fe, and Mg for the analyzed sheet silicate.'),
+        svg_artifact(fig_tet_oct_inter, 'sheet_silicate_tet_oct_interstitial',
+                     'Sheet silicate tetrahedral–octahedral–interstitial ternary',
+                     'Ternary diagram of tetrahedral, octahedral, and interstitial site atoms.'),
+    ]
+    plt.close(fig_sial_fe_mg)
+    plt.close(fig_tet_oct_inter)
+    return phase_output('Sheet Silicate Ternary', OutStr, figures=figures)
 
 if __name__ == '__main__':
 

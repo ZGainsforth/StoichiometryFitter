@@ -4,6 +4,7 @@ __copyright__ = 'Copyright 2014, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
 
 from numpy import *
+from PhaseAnalysis.contract import phase_output
 from collections import *
 if __name__ != '__main__':
     import PhysicsBasics as pb
@@ -294,7 +295,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += 'Ref: Morimoto, N., Fabries, J., Ferguson, A. K., Ginzburg, I. V., Ross, M., Seifert, F. A., et al. (1988). Nomenclature of pyroxenes. American Mineralogist, 73, 1123-1133.\n'
     OutStr += 'We assume oxidation priority: Ti3+ - Ti4+ - Fe2+ - Fe3+ (i.e. Ti3+ is only possible if all Fe is 2+, and Fe3+ is possible only with Ti4+).\n'
 
-    return OutStr, None
+    return phase_output('Pyroxene ideal', OutStr)
 
 if __name__ == '__main__':
 

@@ -7,8 +7,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 from numpy import *
 import os
-import pickle
 from scipy.stats import chisquare
+from PhaseAnalysis.contract import phase_output, svg_artifact
 try:
     import ternary
 except:
@@ -27,67 +27,6 @@ matplotlib.rc('ytick', labelsize=FontSizeBasis)
 # Increase their padding.
 matplotlib.rc('xtick.major', pad=TickMajorBasis)
 matplotlib.rc('ytick.major', pad=TickMajorBasis)
-
-def ShowLastPos(plt):
-    # Call plt.show but pickles the plot position on window close.  When called a second time
-    # it loads the figure to the last position.  So matplotlib now remembers figure positions!
-    # This version works for QT and WX backends.
-
-    backend = matplotlib.get_backend()
-
-    FigNums = plt.get_fignums()
-
-    for FigNum in FigNums:
-        plt.figure(FigNum)
-        fig=plt.gcf()
-        fig.canvas.mpl_connect('close_event', RecordLastPos)
-        mgr = plt.get_current_fig_manager()
-        # WX backend
-        if 'WX' in backend:
-            try:
-                with open('CurrentWindowPos%d.pkl'%FigNum, 'r') as f:
-                    CurPos = pickle.load(f)
-                mgr.window.SetPosition((CurPos[0], CurPos[1]))
-                mgr.window.SetSize((CurPos[2], CurPos[3]))
-            except:
-                pass
-        # QT backend.
-        elif 'QT' in backend:
-            try:
-                with open('CurrentWindowPos%d.pkl'%FigNum, 'r') as f:
-                    CurPos = pickle.load(f)
-                mgr.window.setGeometry(CurPos[0], CurPos[1], CurPos[2], CurPos[3])
-            except:
-                pass
-        else:
-            print('Backend ' + backend + ' not supported.  Plot figure position will not be sticky.')
-
-    plt.show()
-
-def RecordLastPos(evt):
-
-    backend = matplotlib.get_backend()
-
-    FigNums = plt.get_fignums()
-
-    for FigNum in FigNums:
-        plt.figure(FigNum)
-        mgr = plt.get_current_fig_manager()
-        # WX backend
-        if 'WX' in backend:
-            p = mgr.window.GetPosition()
-            s = mgr.window.GetSize()
-            CurPos = (p[0], p[1], s[0], s[1])
-            with open('CurrentWindowPos%d.pkl'%FigNum, 'w') as f:
-                pickle.dump(CurPos, f)
-        # QT backend.
-        elif 'QT' in backend:
-            CurPos = mgr.window.geometry().getRect()
-            with open('CurrentWindowPos%d.pkl'%FigNum, 'w') as f:
-                pickle.dump(CurPos, f)
-        else:
-            pass
-
 
 def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
 
@@ -133,13 +72,10 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     ProtosolarToFe /= ProtosolarToFe[pb.Fe-1]
     ProtosolarChondricity = ProtosolarToFe
 
-    GEMSAtPct, GEMSAtPctSD = GEMSPlot(AtPct, ProtosolarToSi)
-
-    #PrintTernary(AtPct, GEMSAtPct, GEMSAtPctSD)
-
-    Chondricity, ElementSigma, GEMSChiSqRed, DOF = GEMSChiPlot(AtPct, Protosolar)
-
-    ShowLastPos(plt)
+    fig_gems, ax_gems = plt.subplots(figsize=(8, 5))
+    GEMSAtPct, GEMSAtPctSD = GEMSPlot(AtPct, ProtosolarToSi, ax_gems)
+    fig_chondricity, ax_chondricity = plt.subplots(figsize=(8, 5))
+    Chondricity, ElementSigma, GEMSChiSqRed, DOF = GEMSChiPlot(AtPct, Protosolar, ax_chondricity)
 
     # Print out the abundances normalized to protosolar.
     Ratios = list() # Keep track of the ratios, so at the end we can compute standard deviations.
@@ -176,9 +112,22 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
               '    Keller, L. P., & Messenger, S. (2011). On the origins of GEMS grains. Geochimica Et Cosmochimica Acta, 75(18), 5336-5365. ' \
               'http://doi.org/10.1016/j.gca.2011.06.040'
 
-    return OutStr, None
+    figures = [
+        svg_artifact(fig_gems, 'gems_comparison', 'GEMS composition comparison',
+                     'Comparison of the sample composition against GEMS and chondritic values.'),
+        svg_artifact(fig_chondricity, 'gems_chondricity', 'GEMS chondricity and sigma comparison',
+                     'Chondricity and elemental deviation from the GEMS mean.'),
+    ]
+    optional_ternary = PrintTernary(AtPct, GEMSAtPct, GEMSAtPctSD)
+    if optional_ternary is not None:
+        figures.append(svg_artifact(optional_ternary, 'gems_ternary', 'GEMS ternary comparison',
+                                    'Ternary comparison of the sample and average GEMS composition.'))
+    for figure in (fig_gems, fig_chondricity, optional_ternary):
+        if figure is not None:
+            plt.close(figure)
+    return phase_output('GEMS Comparison', OutStr, figures=figures)
 
-def GEMSChiPlot(AtPct, Protosolar):
+def GEMSChiPlot(AtPct, Protosolar, ax):
     AtPct = copy(AtPct[:len(Protosolar)]) # We have to truncate the AtPct vector so it has the same elements as the Protosolar list.
     AtPct[AtPct==0] = nan # We don't want zero abundance elements included in the mean.
 
@@ -240,18 +189,17 @@ def GEMSChiPlot(AtPct, Protosolar):
     # print('Chi Squared result from scipy:', ScipyChiSquare)
 
 
-    plt.figure(3)
-    plt.clf()
     IncludedZ = where(~isnan(Chondricity))[0]+1
     TickLabels = [El for Z, El in enumerate(pb.ElementalSymbols) if Z in IncludedZ]
     TickInds = list(range(len(TickLabels)))
-    plt.scatter(TickInds, Chondricity[IncludedZ-1], marker='o', color='red', s=150, alpha=0.5, label='Chondricity')
-    plt.scatter(TickInds, ElementSigma[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='Elemental sigmas from mean')
-    plt.xticks(TickInds, TickLabels, rotation='vertical')
-    plt.axhline(0, 0, 92, color='green', linewidth=3, label='Chondritic/GEMSitic')
-    plt.legend()
-    plt.ylabel('Chondricity:\nlog$_{10}$(At%/Chondritic)\nVariation from GEMS ($\sigma$)', fontsize=FontSizeBasis)
-    plt.tight_layout()
+    ax.scatter(TickInds, Chondricity[IncludedZ-1], marker='o', color='red', s=150, alpha=0.5, label='Chondricity')
+    ax.scatter(TickInds, ElementSigma[IncludedZ-1], marker='o', color='blue', s=150, alpha=0.5, label='Elemental sigmas from mean')
+    ax.set_xticks(TickInds, TickLabels, rotation='vertical')
+    ax.axhline(0, 0, 92, color='green', linewidth=3, label='Chondritic/GEMSitic')
+    ax.legend()
+    ax.set_ylabel(r'Chondricity:' + '\n' + r'log$_{10}$(At%/Chondritic)' + '\n' +
+                  r'Variation from GEMS ($\sigma$)', fontsize=FontSizeBasis)
+    ax.figure.tight_layout()
     # print(plt.get_backend())
 
     # print('Chondricity values: ', Chondricity[IncludedZ-1])
@@ -300,7 +248,7 @@ def GetGEMSStandardVals(AtPctVectorLen, WhichRefs='KMMK'):
 
     return GEMSAtPct, GEMSAtPctSD, RefStr
 
-def GEMSPlot(AtPct, ProtosolarToSi):
+def GEMSPlot(AtPct, ProtosolarToSi, ax):
     ### Draw a plot comparing this spectrum normalized to CI and plotted against GEMS compositions.
     # First we have mean and standard deviation values for GEMS compositions.
     GEMSAtPct, GEMSAtPctSD, RefStr = GetGEMSStandardVals(pb.U-1)
@@ -345,38 +293,31 @@ def GEMSPlot(AtPct, ProtosolarToSi):
         # if pb.ElementalSymbols[Zminus1+1] in TickLabels:
         #     ChondriticInds.append(TickLabels.index(pb.ElementalSymbols[Zminus1+1]))
         #     ChondriticVals.append(ProtosolarToSi[Zminus1])
-    # We will be plotting so clear the plot that may already be plotted.
-    plt.figure(1)
-    plt.clf()
     # GEMS plot
-    plt.scatter(GEMSInds, GEMSVals, marker='o', color='red', s=150, alpha=0.5, label=RefStr)
+    ax.scatter(GEMSInds, GEMSVals, marker='o', color='red', s=150, alpha=0.5, label=RefStr)
     # plt.errorbar(GEMSInds, GEMSVals, yerr=GEMSErrs, fmt='none', elinewidth=3, capsize=7, capthick=3, ecolor='red')
-    plt.errorbar(GEMSInds, GEMSVals, yerr=GEMSErrs, fmt='none', alpha=0.5, elinewidth=5, capsize=0, capthick=3, ecolor='red')
+    ax.errorbar(GEMSInds, GEMSVals, yerr=GEMSErrs, fmt='none', alpha=0.5, elinewidth=5, capsize=0, capthick=3, ecolor='red')
     # This spectrum.
-    plt.scatter(SpectrumInds, SpectrumVals, marker='v', color='blue', s=150, alpha=0.5, label='This Spectrum')
+    ax.scatter(SpectrumInds, SpectrumVals, marker='v', color='blue', s=150, alpha=0.5, label='This Spectrum')
     # Chondritic
     # plt.scatter(ChondriticInds, ChondriticVals, marker='s', color='green', s=200,alpha=0.5)
-    plt.axhline(1, 0, 92, color='green', linewidth=3, label='Chondritic')
-    plt.xticks(TickInds, TickLabels, rotation='vertical')
-    plt.gca().set_yscale('log')
-    plt.legend()
+    ax.axhline(1, 0, 92, color='green', linewidth=3, label='Chondritic')
+    ax.set_xticks(TickInds, TickLabels, rotation='vertical')
+    ax.set_yscale('log')
+    ax.legend()
     # plt.legend(['Ishii et al., 2008', 'This Spectrum', 'Chondritic'])
-    plt.ylabel('Element/Si/chondritic, At%', fontsize=FontSizeBasis)
-    plt.gca().set_ylim([3e-2, 30])
-    plt.tight_layout()
+    ax.set_ylabel('Element/Si/chondritic, At%', fontsize=FontSizeBasis)
+    ax.set_ylim([3e-2, 30])
+    ax.figure.tight_layout()
     return GEMSAtPct, GEMSAtPctSD
 
 
 def PrintTernary(AtPct, GEMSAtPct, GEMSAtPctSD):
 
     if ternary == None:
-        print("For ternary plot please pip install python-ternary")
-        return
+        return None
 
     ### Now print a ternary plot
-    if plt.fignum_exists(2):
-        plt.figure(2)
-        plt.close()
     fig, tax = ternary.figure(scale=100)
     tax.boundary(linewidth=4)
     tax.gridlines(color='black', multiple=10)
@@ -403,13 +344,8 @@ def PrintTernary(AtPct, GEMSAtPct, GEMSAtPctSD):
 
     tax.legend()
 
-    plt.title('At %')
-
-def SaveResults(FileRoot):
-    plt.figure(1)
-    plt.savefig(FileRoot + '_GEMSplot.png')
-    plt.figure(3)
-    plt.savefig(FileRoot + '_Chondricity_GEMSChi.png')
+    fig.suptitle('At %')
+    return fig
 
 
 if __name__ == '__main__':
@@ -513,4 +449,3 @@ if __name__ == '__main__':
     AtPct[pb.Ni-1] = 1.9498445997580456
     print('Protosolar values\n')
     print(AnalyzePhase(AtPct))
-

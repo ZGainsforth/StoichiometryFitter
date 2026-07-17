@@ -16,6 +16,7 @@ import CountsToQuant
 import PhaseFit
 import PhysicsBasics as pb
 import ReportResults
+from PhaseAnalysis.contract import ImageArtifact, svg_artifact
 
 
 CONFIG_DIR = 'ConfigData'
@@ -59,7 +60,7 @@ class AnalysisResult:
     report_text: str
     quant: Dict[str, Dict[str, float]]
     phase_analysis: Optional[Dict[str, Any]] = None
-    figures: List[Any] = field(default_factory=list, repr=False)
+    figures: List[ImageArtifact] = field(default_factory=list, repr=False)
     warnings: List[str] = field(default_factory=list)
     files: Dict[str, str] = field(default_factory=dict)
 
@@ -142,7 +143,8 @@ def list_config_options(config_dir: str = CONFIG_DIR,
         'arbitrary_absorption': sorted(f.split('Absorption ')[1].split('.csv')[0] for f in files
                                        if f.startswith('Absorption ') and f.endswith('.csv')),
         'phase_analysis': sorted(os.path.splitext(f)[0] for f in phase_files
-                                 if f.endswith('.py') and f not in ('__init__.py', 'ternary_diagram.py')),
+                                 if f.endswith('.py') and f not in ('__init__.py', 'contract.py',
+                                                                     'ternary_diagram.py')),
     }
 
 
@@ -286,21 +288,53 @@ def _run_phase_analysis(name: str, at_pct, wt_pct, ox_wt_pct, stoich, kwargs,
     output = analyze_phase(at_pct, wt_pct, ox_wt_pct, stoich, **kwargs)
 
     if isinstance(output, dict):
-        report_text = output.get('report_text', '')
-        tables = [_table_from_dict(t) if isinstance(t, dict) else t for t in output.get('tables', [])]
-        if not tables:
-            tables = _legacy_phase_tables(name, report_text)
-        figures = output.get('figures') or []
-        if figures is None:
-            figures = []
-        return report_text, tables, list(figures), output
+        required = {'report_text', 'tables', 'figures', 'warnings'}
+        missing = required.difference(output)
+        if missing:
+            raise ValueError('phase-analysis output is missing required field(s): %s' %
+                             ', '.join(sorted(missing)))
+        report_text = output['report_text']
+        if not isinstance(report_text, str):
+            raise TypeError('phase-analysis report_text must be a string')
+        tables = [_table_from_dict(t) if isinstance(t, dict) else t for t in output['tables']]
+        if not all(isinstance(table, ResultTable) for table in tables):
+            raise TypeError('phase-analysis tables must contain result-table objects or dictionaries')
+        figures = []
+        for figure in output['figures']:
+            if isinstance(figure, dict):
+                figure = ImageArtifact(**figure)
+            if not isinstance(figure, ImageArtifact):
+                raise TypeError('phase-analysis figures must be ImageArtifact objects or dictionaries')
+            if figure.mime_type != 'image/svg+xml' or not isinstance(figure.payload, str):
+                raise ValueError('phase-analysis figures must contain SVG text artifacts')
+            figures.append(figure)
+        warnings = output['warnings']
+        if not isinstance(warnings, (list, tuple)) or not all(isinstance(warning, str) for warning in warnings):
+            raise TypeError('phase-analysis warnings must be a list of strings')
+        normalized = {
+            'report_text': report_text,
+            'tables': [asdict(table) for table in tables],
+            'figures': [asdict(figure) for figure in figures],
+            'warnings': list(warnings),
+            'metadata': dict(output.get('metadata', {})),
+        }
+        return report_text, tables, figures, list(warnings), normalized
 
     report_text, figures = output
     if figures is None:
         figures = []
     elif not isinstance(figures, (list, tuple)):
         figures = [figures]
-    return report_text, _legacy_phase_tables(name, report_text), list(figures), {'name': name}
+    legacy_artifacts = []
+    for index, figure in enumerate(figures, start=1):
+        if isinstance(figure, ImageArtifact):
+            legacy_artifacts.append(figure)
+        elif hasattr(figure, 'savefig'):
+            legacy_artifacts.append(svg_artifact(
+                figure, '%s_figure_%d' % (_slug(name), index),
+                '%s figure %d' % (name, index), '%s phase-analysis figure %d' % (name, index)))
+    return (report_text, _legacy_phase_tables(name, report_text), legacy_artifacts, [],
+            {'name': name, 'legacy_output': True})
 
 
 def quant_to_dict(quant) -> Dict[str, Dict[str, float]]:
@@ -359,7 +393,14 @@ def run_analysis(input_data: Any, input_type: str = 'Counts', options: Optional[
         phases = load_phases(config_dir=config_dir)
         phases_to_fit = [phase for phase in phases if phase[0] in analysis_options.selected_phases]
         if phases_to_fit:
-            fit_result, residual, fit_composition = PhaseFit.FitPhases(quant, phases_to_fit)
+            # ``GetAbundancesFromCounts`` annotates its element mapping with
+            # bookkeeping entries such as ``_nonzero_input_``.  PhaseFit
+            # expects only the 118 element abundance tuples.
+            phase_quant = OrderedDict(
+                (element, values) for element, values in quant.items()
+                if element not in ('_nonzero_input_', '_zero_kfactor_')
+            )
+            fit_result, residual, fit_composition = PhaseFit.FitPhases(phase_quant, phases_to_fit)
             phase_tables = [_table_from_dict(t) for t in ReportResults.BuildPhaseTables(
                 fit_result, residual, fit_composition)]
             tables.extend(phase_tables)
@@ -375,7 +416,7 @@ def run_analysis(input_data: Any, input_type: str = 'Counts', options: Optional[
         warnings.append(f'Element {el} has zero k-factor in "{analysis_options.kfactors}" — appears with 0% abundance.')
     if analysis_options.phase_analysis:
         try:
-            phase_report, phase_tables, figures, phase_payload = _run_phase_analysis(
+            phase_report, phase_tables, figures, phase_warnings, phase_payload = _run_phase_analysis(
                 analysis_options.phase_analysis,
                 np.array(at_pct, dtype=float),
                 np.array(wt_pct, dtype=float),
@@ -387,6 +428,7 @@ def run_analysis(input_data: Any, input_type: str = 'Counts', options: Optional[
             if phase_report:
                 report_parts.append(phase_report)
             tables.extend(phase_tables)
+            warnings.extend(phase_warnings)
         except Exception as exc:
             warnings.append('Phase analysis "%s" failed: %s' % (analysis_options.phase_analysis, exc))
 
@@ -421,11 +463,14 @@ def _json_default(value):
 
 def analysis_to_dict(result: AnalysisResult) -> Dict[str, Any]:
     return {
-        'schema_version': 1,
+        'schema_version': 2,
         'input': asdict(result.input),
         'options': asdict(result.options),
         'text_output': result.report_text,
         'tables': [asdict(table) for table in result.tables],
+        'phase_analysis': result.phase_analysis,
+        'figures': [asdict(figure) for figure in result.figures],
+        'warnings': list(result.warnings),
     }
 
 
@@ -483,24 +528,20 @@ def save_analysis(result: AnalysisResult, output_dir: str, basename: str = 'anal
         fid.write(result.report_text)
 
     figure_paths = []
+    used_names = set()
     for index, figure in enumerate(result.figures, start=1):
-        if hasattr(figure, 'savefig'):
-            path = os.path.join(output_dir, '%s_figure_%d.png' % (basename, index))
-            figure.savefig(path)
-            figure_paths.append(path)
+        artifact_name = _slug(figure.id) or 'figure_%d' % index
+        if artifact_name in used_names:
+            artifact_name = '%s_%d' % (artifact_name, index)
+        used_names.add(artifact_name)
+        path = os.path.join(output_dir, '%s_%s.svg' % (basename, artifact_name))
+        with open(path, 'w', encoding='utf-8') as fid:
+            fid.write(figure.payload)
+        figure_paths.append(path)
 
+    # Built-in plugins return self-contained artifacts.  Legacy third-party
+    # SaveResults hooks are intentionally not invoked: analysis is now pure.
     legacy_phase_files = []
-    if result.options.phase_analysis:
-        phase_path = phase_analysis_path(result.options.phase_analysis, phase_analysis_dir)
-        try:
-            save_results = _import_function_from_path('SaveResults', phase_path)
-            before = set(os.listdir(output_dir))
-            file_root = os.path.join(output_dir, basename)
-            save_results(file_root)
-            after = set(os.listdir(output_dir))
-            legacy_phase_files = [os.path.join(output_dir, f) for f in sorted(after - before)]
-        except Exception:
-            pass
 
     saved = SavedFiles(input_csv=input_csv, report_txt=report_txt, results_json=results_json,
                        figures=figure_paths, legacy_phase_files=legacy_phase_files)

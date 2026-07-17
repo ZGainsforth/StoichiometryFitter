@@ -4,6 +4,7 @@ __copyright__ = 'Copyright 2014, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
 
 from numpy import *
+from PhaseAnalysis.contract import phase_output
 if __name__ != '__main__':
     import PhysicsBasics as pb
 
@@ -88,7 +89,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += 'Probable superlattice at room temperature: %s\n' % (NakazawaPhase)
     OutStr += 'Ref: Nakazawa, H., & Morimoto, N. (1971). Phase relations and superstructures of pyrrhotite, Fe1-xS. Materials Research Bulletin, 6(5), 345-357.\n'
 
-    return OutStr, None
+    return phase_output('Sulfide', OutStr)
     
 if __name__ == '__main__':
 
