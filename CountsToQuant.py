@@ -73,7 +73,7 @@ def AbsorptionUsingWtPct(AbsRho, AbsTau, AbsWtPct, Counts, Takeoff=90):
     return Counts
 
 
-def DoArbitraryAbsorptionCorrection(ArbitraryAbsorptionCorrection, Counts):
+def DoArbitraryAbsorptionCorrection(ArbitraryAbsorptionCorrection, Counts, parameters=None):
     """DoArbitraryAbsorptionCorrection(ArbitraryAbsorptionCorrection, Counts):
 
     :param ArbitraryAbsorptionCorrection: Name of csv file with absorption parameters including abs length, density,
@@ -83,21 +83,26 @@ def DoArbitraryAbsorptionCorrection(ArbitraryAbsorptionCorrection, Counts):
     :return: A new counts vector (proportional to wt %) after absorption.
     """
     try:
-        ArbAbsFileName = 'ConfigData/Absorption ' + ArbitraryAbsorptionCorrection + '.csv'
-        ArbAbsWtPct = genfromtxt(ArbAbsFileName, dtype=None, comments='#', skip_header=3, delimiter=',',
-                                 converters={1: floatme})
-        # And we want just column 1.
-        ArbAbsWtPct = [Wt for (Name, Wt) in ArbAbsWtPct]
-        # First line is tau.
-        (s, ArbAbsTau) = linecache.getline(ArbAbsFileName, 1).strip().split('=')
-        assert (s == '#tau')
-        ArbAbsTau = float(ArbAbsTau)
-        # Second line is rho.
-        (s, ArbAbsRho) = linecache.getline(ArbAbsFileName, 2).strip().split('=')
-        assert (s == '#rho')
-        ArbAbsRho = float(ArbAbsRho)
+        if parameters is not None:
+            ArbAbsWtPct = array(parameters['wt_pct'], dtype=float)
+            ArbAbsTau = float(parameters['tau'])
+            ArbAbsRho = float(parameters['rho'])
+        else:
+            ArbAbsFileName = 'ConfigData/Absorption ' + ArbitraryAbsorptionCorrection + '.csv'
+            ArbAbsWtPct = genfromtxt(ArbAbsFileName, dtype=None, comments='#', skip_header=3, delimiter=',',
+                                     converters={1: floatme})
+            # And we want just column 1.
+            ArbAbsWtPct = [Wt for (Name, Wt) in ArbAbsWtPct]
+            # First line is tau.
+            (s, ArbAbsTau) = linecache.getline(ArbAbsFileName, 1).strip().split('=')
+            assert (s == '#tau')
+            ArbAbsTau = float(ArbAbsTau)
+            # Second line is rho.
+            (s, ArbAbsRho) = linecache.getline(ArbAbsFileName, 2).strip().split('=')
+            assert (s == '#rho')
+            ArbAbsRho = float(ArbAbsRho)
     except Exception as exc:
-        raise RuntimeError('Could not read Arbitrary Absorption Correction file.') from exc
+        raise RuntimeError('Could not read Arbitrary Absorption Correction data.') from exc
 
     # Use negative Tau to correct for absorption, not add absorption.
     Counts = AbsorptionUsingWtPct(ArbAbsRho, -ArbAbsTau, ArbAbsWtPct, Counts)
@@ -209,7 +214,8 @@ def AtPctToWtPct(AtPct, OByStoichiometry=None):
     return WtPct
 
 def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', ArbitraryAbsorptionCorrection=None,
-                            AbsorptionCorrection=0, Takeoff=0, OByStoichiometry=None):
+                            AbsorptionCorrection=0, Takeoff=0, OByStoichiometry=None,
+                            kfactors_data=None, arbitrary_absorption_data=None):
     """Counts (ndarray) is the input vector giving all the counts for each element in order. It is MAXELEMENTS long.
     kfacsfile=None (str) gives the k-factors for each element, or None means not to apply k-factors.
         'Titan 80 keV' loads k-factors for the Titan at 80 keV from 'kfacs Titan 80 keV.csv'.
@@ -239,20 +245,25 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', Arbitrar
     ZeroKFactorElements = []
     if InputType == 'Counts':
         # If we're using k-factors, get them and multiply them now.
-        if kfacsfile is not None:
+        if kfacsfile is not None or kfactors_data is not None:
 
             # Load the k-factor file.
             # Skip one header line, skip comments, and be tolerant of missing entries (using the converter.)
-            try:
-                kfacs = genfromtxt('ConfigData/kfacs ' + kfacsfile + '.csv', dtype=None, comments='#', skip_header=1, delimiter=',', converters={1:floatme, 2:floatme, 3:floatme})
-            except Exception as exc:
-                raise RuntimeError('Could not read k-factor file.') from exc
+            if kfactors_data is not None:
+                kfactors = array(kfactors_data, dtype=float)
+                if len(kfactors) != pb.MAXELEMENT:
+                    raise ValueError('Resolved k-factor data must contain one value per element.')
+            else:
+                try:
+                    kfacs = genfromtxt('ConfigData/kfacs ' + kfacsfile + '.csv', dtype=None, comments='#', skip_header=1, delimiter=',', converters={1:floatme, 2:floatme, 3:floatme})
+                except Exception as exc:
+                    raise RuntimeError('Could not read k-factor file.') from exc
 
-            # Now we want a single array of the k-factors for quanting each element.  For now, we only implement K-shell.
-            # TODO implement L, M shells.
-            kfactors = ones(pb.MAXELEMENT)
-            for Z in range(1, pb.MAXELEMENT + 1):
-                kfactors[Z-1] = kfacs[Z-1][1] # First column is the K-shell.
+                # Now we want a single array of the k-factors for quanting each element.  For now, we only implement K-shell.
+                # TODO implement L, M shells.
+                kfactors = ones(pb.MAXELEMENT)
+                for Z in range(1, pb.MAXELEMENT + 1):
+                    kfactors[Z-1] = kfacs[Z-1][1] # First column is the K-shell.
 
             # Now multiply by the k-factors.
             WtPct = Counts*kfactors
@@ -302,8 +313,9 @@ def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', Arbitrar
         WtPct = AbsorptionUsingWtPct(1, -AbsorptionCorrection, WtPct, WtPct, Takeoff=Takeoff)
 
     # Do the arbitrary absorption correction if requested.
-    if ArbitraryAbsorptionCorrection is not None:
-        WtPct = DoArbitraryAbsorptionCorrection(ArbitraryAbsorptionCorrection, WtPct)
+    if ArbitraryAbsorptionCorrection is not None or arbitrary_absorption_data is not None:
+        WtPct = DoArbitraryAbsorptionCorrection(ArbitraryAbsorptionCorrection, WtPct,
+                                                parameters=arbitrary_absorption_data)
 
     # After absorption corrections, we have to recompute O by stoichiometry.
     WtPct = ComputeOxygenStoichiometry(WtPct, OByStoichiometry)

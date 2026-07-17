@@ -28,7 +28,7 @@ matplotlib.rc('ytick', labelsize=FontSizeBasis)
 matplotlib.rc('xtick.major', pad=TickMajorBasis)
 matplotlib.rc('ytick.major', pad=TickMajorBasis)
 
-def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
+def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None, ProtosolarData=None):
 
     #Normalize our AtPct vector.
     AtPct = AtPct/sum(AtPct)*100
@@ -56,12 +56,14 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     OutStr += '--- Chondritic Analysis ---\n\n'
 
     # Load the prosolar abundances.  This is recorded from the Lodders ref with logarithmic values.
-    ProtosolarAbundancesFileName = 'ProtosolarAbundances.csv'
-    if not os._exists(ProtosolarAbundancesFileName):
-        ProtosolarAbundancesFileName = os.path.join('ConfigData', ProtosolarAbundancesFileName)
-    Protosolar = genfromtxt(ProtosolarAbundancesFileName, delimiter=',', skip_header=1, dtype=None)
-    ProtosolarDict = dict(Protosolar)   # This dictionary could be handy...
-    Protosolar = array(list(zip(*Protosolar))[1]) # But we really need just a numpy array with the numbers.
+    if ProtosolarData is None:
+        ProtosolarAbundancesFileName = 'ProtosolarAbundances.csv'
+        if not os.path.exists(ProtosolarAbundancesFileName):
+            ProtosolarAbundancesFileName = os.path.join('ConfigData', ProtosolarAbundancesFileName)
+        ProtosolarRows = genfromtxt(ProtosolarAbundancesFileName, delimiter=',', skip_header=1, dtype=None)
+        Protosolar = array(list(zip(*ProtosolarRows))[1])
+    else:
+        Protosolar = array(ProtosolarData, dtype=float)
 
     # Convert to vectors which are normalized to Mg, Si, and Fe.
     ProtosolarToMg = power(10, Protosolar)  # Get out of log space into linear space.  Now the numbers relate to AtPct.

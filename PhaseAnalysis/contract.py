@@ -38,6 +38,16 @@ def _slug(text: str) -> str:
     return re.sub(r'[^0-9A-Za-z]+', '_', text.strip().lower()).strip('_') or 'table'
 
 
+def _table_columns(heading: str):
+    """Return descriptive column titles for a report-derived phase table."""
+    title = heading.casefold()
+    if 'cations per ' in title:
+        return ['Element', 'Number Cations', 'Cations (ppm)']
+    if 'site ' in title:
+        return ['Element', 'Occupancy']
+    return ['Label', 'Value']
+
+
 def tables_from_report(name: str, report_text: str) -> List[Dict[str, Any]]:
     """Expose the numeric data already emitted in a built-in plugin report as tables.
 
@@ -52,20 +62,21 @@ def tables_from_report(name: str, report_text: str) -> List[Dict[str, Any]]:
     for line in lines:
         match = ratio_re.match(line)
         if match and match.group(1).strip():
-            ratio_rows.append({'metric': match.group(1).strip(),
-                               'value': float(match.group(2)),
-                               'note': match.group(3).strip()})
+            ratio_rows.append({'Metric': match.group(1).strip(),
+                               'Value': float(match.group(2)),
+                               'Note': match.group(3).strip()})
     if ratio_rows:
         tables.append({
             'name': 'phase_analysis_%s_numeric_results' % _slug(name),
             'title': '%s Numeric Results' % name,
-            'columns': ['metric', 'value', 'note'],
+            'columns': ['Metric', 'Value', 'Note'],
             'rows': ratio_rows,
             'metadata': {'phase_analysis': name},
             'description': 'Numeric ratio and scalar results from the %s phase analysis.' % name,
         })
 
     row_re = re.compile(r'^\s*([^:]+):\s*([-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)\b')
+    ppm_re = re.compile(r',\s*[^:]+:\s*([-+]?\d+(?:\.\d+)?)\s*\*\s*10\^-6\s*$')
     index = 0
     while index < len(lines):
         heading = lines[index].strip()
@@ -80,14 +91,19 @@ def tables_from_report(name: str, report_text: str) -> List[Dict[str, Any]]:
             match = row_re.match(lines[cursor])
             if match is None:
                 break
-            rows.append({'label': match.group(1).strip(), 'value': float(match.group(2))})
+            ppm_match = ppm_re.search(lines[cursor])
+            rows.append({'label': match.group(1).strip(), 'value': float(match.group(2)),
+                         'ppm': float(ppm_match.group(1)) if ppm_match else None})
             cursor += 1
         if rows:
+            columns = _table_columns(heading)
             tables.append({
                 'name': 'phase_analysis_%s_%s' % (_slug(name), _slug(heading[:-1])),
                 'title': '%s - %s' % (name, heading[:-1]),
-                'columns': ['label', 'value'],
-                'rows': rows,
+                'columns': columns,
+                'rows': [{columns[0]: row['label'], columns[1]: row['value'],
+                          **({columns[2]: row['ppm']} if len(columns) > 2 and row['ppm'] is not None else {})}
+                         for row in rows],
                 'metadata': {'phase_analysis': name},
                 'description': 'Numeric table from the %s phase analysis.' % name,
             })

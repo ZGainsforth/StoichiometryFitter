@@ -26,9 +26,9 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     table = {
         'name': 'phase_analysis_qmin_algorithm_input_oxides',
         'title': 'QMin oxide input',
-        'columns': ['oxide', 'value'],
-        'rows': [{'oxide': element, 'value': value} for element, value in E.items()] +
-                [{'oxide': 'Total', 'value': summmm}],
+        'columns': ['Oxide', 'Oxide Wt%'],
+        'rows': [{'Oxide': element, 'Oxide Wt%': value} for element, value in E.items()] +
+                [{'Oxide': 'Total', 'Oxide Wt%': summmm}],
         'metadata': {'phase_analysis': 'QMin Algorithm'},
         'description': 'Oxide values prepared for optional manual QMin submission.',
     }

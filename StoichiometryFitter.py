@@ -14,7 +14,18 @@ __email__ = 'zsg@gainsforth.com'
 # TODO Output quant from minerals and delta.
 # TODO Subphase reporter.
 
+import os
 import pickle
+import platform
+
+# WSLg normally selects Wayland for wxGTK.  Wayland intentionally leaves
+# top-level placement to its compositor, so saved phase-figure positions are
+# not reproducible there.  WSLg also supplies X11; select it before wx opens a
+# display, unless the user has explicitly chosen a backend of their own.
+if (os.environ.get('WSL_DISTRO_NAME') or
+        'microsoft' in platform.release().lower()) and not os.environ.get('GDK_BACKEND'):
+    os.environ['GDK_BACKEND'] = 'x11'
+
 import wx
 import builtins
 from copy import deepcopy
@@ -24,7 +35,6 @@ try:
 except ImportError:
     wxsvg = None
 from numpy import *
-import os
 import ReportResults
 from collections import OrderedDict
 import MyPython
@@ -38,8 +48,8 @@ import PhysicsBasics as pb
 from MyPython import *
 import CountsToQuant
 import PhaseFit
-import pandas as pd
 import StoichiometryCore
+import ProjectPackage
 
 def import_function_from_path(function_name, path):
     spec = importlib.util.spec_from_file_location("module_name", path)
@@ -88,15 +98,18 @@ class EditableTextListCtrl(wx.ListCtrl, TextEditMixin):
 class SVGFigureFrame(wx.Frame):
     """A resizable, zoomable wx viewer for one portable SVG artifact."""
 
-    def __init__(self, parent, title, svg_payload):
-        wx.Frame.__init__(self, parent, title='Phase Analysis Figure - ' + title, size=(1, 1))
+    def __init__(self, parent, title, svg_payload, position=wx.DefaultPosition,
+                 restored_geometry=None):
+        restored_size = restored_geometry[1] if restored_geometry is not None else (1, 1)
+        wx.Frame.__init__(self, parent, title='Phase Analysis Figure - ' + title,
+                          pos=position, size=restored_size)
         self._svg_image = wxsvg.SVGimage.CreateFromBytes(svg_payload)
         self._native_width = builtins.max(1, int(builtins.round(self._svg_image.width)))
         self._native_height = builtins.max(1, int(builtins.round(self._svg_image.height)))
         self._scale = 1.0
         self._fit_mode = True
         self._pixel_buffer = None
-        self._initial_layout = True
+        self._initial_layout = restored_geometry is None
         self._drag_start = None
         self._drag_view_start = None
 
@@ -134,7 +147,14 @@ class SVGFigureFrame(wx.Frame):
         self.scroller.Bind(wx.EVT_MOTION, self._on_mouse_motion)
         self.scroller.Bind(wx.EVT_LEFT_UP, self._on_left_up)
         self.Bind(wx.EVT_SIZE, self._on_size)
-        wx.CallAfter(self._size_to_native_image)
+        if restored_geometry is None:
+            wx.CallAfter(self._size_to_native_image)
+        else:
+            # A restored frame must not be resized after it is mapped: several
+            # desktop compositors recascade an owned top-level window when that
+            # happens.  Giving wx its final geometry at construction time keeps
+            # both its saved position and size intact.
+            wx.CallAfter(self._render)
 
     def _render(self):
         width = builtins.max(1, int(builtins.round(self._native_width * self._scale)))
@@ -182,6 +202,16 @@ class SVGFigureFrame(wx.Frame):
         controls_height = self._controls.CalcMin().height
         self.SetClientSize((self._native_width + 12, self._native_height + controls_height + 12))
         self._initial_layout = False
+
+    def SetSvgPayload(self, svg_payload):
+        """Replace the displayed SVG without changing this window's geometry."""
+        self._svg_image = wxsvg.SVGimage.CreateFromBytes(svg_payload)
+        self._native_width = builtins.max(1, int(builtins.round(self._svg_image.width)))
+        self._native_height = builtins.max(1, int(builtins.round(self._svg_image.height)))
+        if self._fit_mode:
+            self._fit_image()
+        else:
+            self._render()
 
     def _zoom(self, factor, focus=None):
         old_scale = self._scale
@@ -276,10 +306,12 @@ class MyFrame(wx.Frame):
         # Menu Bar
         self.MainMenu = wx.MenuBar()
         wxglade_tmp_menu = wx.Menu()
-        wxglade_tmp_menu.Append(wx.ID_OPEN, _("&Open Inputs..."), "", wx.ITEM_NORMAL)
-        wxglade_tmp_menu.Append(1000, _("Save &Inputs..."), "", wx.ITEM_NORMAL)
-        wxglade_tmp_menu.Append(1001, _("Save &Results..."), "", wx.ITEM_NORMAL)
-        wxglade_tmp_menu.Append(wx.ID_SAVE, _("&Save All..."), "", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(wx.ID_OPEN, _("&Open..."), "", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(wx.ID_SAVE, _("&Save Project"), "", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(wx.ID_SAVEAS, _("Save Project &As..."), "", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.AppendSeparator()
+        wxglade_tmp_menu.Append(1000, _("Export &Input CSV..."), "", wx.ITEM_NORMAL)
+        wxglade_tmp_menu.Append(1001, _("Export &Text Report..."), "", wx.ITEM_NORMAL)
         wxglade_tmp_menu.Append(wx.ID_ABOUT, _("&About"), "", wx.ITEM_NORMAL)
         self.MainMenu.Append(wxglade_tmp_menu, _("File"))
         self.SetMenuBar(self.MainMenu)
@@ -317,6 +349,7 @@ class MyFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnSaveInputs, id=1000)
         self.Bind(wx.EVT_MENU, self.OnSaveResults, id=1001)
         self.Bind(wx.EVT_MENU, self.OnSave, id=wx.ID_SAVE)
+        self.Bind(wx.EVT_MENU, self.OnSaveAs, id=wx.ID_SAVEAS)
         self.Bind(wx.EVT_MENU, self.OnAbout, id=wx.ID_ABOUT)
         self.Bind(wx.EVT_RADIOBOX, self.OnInputType, self.rdioInputType)
         self.Bind(wx.EVT_BUTTON, self.OnReset, self.btnReset)
@@ -344,6 +377,15 @@ class MyFrame(wx.Frame):
 
         # Set up the initial conditions for the frame.
         self.InitControls()
+        self.CurrentProjectPath = None
+        self.CurrentProjectId = None
+        self.OriginalSource = None
+        self.ArchivedResources = None
+        self.ArchivedFingerprint = None
+        self.ArchivedInput = None
+        self.ArchivedOptions = None
+        self.ProjectMetadata = {}
+        self.PhaseFigureLayouts = {}
 
         # Catch the frame closing event so we can ask if we want to save.
         self.Bind(wx.EVT_CLOSE, self.OnClose)
@@ -354,6 +396,9 @@ class MyFrame(wx.Frame):
         """OnClose(self, evt): Ask the user if he wants to save before closing.  Not yet implemented."""
         # it = self.ElementsListCtrl.GetItem(0,1)
         # print it.GetText()
+        self.ClosePhaseAnalysisFigures()
+        self.PhaseFigureLayouts = {}
+        self.ProjectMetadata = {}
         self.Destroy()
 
     def __set_properties(self):
@@ -585,10 +630,61 @@ class MyFrame(wx.Frame):
         # Sometimes the person doesn't hit enter after editing a value in the ElementsListControl.  In this case,
         # we need to end his edit or the value doesn't get saved.
         self.ElementsListCtrl.CloseEditor(None)
+        self.ClosePhaseAnalysisFigures()
+        self.PhaseFigureLayouts = {}
+        self.ProjectMetadata = {}
 
         for Z in range(1, pb.MAXELEMENT + 1):
             self.ElementsListCtrl.SetItem(Z - 1, 1, '0')
+        if hasattr(self, 'LastAnalysisResult'):
+            del self.LastAnalysisResult
+        self.OriginalSource = None
+        self.CurrentProjectPath = None
+        self.CurrentProjectId = None
         event.Skip()
+
+    def _analysis_state_from_controls(self):
+        """Capture editable state without performing a calculation."""
+        self.ElementsListCtrl.CloseEditor(None)
+        values = zeros(pb.MAXELEMENT)
+        for Z in range(1, pb.MAXELEMENT + 1):
+            text = self.ElementsListCtrl.GetItem(Z - 1, 1).GetText().strip()
+            values[Z - 1] = float(text) if text else 0.0
+
+        stoichiometry = None
+        if self.chkOByStoichiometry.IsChecked():
+            stoichiometry = []
+            for Z in range(1, pb.MAXELEMENT + 1):
+                text = self.ElementsListCtrl.GetItem(Z - 1, 2).GetText().strip()
+                if text == 'n/a':
+                    raise ValueError('Stoichiometry is enabled but charge values are unavailable.')
+                stoichiometry.append(float(text))
+
+        absorption_correction = 0.0
+        takeoff = 18.0
+        if self.chkAbsCorr.IsChecked():
+            absorption_correction = float(self.txtAbsCorr.GetValue()) / 1000.0
+            takeoff = float(clip(float(self.txtTakeoff.GetValue()), 0.1, 90))
+
+        analysis_input = StoichiometryCore.AnalysisInput(
+            values=dict(StoichiometryCore.vector_to_element_dict(values)),
+            input_type=self.rdioInputType.StringSelection,
+            stoichiometry=stoichiometry,
+            stoichiometry_name=self.comboStoich.StringSelection,
+        )
+        options = StoichiometryCore.AnalysisOptions(
+            kfactors=self.comboKfacs.StringSelection if self.chkKfacs.IsChecked() else None,
+            arbitrary_absorption=(self.comboArbAbsCorrection.StringSelection
+                                  if self.chkArbAbsCorrection.IsChecked() else None),
+            absorption_correction=absorption_correction,
+            takeoff=takeoff,
+            selected_phases=GetSelectedItemsFromListCtrl(self.PhasesListCtrl),
+            phase_analysis=(self.cmbPhaseAnalysis.StringSelection
+                            if self.chkPhaseAnalysis.IsChecked() else None),
+        )
+        ProjectPackage.validate_analysis_input(analysis_input)
+        ProjectPackage.validate_options(options)
+        return analysis_input, options, values
 
     def OnGo(self, event):  # wxGlade: MyFrame.<event_handler>
         # Sometimes the person doesn't hit enter after editing a value in the ElementsListControl.  In this case,
@@ -599,85 +695,37 @@ class MyFrame(wx.Frame):
         if os.path.exists(PICKLE_FILE):
             os.remove(PICKLE_FILE)
 
-        # Extract the input vector out of the ElementsListControl.
-        # Z-1 since H=1 is the first atom, and the list is zero based.
-        Counts = zeros(pb.MAXELEMENT)
-        for Z in range(1, pb.MAXELEMENT + 1):
-            text = self.ElementsListCtrl.GetItem(Z - 1,1).GetText()
-            Counts[Z-1] = float(text) if text else 0.0
+        try:
+            AnalysisInput, AnalysisOptions, Counts = self._analysis_state_from_controls()
+        except Exception as exc:
+            wx.MessageBox(str(exc), 'Please correct input:', style=wx.OK)
+            return
 
-        # Extract the stoichiometry vector out of the ElementsListControl.
-        # Z-1 since H=1 is the first atom, and the list is zero based.
-        for Z in range(1, pb.MAXELEMENT + 1):
-            if self.ElementsListCtrl.GetItem(Z - 1,2).GetText() == 'n/a':
-                break
-            self.Stoich[Z-1][1] = float(self.ElementsListCtrl.GetItem(Z - 1,2).GetText())
-
-        # Find out if there is a k-factor file to use.
-        if self.chkKfacs.IsChecked():
-            kfacsfile = self.comboKfacs.StringSelection
-        else:
-            kfacsfile = None
-
-        # Find out if there is an absorption correction to use.
-        if self.chkArbAbsCorrection.IsChecked():
-            DetectorFile = self.comboArbAbsCorrection.StringSelection
-        else:
-            DetectorFile = None
-
-        # Find out if there is an absorption correction to do.
-        AbsorptionCorrection = 0
-        if self.chkAbsCorr.IsChecked():
-            try:
-                # The text box uses nm.  Absorption path lengths are in microns, convert.
-                AbsorptionCorrection = float(self.txtAbsCorr.GetValue())/1000
-                Takeoff = clip(float(self.txtTakeoff.GetValue()), 0.1, 90) # Allow angles between 0.1 and 90 degrees.
-            except:
-                wx.MessageBox('Absorption Correction is not a valid number.', 'Please correct input:')
-                return
-        else:
-            AbsorptionCorrection = 0
-            Takeoff=18
-
-        # Find out if we are using oxygen by stoichiometry
-        if self.chkOByStoichiometry.IsChecked():
-            # Stoich is a list of tuples.  We want an array of atom charges from the 1 index of the tuples.  So unzip
-            # the list into two tuples,
-            # choose the tuple which corresponds to the charges not the atom names and feed it to numpy to make a vector.
-            OByStoich = array(list(zip(*self.Stoich))[1])
-        else:
-            OByStoich = None
-
-        SelectedPhases = GetSelectedItemsFromListCtrl(self.PhasesListCtrl)
-
-        if self.chkPhaseAnalysis.IsChecked():
-            PhaseAnalysis = self.cmbPhaseAnalysis.StringSelection
-        else:
-            PhaseAnalysis = None
-
-        InputDat = StoichiometryCore.vector_to_element_dict(Counts)
-        AnalysisInput = StoichiometryCore.AnalysisInput(
-            values=dict(InputDat),
-            input_type=self.rdioInputType.StringSelection,
-            stoichiometry=None if OByStoich is None else list(map(float, OByStoich)),
-            stoichiometry_name=self.comboStoich.StringSelection,
-        )
-        AnalysisOptions = StoichiometryCore.AnalysisOptions(
-            kfactors=kfacsfile,
-            arbitrary_absorption=DetectorFile,
-            absorption_correction=AbsorptionCorrection,
-            takeoff=Takeoff,
-            selected_phases=SelectedPhases,
-            phase_analysis=PhaseAnalysis,
-        )
+        archived_resources = None
+        if (getattr(self, 'ArchivedResources', None) is not None and
+                AnalysisInput == getattr(self, 'ArchivedInput', None) and
+                AnalysisOptions == getattr(self, 'ArchivedOptions', None)):
+            archived_resources = self.ArchivedResources
 
         try:
-            self.LastAnalysisResult = StoichiometryCore.run_analysis(AnalysisInput, options=AnalysisOptions)
+            self.LastAnalysisResult = StoichiometryCore.run_analysis(
+                AnalysisInput, options=AnalysisOptions, resolved_resources=archived_resources)
         except Exception as exc:
             wx.MessageBox(str(exc), 'Analysis failed', style=wx.OK)
             return
 
         self.Counts = Counts
+        if archived_resources is not None:
+            current_fingerprint = StoichiometryCore.calculation_fingerprint(
+                archived_resources, AnalysisOptions.phase_analysis)
+            stored_algorithms = (getattr(self, 'ArchivedFingerprint', None) or {}).get('algorithm_hashes', {})
+            if stored_algorithms and stored_algorithms != current_fingerprint.get('algorithm_hashes', {}):
+                self.LastAnalysisResult.warnings.insert(
+                    0, 'This project was calculated with a different algorithm fingerprint; rerun results may differ from the archived snapshot.')
+        self.ArchivedResources = self.LastAnalysisResult.resources
+        self.ArchivedFingerprint = self.LastAnalysisResult.calculation_fingerprint
+        self.ArchivedInput = self.LastAnalysisResult.input
+        self.ArchivedOptions = self.LastAnalysisResult.options
         self.txtOutput.SetValue(self.LastAnalysisResult.report_text)
         for warning in self.LastAnalysisResult.warnings:
             self.txtOutput.AppendText('\nWarning: %s\n' % warning)
@@ -686,6 +734,8 @@ class MyFrame(wx.Frame):
             if figure_warning:
                 self.LastAnalysisResult.warnings.append(figure_warning)
                 self.txtOutput.AppendText('\nWarning: %s\n' % figure_warning)
+        else:
+            self.ClosePhaseAnalysisFigures()
 
         # Saving the entry to the pickle file. Fixed by Roger
         add_to_pickle(PICKLE_FILE, self.cmbPhaseAnalysis.StringSelection)
@@ -764,15 +814,106 @@ class MyFrame(wx.Frame):
         """Display each returned SVG artifact in its own non-modal window."""
         if wxsvg is None:
             return 'SVG display support is unavailable; phase-analysis figures remain available for SVG export.'
+        figure_ids = [self._phase_figure_layout_id(artifact.id) for artifact in figures]
+        existing = getattr(self, '_phase_figure_frames', [])
+        if (len(existing) == len(figures) and existing and
+                all(not frame.IsBeingDeleted() for frame in existing) and
+                [getattr(frame, '_phase_figure_id', None) for frame in existing] == figure_ids):
+            try:
+                for frame, artifact in zip(existing, figures):
+                    frame.SetSvgPayload(self._svg_for_wx_rasterization(artifact.payload))
+                    frame.Show()
+                    frame.Raise()
+                return None
+            except Exception:
+                # Recreate windows if an existing viewer cannot accept the new SVG.
+                self.ClosePhaseAnalysisFigures()
+        else:
+            self.ClosePhaseAnalysisFigures()
+        frames = []
+        layouts = []
         try:
-            self._phase_figure_frames = [
-                SVGFigureFrame(self, artifact.title, self._svg_for_wx_rasterization(artifact.payload))
-                for artifact in figures
-            ]
-            for frame in self._phase_figure_frames:
+            for artifact in figures:
+                layout = self._usable_phase_figure_layout(self._phase_figure_layout_id(artifact.id))
+                layouts.append(layout)
+                frame = SVGFigureFrame(
+                    self, artifact.title, self._svg_for_wx_rasterization(artifact.payload),
+                    position=layout[0] if layout is not None else wx.DefaultPosition,
+                    restored_geometry=layout)
+                frame._phase_figure_id = self._phase_figure_layout_id(artifact.id)
+                frame.Bind(wx.EVT_CLOSE, self._on_phase_figure_close)
+                frames.append(frame)
+            self._phase_figure_frames = frames
+            for frame, layout in zip(frames, layouts):
                 frame.Show()
         except Exception as exc:
+            for frame in frames:
+                if not frame.IsBeingDeleted():
+                    frame.Destroy()
             return 'Could not display SVG phase-analysis figures (%s); they remain available for SVG export.' % exc
+        return None
+
+    def ClosePhaseAnalysisFigures(self):
+        """Close viewer windows created for the prior phase-analysis result."""
+        self._capture_phase_figure_layouts()
+        for frame in getattr(self, '_phase_figure_frames', []):
+            if not frame.IsBeingDeleted():
+                frame.Destroy()
+        self._phase_figure_frames = []
+
+    def _capture_phase_figure_layouts(self):
+        """Record the current geometry of every live phase-analysis viewer."""
+        layouts = getattr(self, 'PhaseFigureLayouts', {})
+        for frame in getattr(self, '_phase_figure_frames', []):
+            if frame.IsBeingDeleted():
+                continue
+            figure_id = getattr(frame, '_phase_figure_id', None)
+            if not figure_id:
+                continue
+            position = frame.GetPosition()
+            size = frame.GetSize()
+            if size.width > 0 and size.height > 0:
+                layouts[figure_id] = {
+                    'position': [int(position.x), int(position.y)],
+                    'size': [int(size.width), int(size.height)],
+                }
+        self.PhaseFigureLayouts = layouts
+
+    def _on_phase_figure_close(self, event):
+        self._capture_phase_figure_layouts()
+        event.Skip()
+
+    def _phase_figure_layout_id(self, figure_id):
+        result = getattr(self, 'LastAnalysisResult', None)
+        phase_analysis = result.options.phase_analysis if result is not None else None
+        return '%s:%s' % (phase_analysis or 'phase-analysis', figure_id)
+
+    def _usable_phase_figure_layout(self, figure_id):
+        layout = getattr(self, 'PhaseFigureLayouts', {}).get(figure_id)
+        if not isinstance(layout, dict):
+            return None
+        position, size = layout.get('position'), layout.get('size')
+        if (not isinstance(position, (list, tuple)) or not isinstance(size, (list, tuple)) or
+                len(position) != 2 or len(size) != 2):
+            return None
+        try:
+            x, y = (int(position[0]), int(position[1]))
+            width, height = (int(size[0]), int(size[1]))
+        except (TypeError, ValueError, OverflowError):
+            return None
+        if width < 150 or height < 100:
+            return None
+        for index in range(wx.Display.GetCount()):
+            area = wx.Display(index).GetClientArea()
+            if width > area.width or height > area.height:
+                continue
+            if area.x <= x < area.x + area.width and area.y <= y < area.y + area.height:
+                # Keep the saved location where possible, but shift a window
+                # that now intersects a taskbar or smaller display back into
+                # the visible working area rather than discarding it.
+                x = builtins.max(area.x, builtins.min(x, area.x + area.width - width))
+                y = builtins.max(area.y, builtins.min(y, area.y + area.height - height))
+                return (x, y), (width, height)
         return None
 
     def UpdateInputType(self, InputType=None):
@@ -849,81 +990,121 @@ class MyFrame(wx.Frame):
             event.Skip()
 
     def OnOpen(self, event):  # wxGlade: MyFrame.<event_handler>
-        dlg = wx.FileDialog(self, 'Open counts/At%/Wt% input file', '','','Comma space delimited (*.csv)|*'
-                                                                          '.csv|Any file (*.*)|*.*', wx.FD_OPEN |
-                                                                          wx.FD_FILE_MUST_EXIST)
+        wildcard = ('Stoichiometry Fitter projects (*.stf;*.html)|*.stf;*.html|'
+                    'Legacy inputs (*.csv;*.txt)|*.csv;*.txt|Any file (*.*)|*.*')
+        dlg = wx.FileDialog(self, 'Open project or input', '', '', wildcard,
+                            wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
         dlg.SetFilterIndex(0)
 
         if dlg.ShowModal() == wx.ID_CANCEL:
             return
-
-        # First read the first line of the file and see if it is a StoichiometryFitter csv file or a Bruker text file.
-        with open(dlg.GetPath(), 'r') as f:
-            FirstLine = f.readline()
-
-        if FirstLine.startswith('Spectrum: '):
-            # This is a Bruker text file, so let's read it in and convert it to an InputDat structure like we expect.
-            S = genfromtxt(dlg.GetPath(), skip_header=5, skip_footer=2, dtype=None)
-            # Drop it into pandas and sort based on elemental Z.
-            pdS = pd.DataFrame(S).sort_values('f1')
-            BrukerInput = pdS.to_numpy()[:, (0, 3)].T
-            # Make a structure like we expect to import from a StoichiometryFitter csv.  (All values are zero of course)
-            InputDat = zeros(pb.MAXELEMENT, dtype=[('Counts', '<f8')])
-            # For every entry in the Bruker file, update the respective element in our csv.
-            for El,Cnts in [(BrukerInput[0,i], BrukerInput[1,i]) for i in range(BrukerInput.shape[1])]:
-                InputDat[pb.ElementDict[str(El,'utf-8')][0]-1][0] = Cnts
-        elif FirstLine.startswith('Hyperspy'):
-            # This is a fit generated from a hyperspy model, so let's read it in and convert it to an InputDat structure like we expect.
-            pdS = pd.read_csv(dlg.GetPath())
-            # Make a structure like we expect to import from a StoichiometryFitter csv.  (All values are zero of course)
-            InputDat = zeros(pb.MAXELEMENT, dtype=[('Counts', '<f8')])
-            # For every entry in the hyperspy fit csv, update the respective element in our memory.
-            for _, r in pdS.iterrows():
-                El,Line = r['Name'].split('_')
-                # For now we only handle K-shells.
-                if 'K' in Line:
-                    InputDat[pb.ElementDict[El][0]-1][0] += r['Area']
-        else:
-            # It is not a Bruker format, so it should be a StoichiometryFitter format.
-            InputDat = genfromtxt(dlg.GetPath(), dtype=float, delimiter=',', usecols=(1), autostrip=True, comments='#',
-                              names=True)
-
-        HowlBadFile = lambda s: wx.MessageBox("Input file does not match the expected format.\n"
-                                              "It should be a CSV with the header:\n"
-                                              "Element,Counts\n"
-                                              "Where Counts can be replaced by At%, Wt% or OxWt%.\n"
-                                              "It should have a line for each element from H to Uuo.""",
-                                          "Invalid file format: "+s,
-                                          style=wx.OK)
-
-        # Verify the quality of the input data.  It should have as many rows as we have rows in the input listbox.
-        if len(InputDat) != self.ElementsListCtrl.GetItemCount():
-            HowlBadFile('Incorrect number of lines')
+        path = dlg.GetPath()
+        try:
+            loaded = ProjectPackage.detect_and_load_path(path)
+        except Exception as exc:
+            wx.MessageBox(str(exc), 'Could not open file', style=wx.OK)
             return
 
-        # If the input type is valid, this will be set True.  Otherwise, we bail by default.
-        InputTypeValid = False
-
-        if InputDat.dtype.names[0][:2] in ['Co', 'At', 'Wt', 'Ox']:
-            # Note that the file reader filters out the % symbol, so we have to add that in.  Kind of stupid...
-            if InputDat.dtype.names[0] == 'Counts':
-                # Set the input type radio to Counts
-                self.UpdateInputType(InputDat.dtype.names[0])
-            if InputDat.dtype.names[0] == 'OxWt':
-                self.UpdateInputType('OxWt%')
-            else:
-                self.UpdateInputType(InputDat.dtype.names[0][:2] + '%')
+        # Loading and validation above is side-effect free.  GUI state changes
+        # only after the complete package/input has passed validation.
+        if isinstance(loaded, ProjectPackage.Project):
+            self._restore_project(loaded, path)
         else:
-            HowlBadFile('Incorrect header')
-            return
+            self._restore_imported_input(loaded)
 
-        # Now populate it with the numbers from the input file.
+    def _set_input_controls(self, analysis_input):
+        type_names = {'Counts': 'Counts', 'At %': 'At%', 'Wt %': 'Wt%', 'Ox Wt %': 'OxWt%'}
+        self.UpdateInputType(type_names[StoichiometryCore.normalize_input_type(analysis_input.input_type)])
+        values = StoichiometryCore.values_to_vector(analysis_input.values)
         for Z in range(1, pb.MAXELEMENT + 1):
-            self.ElementsListCtrl.SetItem(Z-1, 1, str(InputDat[Z-1][0]))
-        return
+            self.ElementsListCtrl.SetItem(Z - 1, 1, format(float(values[Z - 1]), '.17g'))
+
+    def _restore_imported_input(self, imported):
+        self.ClosePhaseAnalysisFigures()
+        self.PhaseFigureLayouts = {}
+        self.ProjectMetadata = {}
+        self._set_input_controls(imported.analysis_input)
+        self.OriginalSource = imported.source
+        self.CurrentProjectPath = None
+        self.CurrentProjectId = None
+        self.ArchivedResources = None
+        self.ArchivedFingerprint = None
+        self.ArchivedInput = None
+        self.ArchivedOptions = None
+        if hasattr(self, 'LastAnalysisResult'):
+            del self.LastAnalysisResult
+        self.txtOutput.SetValue('')
+
+    def _restore_project(self, project, opened_path):
+        self.ClosePhaseAnalysisFigures()
+        self.ProjectMetadata = dict(project.metadata)
+        layouts = self.ProjectMetadata.get('phase_figure_layouts', {})
+        self.PhaseFigureLayouts = layouts if isinstance(layouts, dict) else {}
+        self._set_input_controls(project.input)
+        options = project.options
+        self.comboStoich.SetValue(project.input.stoichiometry_name or '')
+        self.chkOByStoichiometry.SetValue(project.input.stoichiometry is not None)
+        if project.input.stoichiometry is None:
+            for Z in range(1, pb.MAXELEMENT + 1):
+                self.ElementsListCtrl.SetItem(Z - 1, 2, 'n/a')
+            self.ElementsListCtrl.SetEditableColumns((1,))
+        else:
+            for Z, charge in enumerate(project.input.stoichiometry, start=1):
+                self.ElementsListCtrl.SetItem(Z - 1, 2, format(float(charge), '.17g'))
+            self.ElementsListCtrl.SetEditableColumns((1, 2))
+
+        self.chkKfacs.SetValue(options.kfactors is not None)
+        if options.kfactors:
+            self.comboKfacs.SetValue(options.kfactors)
+        self.chkArbAbsCorrection.SetValue(options.arbitrary_absorption is not None)
+        if options.arbitrary_absorption:
+            self.comboArbAbsCorrection.SetValue(options.arbitrary_absorption)
+        self.chkAbsCorr.SetValue(options.absorption_correction != 0)
+        self.txtAbsCorr.SetValue(format(options.absorption_correction * 1000, '.17g'))
+        self.txtTakeoff.SetValue(format(options.takeoff, '.17g'))
+        self.chkPhaseAnalysis.SetValue(options.phase_analysis is not None)
+        if options.phase_analysis:
+            self.cmbPhaseAnalysis.SetValue(options.phase_analysis)
+
+        selected = set(options.selected_phases or [])
+        for index in range(self.PhasesListCtrl.GetItemCount()):
+            state = wx.LIST_STATE_SELECTED if self.PhasesListCtrl.GetItemText(index) in selected else 0
+            self.PhasesListCtrl.SetItemState(index, state, wx.LIST_STATE_SELECTED)
+
+        self.CurrentProjectPath = (os.path.splitext(opened_path)[0] + '.stf'
+                                   if opened_path.lower().endswith('.html') else opened_path)
+        self.CurrentProjectId = project.project_id
+        self.OriginalSource = project.original_source
+        self.ArchivedResources = project.resources if project.result is not None else None
+        self.ArchivedFingerprint = (project.calculation_fingerprint
+                                    if project.result is not None else None)
+        self.ArchivedInput = project.input
+        self.ArchivedOptions = project.options
+        if project.result is None:
+            if hasattr(self, 'LastAnalysisResult'):
+                del self.LastAnalysisResult
+            self.txtOutput.SetValue('Not yet calculated.\n')
+        else:
+            self.LastAnalysisResult = project.result
+            self.txtOutput.SetValue(project.result.report_text)
+            for warning in project.result.warnings:
+                self.txtOutput.AppendText('\nWarning: %s\n' % warning)
+            if project.result.figures:
+                # Let the main frame finish restoring controls and layout before
+                # creating owned top-level figure windows.  Windows otherwise
+                # applies its automatic cascade placement during project load.
+                wx.CallAfter(self._show_loaded_phase_analysis_figures, project.result.figures)
+
+    def _show_loaded_phase_analysis_figures(self, figures):
+        if self.IsBeingDeleted():
+            return
+        figure_warning = self.ShowPhaseAnalysisFigures(figures)
+        if figure_warning:
+            self.txtOutput.AppendText('\nWarning: %s\n' % figure_warning)
 
     def OnSaveInputs(self, event):  # wxGlade: MyFrame.<event_handler>
-        dlg = wx.FileDialog(self, '', '', '', 'CSV file (*.csv)|*.csv|Any file (*.*)|*.*', wx.FD_SAVE)
+        dlg = wx.FileDialog(self, '', '', '', 'CSV file (*.csv)|*.csv|Any file (*.*)|*.*',
+                            wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         dlg.SetFilterIndex(0)
 
         if dlg.ShowModal() == wx.ID_CANCEL:
@@ -934,31 +1115,12 @@ class MyFrame(wx.Frame):
         return
 
     def DoSaveInputs(self, FileName):
-        if hasattr(self, 'LastAnalysisResult'):
-            StoichiometryCore.save_input_csv(self.LastAnalysisResult.input, FileName)
-            return
-
-        if self.rdioInputType.GetSelection() == 0:
-            SavStr = 'Element,Counts\n'
-        elif self.rdioInputType.GetSelection() == 1:
-            SavStr = 'Element,At%\n'
-        elif self.rdioInputType.GetSelection() == 2:
-            SavStr = 'Element,Wt%\n'
-        elif self.rdioInputType.GetSelection() == 3:
-            SavStr = 'Element,OxWt%\n'
-        else:
-            raise
-
-        for Z in range(1, pb.MAXELEMENT + 1):
-            ElName = pb.ElementalSymbols[Z]
-            SavStr += '%s,%f\n' % (ElName, float(self.ElementsListCtrl.GetItem(Z-1,1).GetText()))
-
-        with open(FileName, 'w') as fid:
-            fid.write(SavStr)
-        return
+        analysis_input, _, _ = self._analysis_state_from_controls()
+        ProjectPackage.export_input_csv(analysis_input, FileName)
 
     def OnSaveResults(self, event):  # wxGlade: MyFrame.<event_handler>
-        dlg = wx.FileDialog(self, 'Save report', '', '', 'Text file (*.txt)|*.txt|Any file (*.*)|*.*', wx.FD_SAVE)
+        dlg = wx.FileDialog(self, 'Save report', '', '', 'Text file (*.txt)|*.txt|Any file (*.*)|*.*',
+                            wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         dlg.SetFilterIndex(0)
 
         if dlg.ShowModal() == wx.ID_CANCEL:
@@ -969,36 +1131,75 @@ class MyFrame(wx.Frame):
         return
 
     def DoSaveResults(self, FileName):
-        if hasattr(self, 'LastAnalysisResult'):
-            ReportText = self.LastAnalysisResult.report_text
+        ProjectPackage.export_report_text(
+            self.LastAnalysisResult if hasattr(self, 'LastAnalysisResult') else None,
+            FileName)
+
+    def _build_current_project(self):
+        self._capture_phase_figure_layouts()
+        analysis_input, options, _ = self._analysis_state_from_controls()
+        result = None
+        if (hasattr(self, 'LastAnalysisResult') and
+                self.LastAnalysisResult.input == analysis_input and
+                self.LastAnalysisResult.options == options):
+            result = self.LastAnalysisResult
+        metadata = dict(getattr(self, 'ProjectMetadata', {}))
+        if self.PhaseFigureLayouts:
+            metadata['phase_figure_layouts'] = self.PhaseFigureLayouts
         else:
-            ReportText = self.txtOutput.GetValue()
+            metadata.pop('phase_figure_layouts', None)
+        project = ProjectPackage.new_project(
+            analysis_input, options, result=result,
+            original_source=getattr(self, 'OriginalSource', None),
+            project_id=getattr(self, 'CurrentProjectId', None), metadata=metadata)
+        self.CurrentProjectId = project.project_id
+        return project
 
-        fid = open(FileName, 'w')
-        fid.write(ReportText)
-        fid.close()
-
-        return
+    def _save_project_to_path(self, path, overwrite_confirmed=False):
+        if not path.lower().endswith('.stf'):
+            path += '.stf'
+        html_path = os.path.splitext(path)[0] + '.html'
+        # Save As uses the native save dialog's overwrite confirmation.  Keep a
+        # separate confirmation only when a directly saved project, or an
+        # orphaned sidecar report, would be replaced.
+        if (os.path.exists(html_path) and not os.path.exists(path)) or (
+                os.path.exists(path) and not overwrite_confirmed):
+            answer = wx.MessageBox(
+                'Replace both project files?\n\n%s\n%s' % (path, html_path),
+                'Replace existing project',
+                style=wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING)
+            if answer != wx.YES:
+                return False
+        try:
+            project = self._build_current_project()
+            stf_path, _ = ProjectPackage.save_project_files(project, path)
+        except Exception as exc:
+            wx.MessageBox(str(exc), 'Could not save project', style=wx.OK)
+            return False
+        self.CurrentProjectPath = stf_path
+        self.ProjectMetadata = dict(project.metadata)
+        self.ArchivedResources = project.resources if project.result is not None else None
+        self.ArchivedFingerprint = (project.calculation_fingerprint
+                                    if project.result is not None else None)
+        self.ArchivedInput = project.input
+        self.ArchivedOptions = project.options
+        return True
 
     def OnSave(self, event):  # wxGlade: MyFrame.<event_handler>
-        dlg = wx.FileDialog(self, 'Save all', '', '', 'Any file (*.*)|*.*', wx.FD_SAVE)
+        if getattr(self, 'CurrentProjectPath', None):
+            self._save_project_to_path(self.CurrentProjectPath)
+            return
+        self.OnSaveAs(event)
+
+    def OnSaveAs(self, event):
+        dlg = wx.FileDialog(self, 'Save Stoichiometry Fitter project', '', '',
+                            'Stoichiometry Fitter project (*.stf)|*.stf',
+                            wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         dlg.SetFilterIndex(0)
 
         if dlg.ShowModal() == wx.ID_CANCEL:
             return
-
-        FileRoot = dlg.GetPath()
-
-        if hasattr(self, 'LastAnalysisResult'):
-            OutputDir = os.path.dirname(FileRoot) or '.'
-            BaseName = os.path.basename(FileRoot)
-            StoichiometryCore.save_analysis(self.LastAnalysisResult, OutputDir, basename=BaseName)
-        else:
-            # Save the input and output files for pre-compute compatibility.
-            self.DoSaveInputs(FileRoot + '.csv')
-            self.DoSaveResults(FileRoot + '.txt')
-
-        return
+        self._save_project_to_path(dlg.GetPath(), overwrite_confirmed=True)
 
 
     def OnAbout(self, event):  # wxGlade: MyFrame.<event_handler>

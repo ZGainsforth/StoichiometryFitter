@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from dataclasses import asdict, dataclass, field
+import hashlib
+import importlib.metadata
 import importlib.util
 import json
 import os
+import platform
 import re
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -21,6 +24,7 @@ from PhaseAnalysis.contract import ImageArtifact, svg_artifact
 
 CONFIG_DIR = 'ConfigData'
 PHASE_ANALYSIS_DIR = 'PhaseAnalysis'
+APPLICATION_VERSION = '3.0-project-packages'
 
 
 @dataclass
@@ -53,6 +57,22 @@ class AnalysisOptions:
 
 
 @dataclass
+class ResolvedResources:
+    """Scientific configuration captured at calculation time.
+
+    These values, rather than configuration filenames, are the calculation
+    inputs.  They are deliberately JSON-compatible so a project can archive
+    them and use them for an explicit rerun on another installation.
+    """
+    k_factors: Optional[List[float]] = None
+    stoichiometry: Optional[List[float]] = None
+    arbitrary_absorption: Optional[Dict[str, Any]] = None
+    selected_phase_formulas: Dict[str, str] = field(default_factory=dict)
+    phase_analysis_resources: Dict[str, Any] = field(default_factory=dict)
+    hashes: Dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
 class AnalysisResult:
     input: AnalysisInput
     options: AnalysisOptions
@@ -62,6 +82,8 @@ class AnalysisResult:
     phase_analysis: Optional[Dict[str, Any]] = None
     figures: List[ImageArtifact] = field(default_factory=list, repr=False)
     warnings: List[str] = field(default_factory=list)
+    resources: ResolvedResources = field(default_factory=ResolvedResources)
+    calculation_fingerprint: Dict[str, Any] = field(default_factory=dict)
     files: Dict[str, str] = field(default_factory=dict)
 
 
@@ -125,6 +147,114 @@ def load_stoichiometry(name: str, config_dir: str = CONFIG_DIR) -> List[float]:
 def load_phases(config_dir: str = CONFIG_DIR):
     return np.genfromtxt(os.path.join(config_dir, 'Phases.csv'), dtype=None, comments='#',
                          delimiter=',', converters={1: lambda s: str(s).lstrip()})
+
+
+def _sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _read_bytes(path: str) -> bytes:
+    with open(path, 'rb') as fid:
+        return fid.read()
+
+
+def _load_k_factors(path: str) -> List[float]:
+    data = np.genfromtxt(path, dtype=None, comments='#', skip_header=1, delimiter=',',
+                         converters={1: CountsToQuant.floatme, 2: CountsToQuant.floatme,
+                                     3: CountsToQuant.floatme})
+    if len(data) != pb.MAXELEMENT:
+        raise ValueError('Expected %d rows in k-factor data, got %d' % (pb.MAXELEMENT, len(data)))
+    return [float(row[1]) for row in data]
+
+
+def _load_absorption_parameters(path: str) -> Dict[str, Any]:
+    with open(path, encoding='utf-8-sig') as fid:
+        lines = fid.read().splitlines()
+    if len(lines) < 4 or not lines[0].startswith('#tau=') or not lines[1].startswith('#rho='):
+        raise ValueError('Invalid arbitrary absorption resource.')
+    values = np.genfromtxt(path, dtype=None, comments='#', skip_header=3, delimiter=',',
+                           converters={1: CountsToQuant.floatme})
+    weights = [float(row[1]) for row in values]
+    if len(weights) != pb.MAXELEMENT:
+        raise ValueError('Expected %d rows in absorption data, got %d' % (pb.MAXELEMENT, len(weights)))
+    return {'tau': float(lines[0].split('=', 1)[1]),
+            'rho': float(lines[1].split('=', 1)[1]), 'wt_pct': weights}
+
+
+def resolve_resources(analysis_input: AnalysisInput, options: AnalysisOptions,
+                      config_dir: str = CONFIG_DIR,
+                      phase_analysis_dir: str = PHASE_ANALYSIS_DIR) -> ResolvedResources:
+    """Resolve named configuration once, before running any calculation."""
+    resources = ResolvedResources()
+    if analysis_input.stoichiometry is not None:
+        resources.stoichiometry = [float(value) for value in analysis_input.stoichiometry]
+    elif analysis_input.stoichiometry_name:
+        path = os.path.join(config_dir, 'Stoich ' + analysis_input.stoichiometry_name + '.csv')
+        resources.stoichiometry = load_stoichiometry(analysis_input.stoichiometry_name, config_dir)
+        resources.hashes['stoichiometry'] = _sha256(_read_bytes(path))
+
+    if options.kfactors:
+        path = os.path.join(config_dir, 'kfacs ' + options.kfactors + '.csv')
+        resources.k_factors = _load_k_factors(path)
+        resources.hashes['k_factors'] = _sha256(_read_bytes(path))
+
+    if options.arbitrary_absorption:
+        path = os.path.join(config_dir, 'Absorption ' + options.arbitrary_absorption + '.csv')
+        resources.arbitrary_absorption = _load_absorption_parameters(path)
+        resources.hashes['arbitrary_absorption'] = _sha256(_read_bytes(path))
+
+    if options.selected_phases:
+        for phase, formula in load_phases(config_dir):
+            phase_name = phase.decode() if isinstance(phase, bytes) else str(phase)
+            phase_formula = formula.decode() if isinstance(formula, bytes) else str(formula)
+            if phase_name in options.selected_phases:
+                resources.selected_phase_formulas[phase_name] = phase_formula
+        resources.hashes['selected_phase_formulas'] = _sha256(json.dumps(
+            resources.selected_phase_formulas, sort_keys=True).encode('utf-8'))
+
+    # Plugin source is fingerprinted but never archived as executable code.
+    # Its declared auxiliary data may be placed in phase_analysis_resources by
+    # callers/plugins as JSON-compatible values.
+    if options.phase_analysis:
+        path = phase_analysis_path(options.phase_analysis, phase_analysis_dir)
+        if os.path.isfile(path):
+            resources.hashes['phase_analysis_algorithm'] = _sha256(_read_bytes(path))
+        if options.phase_analysis in ('Bulk Composition', 'GEMS Comparison'):
+            auxiliary_path = os.path.join(config_dir, 'ProtosolarAbundances.csv')
+            auxiliary = np.genfromtxt(auxiliary_path, delimiter=',', skip_header=1, dtype=None)
+            resources.phase_analysis_resources['protosolar_abundances'] = [
+                float(row[1]) for row in auxiliary]
+            resources.hashes['phase_analysis_protosolar_abundances'] = _sha256(
+                _read_bytes(auxiliary_path))
+    return resources
+
+
+def calculation_fingerprint(resources: Optional[ResolvedResources] = None,
+                            phase_analysis: Optional[str] = None,
+                            phase_analysis_dir: str = PHASE_ANALYSIS_DIR) -> Dict[str, Any]:
+    """Return a portable compatibility fingerprint for rerun warnings."""
+    algorithm_hashes = {}
+    base = os.path.dirname(os.path.abspath(__file__))
+    for name in ('StoichiometryCore.py', 'CountsToQuant.py', 'AbsorptionCorrection.py',
+                 'PhaseFit.py', 'ReportResults.py'):
+        path = os.path.join(base, name)
+        if os.path.isfile(path):
+            algorithm_hashes[name] = _sha256(_read_bytes(path))
+    if phase_analysis:
+        plugin_path = phase_analysis_path(phase_analysis, phase_analysis_dir)
+        if os.path.isfile(plugin_path):
+            algorithm_hashes['PhaseAnalysis/' + phase_analysis + '.py'] = _sha256(
+                _read_bytes(plugin_path))
+    dependencies = {'python': platform.python_version(), 'numpy': np.__version__}
+    for distribution in ('scipy', 'matplotlib', 'pandas', 'wxPython'):
+        try:
+            dependencies[distribution] = importlib.metadata.version(distribution)
+        except importlib.metadata.PackageNotFoundError:
+            pass
+    return {'application': 'Stoichiometry Fitter', 'application_version': APPLICATION_VERSION,
+            'algorithm_hashes': algorithm_hashes,
+            'dependencies': dependencies,
+            'resource_hashes': dict(resources.hashes) if resources else {}}
 
 
 def phase_analysis_path(name: str, phase_analysis_dir: str = PHASE_ANALYSIS_DIR) -> str:
@@ -226,22 +356,23 @@ def _legacy_phase_tables(name: str, report_text: str) -> List[ResultTable]:
         if not metric:
             continue
         ratio_rows.append({
-            'metric': metric,
-            'value': float(match.group(2)),
-            'note': match.group(3).strip(),
+            'Metric': metric,
+            'Value': float(match.group(2)),
+            'Note': match.group(3).strip(),
         })
 
     if ratio_rows:
         tables.append(ResultTable(
             name='phase_analysis_%s_numeric_results' % _slug(name),
             title='%s Numeric Results' % name,
-            columns=['metric', 'value', 'note'],
+            columns=['Metric', 'Value', 'Note'],
             rows=ratio_rows,
             metadata={'phase_analysis': name},
             description='Numeric ratio and scalar results parsed from the %s phase analysis.' % name,
         ))
 
     row_re = re.compile(r'^\s*([^:]+):\s*([-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)\b')
+    ppm_re = re.compile(r',\s*[^:]+:\s*([-+]?\d+(?:\.\d+)?)\s*\*\s*10\^-6\s*$')
     index = 0
     while index < len(lines):
         heading = lines[index].strip()
@@ -259,18 +390,29 @@ def _legacy_phase_tables(name: str, report_text: str) -> List[ResultTable]:
             row_match = row_re.match(lines[cursor])
             if row_match is None:
                 break
+            ppm_match = ppm_re.search(lines[cursor])
             rows.append({
                 'label': row_match.group(1).strip(),
                 'value': float(row_match.group(2)),
+                'ppm': float(ppm_match.group(1)) if ppm_match else None,
             })
             cursor += 1
 
         if rows:
+            heading_text = heading[:-1]
+            if 'cations per ' in heading_text.casefold():
+                columns = ['Element', 'Number Cations', 'Cations (ppm)']
+            elif 'site ' in heading_text.casefold():
+                columns = ['Element', 'Occupancy']
+            else:
+                columns = ['Label', 'Value']
             tables.append(ResultTable(
-                name='phase_analysis_%s_%s' % (_slug(name), _slug(heading[:-1])),
-                title='%s - %s' % (name, heading[:-1]),
-                columns=['label', 'value'],
-                rows=rows,
+                name='phase_analysis_%s_%s' % (_slug(name), _slug(heading_text)),
+                title='%s - %s' % (name, heading_text),
+                columns=columns,
+                rows=[{columns[0]: row['label'], columns[1]: row['value'],
+                       **({columns[2]: row['ppm']} if len(columns) > 2 and row['ppm'] is not None else {})}
+                      for row in rows],
                 metadata={'phase_analysis': name},
                 description='Numeric table parsed from the %s phase analysis.' % name,
             ))
@@ -349,14 +491,22 @@ def quant_to_dict(quant) -> Dict[str, Dict[str, float]]:
 def run_analysis(input_data: Any, input_type: str = 'Counts', options: Optional[Any] = None,
                  save_dir: Optional[str] = None, basename: str = 'analysis',
                  config_dir: str = CONFIG_DIR,
-                 phase_analysis_dir: str = PHASE_ANALYSIS_DIR) -> AnalysisResult:
+                 phase_analysis_dir: str = PHASE_ANALYSIS_DIR,
+                 resolved_resources: Optional[Any] = None) -> AnalysisResult:
     analysis_input = _coerce_input(input_data, input_type)
     analysis_options = _coerce_options(options)
+    if resolved_resources is None:
+        resources = resolve_resources(analysis_input, analysis_options, config_dir,
+                                      phase_analysis_dir)
+    elif isinstance(resolved_resources, ResolvedResources):
+        resources = resolved_resources
+    elif isinstance(resolved_resources, dict):
+        resources = ResolvedResources(**resolved_resources)
+    else:
+        raise TypeError('resolved_resources must be ResolvedResources, dict, or None')
 
     counts = values_to_vector(analysis_input.values)
-    stoich = analysis_input.stoichiometry
-    if stoich is None and analysis_input.stoichiometry_name:
-        stoich = load_stoichiometry(analysis_input.stoichiometry_name, config_dir=config_dir)
+    stoich = resources.stoichiometry
     stoich_array = None if stoich is None else np.array(stoich, dtype=float)
 
     input_dict = vector_to_element_dict(counts)
@@ -371,6 +521,8 @@ def run_analysis(input_data: Any, input_type: str = 'Counts', options: Optional[
         AbsorptionCorrection=analysis_options.absorption_correction,
         Takeoff=analysis_options.takeoff,
         OByStoichiometry=stoich_array,
+        kfactors_data=resources.k_factors,
+        arbitrary_absorption_data=resources.arbitrary_absorption,
     )
     if quant is None:
         raise ValueError('Quantification failed for input type %s' % analysis_input.input_type)
@@ -390,8 +542,9 @@ def run_analysis(input_data: Any, input_type: str = 'Counts', options: Optional[
     at_pct, wt_pct, ox_wt_pct, _ = list(zip(*quant_numbers))
 
     if analysis_options.selected_phases:
-        phases = load_phases(config_dir=config_dir)
-        phases_to_fit = [phase for phase in phases if phase[0] in analysis_options.selected_phases]
+        phases_to_fit = [(name, resources.selected_phase_formulas[name])
+                         for name in analysis_options.selected_phases
+                         if name in resources.selected_phase_formulas]
         if phases_to_fit:
             # ``GetAbundancesFromCounts`` annotates its element mapping with
             # bookkeeping entries such as ``_nonzero_input_``.  PhaseFit
@@ -416,13 +569,17 @@ def run_analysis(input_data: Any, input_type: str = 'Counts', options: Optional[
         warnings.append(f'Element {el} has zero k-factor in "{analysis_options.kfactors}" — appears with 0% abundance.')
     if analysis_options.phase_analysis:
         try:
+            phase_kwargs = dict(analysis_options.phase_analysis_kwargs)
+            if 'protosolar_abundances' in resources.phase_analysis_resources:
+                phase_kwargs['ProtosolarData'] = list(
+                    resources.phase_analysis_resources['protosolar_abundances'])
             phase_report, phase_tables, figures, phase_warnings, phase_payload = _run_phase_analysis(
                 analysis_options.phase_analysis,
                 np.array(at_pct, dtype=float),
                 np.array(wt_pct, dtype=float),
                 np.array(ox_wt_pct, dtype=float),
                 stoich_array,
-                analysis_options.phase_analysis_kwargs,
+                phase_kwargs,
                 phase_analysis_dir,
             )
             if phase_report:
@@ -441,6 +598,9 @@ def run_analysis(input_data: Any, input_type: str = 'Counts', options: Optional[
         phase_analysis=phase_payload,
         figures=figures,
         warnings=warnings,
+        resources=resources,
+        calculation_fingerprint=calculation_fingerprint(
+            resources, analysis_options.phase_analysis, phase_analysis_dir),
     )
 
     if save_dir is not None:
@@ -462,15 +622,18 @@ def _json_default(value):
 
 
 def analysis_to_dict(result: AnalysisResult) -> Dict[str, Any]:
+    """Return the legacy standalone JSON export shape.
+
+    Resumable, provenance-complete state belongs in the schema-validated STF
+    project package.  Keeping this older JSON contract stable avoids silently
+    changing downstream scripts that use ``save_analysis``.
+    """
     return {
         'schema_version': 2,
         'input': asdict(result.input),
         'options': asdict(result.options),
         'text_output': result.report_text,
         'tables': [asdict(table) for table in result.tables],
-        'phase_analysis': result.phase_analysis,
-        'figures': [asdict(figure) for figure in result.figures],
-        'warnings': list(result.warnings),
     }
 
 
