@@ -1,0 +1,318 @@
+/* Stoichiometry Fitter — Dark Theme Styles */
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Element grid (full periodic table) */
+.element-grid-full {
+    display: grid;
+    grid-template-columns: repeat(18, 1fr);
+    gap: 2px;
+    margin-bottom: 8px;
+}
+
+.element-grid-full .element-cell {
+    aspect-ratio: 1;
+    min-height: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #334155;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.element-grid-full .element-cell:hover {
+    transform: scale(1.15);
+    z-index: 10;
+    border-color: #64748b;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.element-grid-full .element-cell .cell-symbol {
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.element-grid-full .element-cell .cell-number {
+    font-size: 7px;
+    color: #64748b;
+    line-height: 1;
+}
+
+.element-grid-full .element-cell.has-value {
+    border-width: 2px;
+}
+
+/* Element values table (2 columns: Element + Abundance) */
+.element-values-table-container {
+    overflow-x: auto;
+}
+
+.element-values-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.element-values-table th {
+    background: #1e293b;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 12px;
+    text-align: right;
+    border-bottom: 1px solid #334155;
+}
+
+.element-values-table th:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    background: #1e293b;
+    z-index: 1;
+}
+
+.element-values-table td {
+    padding: 6px 12px;
+    font-size: 13px;
+    color: #e2e8f0;
+    text-align: right;
+    border-bottom: 1px solid #1e293b;
+}
+
+.element-values-table td:first-child {
+    text-align: left;
+    font-weight: 500;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.element-values-table tr:hover td {
+    background: rgba(51, 65, 85, 0.5);
+}
+
+.element-values-table td input {
+    width: 80px;
+    padding: 4px 8px;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    color: #e2e8f0;
+    font-size: 13px;
+    text-align: right;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.element-values-table td input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px #3b82f6;
+}
+
+/* Category legend */
+.category-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.category-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: #94a3b8;
+}
+
+.category-legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    border: 1px solid #475569;
+}
+
+/* Loading state */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+.loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #475569;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Overlay animation */
+#element-overlay {
+    transition: opacity 0.15s ease;
+}
+
+#element-overlay:not(.hidden) {
+    animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#element-overlay:not(.hidden) > div:last-child {
+    animation: slideUp 0.15s ease;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translate(-50%, calc(-50% + 10px)); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* Number input styling */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Select styling */
+select[multiple] option {
+    padding: 2px 6px;
+}
+
+/* Results table */
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+}
+
+.results-table th {
+    background: #1e293b;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 12px;
+    text-align: right;
+    border-bottom: 1px solid #334155;
+}
+
+.results-table th:first-child {
+    text-align: left;
+}
+
+.results-table td {
+    padding: 6px 12px;
+    font-size: 13px;
+    color: #e2e8f0;
+    text-align: right;
+    border-bottom: 1px solid #1e293b;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.results-table td:first-child {
+    text-align: left;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 500;
+}
+
+.results-table tr:hover td {
+    background: rgba(51, 65, 85, 0.5);
+}
+
+/* Results table title */
+.results-table-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #334155;
+}
+
+/* Status bar */
+#status {
+    transition: color 0.2s ease;
+}
+
+#status.info {
+    color: #60a5fa;
+}
+
+#status.success {
+    color: #4ade80;
+}
+
+#status.error {
+    color: #f87171;
+}
+
+/* Warnings */
+.warning {
+    background: #451a03;
+    border: 1px solid #92400e;
+    color: #fbbf24;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+/* Download buttons */
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Collapse toggle */
+#collapse-toggle {
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* Checkbox styling for settings */
+input[type="checkbox"].rounded {
+    accent-color: #3b82f6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    aside {
+        width: 240px !important;
+        min-width: 240px !important;
+    }
+}
