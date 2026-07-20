@@ -64,6 +64,8 @@
 /* Element values table (2 columns: Element + Abundance) */
 .element-values-table-container {
     overflow-x: auto;
+    overflow-y: auto;
+    max-height: 200px;
 }
 
 .element-values-table {

@@ -8,29 +8,31 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
-                    },
-                    colors: {
-                        bg: '#0f172a',
-                        surface: '#1e293b',
-                        'surface-hover': '#273449',
-                        'surface-active': '#334155',
-                        border: '#334155',
-                        'border-light': '#475569',
-                        text: '#e2e8f0',
-                        'text-secondary': '#94a3b8',
-                        'text-muted': '#64748b',
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            sans: ['Inter', 'system-ui', 'sans-serif'],
+                        },
+                        colors: {
+                            bg: '#0f172a',
+                            surface: '#1e293b',
+                            'surface-hover': '#273449',
+                            'surface-active': '#334155',
+                            border: '#334155',
+                            'border-light': '#475569',
+                            text: '#e2e8f0',
+                            'text-secondary': '#94a3b8',
+                            'text-muted': '#64748b',
+                        }
                     }
                 }
             }
-        }
-    </script>
-    <link rel="stylesheet" href="/static/style.css">
+        </script>
+        <link rel="stylesheet" href="/static/style.css">
+        <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    </head>
 </head>
 <body class="bg-bg text-text font-sans overflow-hidden">
     <!-- Main Layout -->
@@ -46,7 +48,7 @@
             <!-- Element Values Table (2 columns: Element + Abundance label) -->
             <div id="element-values-section" class="p-4 border-b border-border" style="max-height: 300px;">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Values</h3>
+                    <h3 class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Input</h3>
                     <button id="clear-values-btn" class="text-xs text-text-muted hover:text-text transition-colors">Clear All</button>
                 </div>
                 <div id="element-values-table" class="element-values-table-container">
@@ -57,14 +59,11 @@
             <!-- File Actions -->
             <div class="p-4 border-b border-border">
                 <div class="flex gap-2">
-                    <label class="flex-1 cursor-pointer">
-                        <input type="file" id="file-upload" accept=".csv,.txt,.stf" class="hidden">
-                        <button id="upload-btn" class="w-full px-3 py-2 bg-surface-active hover:bg-border-light border border-border rounded text-sm font-medium transition-colors">
-                            Upload File
-                        </button>
-                    </label>
                     <button id="example-btn" class="flex-1 px-3 py-2 bg-surface-active hover:bg-border-light border border-border rounded text-sm font-medium transition-colors">
                         Use Example
+                    </button>
+                    <button id="reset-btn" class="flex-1 px-3 py-2 bg-surface-active hover:bg-border-light border border-border rounded text-sm font-medium transition-colors">
+                        Reset
                     </button>
                 </div>
                 <div id="file-name" class="text-xs text-text-muted mt-2 truncate hidden"></div>
@@ -75,16 +74,6 @@
                 <h2 class="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">Settings</h2>
 
                 <div class="space-y-3">
-                    <div>
-                        <label class="block text-xs text-text-secondary mb-1">Input Type</label>
-                        <select id="input-type" class="w-full px-2 py-1.5 bg-bg border border-border rounded text-sm text-text focus:outline-none focus:ring-1 focus:ring-blue-500">
-                            <option>Counts</option>
-                            <option>At %</option>
-                            <option>Wt %</option>
-                            <option>Ox Wt %</option>
-                        </select>
-                    </div>
-
                     <div id="kfactors-group">
                         <label class="block text-xs text-text-secondary mb-1">k-factors</label>
                         <select id="k-factors" class="w-full px-2 py-1.5 bg-bg border border-border rounded text-sm text-text focus:outline-none focus:ring-1 focus:ring-blue-500">
@@ -163,21 +152,25 @@
                 </div>
             </div>
 
+            <!-- File Actions (always visible) -->
+            <div class="mb-4">
+                <div class="flex gap-2">
+                    <button id="upload-btn" class="px-3 py-1.5 bg-surface hover:bg-surface-hover border border-border rounded text-xs font-medium transition-colors">
+                        Upload File
+                    </button>
+                    <button id="download-report" class="px-3 py-1.5 bg-surface hover:bg-surface-hover border border-border rounded text-xs font-medium transition-colors">
+                        Download Report
+                    </button>
+                    <button id="download-stf" class="px-3 py-1.5 bg-surface hover:bg-surface-hover border border-border rounded text-xs font-medium transition-colors">
+                        Download .stf
+                    </button>
+                </div>
+            </div>
+
             <!-- Results -->
             <div id="results-section" class="hidden">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-semibold text-text">Analysis Results</h2>
-                    <div class="flex gap-2">
-                        <button id="download-csv" class="px-3 py-1.5 bg-surface hover:bg-surface-hover border border-border rounded text-xs font-medium transition-colors">
-                            Download CSV
-                        </button>
-                        <button id="download-report" class="px-3 py-1.5 bg-surface hover:bg-surface-hover border border-border rounded text-xs font-medium transition-colors">
-                            Download Report
-                        </button>
-                        <button id="download-stf" class="px-3 py-1.5 bg-surface hover:bg-surface-hover border border-border rounded text-xs font-medium transition-colors">
-                            Download .stf
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Warnings -->
@@ -220,6 +213,9 @@
 
                 <!-- Tables -->
                 <div id="results-tables" class="space-y-6"></div>
+
+                <!-- Figures (phase analysis plots, ternary diagrams, etc.) -->
+                <div id="results-figures" class="space-y-6 mt-6"></div>
 
                 <!-- Raw Report -->
                 <details class="mt-6">

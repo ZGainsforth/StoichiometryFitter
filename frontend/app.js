@@ -11,6 +11,66 @@ let configOptions = {};
 let lastResult = null;
 let isRunning = false;
 
+// --- Upload/Download directory handle storage ---
+let uploadDirHandle = null;
+let downloadDirHandle = null;
+
+// --- IndexedDB for persistent directory handle storage ---
+const DB_NAME = 'stoichiometry-fitter-db';
+const DB_VERSION = 1;
+const STORE_NAME = 'directory-handles';
+
+async function initIndexedDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+            }
+        };
+    });
+}
+
+async function saveDirHandle(key, handle) {
+    try {
+        const db = await initIndexedDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.put(handle, key);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    } catch (err) {
+        console.warn('Failed to save directory handle:', err);
+    }
+}
+
+async function loadDirHandle(key) {
+    try {
+        const db = await initIndexedDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(STORE_NAME, 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.get(key);
+            request.onsuccess = () => resolve(request.result || null);
+            request.onerror = () => reject(request.error);
+        });
+    } catch (err) {
+        console.warn('Failed to load directory handle:', err);
+        return null;
+    }
+}
+
+async function loadStoredDirHandles() {
+    uploadDirHandle = await loadDirHandle('uploadDirHandle');
+    downloadDirHandle = await loadDirHandle('downloadDirHandle');
+    console.log('Loaded directory handles:', { uploadDirHandle, downloadDirHandle });
+}
+
 // --- Utility ---
 const api = (path, options = {}) => {
     const base = window.STOICHIOMETRY_API_BASE || '';
@@ -104,7 +164,7 @@ function onInputTypeChange() {
     // Show/hide (None) option in k-factors based on input type
     // When Counts is selected, k-factors are required (hide None)
     // When At%, Wt%, Ox Wt% is selected, k-factors are optional
-    const inputType = document.getElementById('input-type').value;
+    const inputType = getInputTypeValue();
     const kfSel = document.getElementById('k-factors');
     const noneOption = kfSel.querySelector('option[value=""]');
     if (inputType === 'Counts') {
@@ -124,11 +184,32 @@ function onInputTypeChange() {
     runQuickQuant();
 }
 
+// --- Helper: read input type from values-table dropdown ---
+function getInputTypeValue() {
+    const el = document.getElementById('values-table-input-type');
+    return el ? el.value : 'Counts';
+}
+
+// --- Helper: set input type on values-table dropdown ---
+function setInputTypeValue(val) {
+    const el = document.getElementById('values-table-input-type');
+    if (el) el.value = val;
+}
+
 // --- Load example input ---
 async function loadExample() {
     try {
         setStatus('Loading example input...', 'text-blue-400');
         const data = await apiJSON('/api/example');
+        
+        // Set input type to Counts (example data is in Counts)
+        setInputTypeValue('Counts');
+        
+        // Auto-select first available k-factor (Counts requires k-factors)
+        const kfSel = document.getElementById('k-factors');
+        const firstOpt = kfSel.querySelector('option:not([value=""])');
+        if (firstOpt) kfSel.value = firstOpt.value;
+        
         loadValues(data.values);
         setStatus(`Loaded example input with ${Object.keys(data.values).length} elements.`, 'text-green-400');
     } catch (err) {
@@ -149,10 +230,78 @@ async function loadFile(file) {
             throw new Error(err.detail || resp.statusText);
         }
         const data = await resp.json();
+        
+        // Restore ALL settings from the uploaded file (STF stores full project state)
+        restoreSettings(data);
+        
+        // Load values and trigger quick quant (updates sidebar table & results)
         loadValues(data.values);
-        setStatus(`Loaded ${file.name} with ${Object.keys(data.values).length} elements.`, 'text-green-400');
+        
+        // If phase_analysis was set in the STF, run full analysis so results
+        // include the saved phase analysis (e.g. Olivine cation calculations).
+        if (data.phase_analysis) {
+            await runAnalysis();
+            // runAnalysis() sets "Analysis complete." status — do NOT overwrite it
+        } else {
+            setStatus(`Loaded ${file.name} with ${Object.keys(data.values).length} elements.`, 'text-green-400');
+        }
     } catch (err) {
         setStatus(`Upload failed: ${err.message}`, 'text-red-400');
+    }
+}
+
+// --- Restore settings from uploaded file data ---
+function restoreSettings(data) {
+    // Input type
+    if (data.input_type) {
+        setInputTypeValue(data.input_type);
+    }
+    
+    // k-factors
+    if (data.kfactors) {
+        const kfSel = document.getElementById('k-factors');
+        kfSel.value = data.kfactors;
+        // Hide/show None option based on input type
+        const inputType = getInputTypeValue();
+        const noneOption = kfSel.querySelector('option[value=""]');
+        if (inputType === 'Counts') {
+            noneOption.style.display = 'none';
+        } else {
+            noneOption.style.display = '';
+        }
+    }
+    
+    // Stoichiometry
+    if (data.stoichiometry_name) {
+        document.getElementById('stoichiometry').value = data.stoichiometry_name;
+    }
+    
+    // Arbitrary absorption
+    if (data.arbitrary_absorption) {
+        document.getElementById('arbitrary-absorption').value = data.arbitrary_absorption;
+    }
+    
+    // Absorption correction
+    if (data.absorption_correction !== undefined && data.absorption_correction !== null) {
+        document.getElementById('absorption-correction').value = data.absorption_correction;
+    }
+    
+    // Takeoff angle
+    if (data.takeoff !== undefined && data.takeoff !== null) {
+        document.getElementById('takeoff').value = data.takeoff;
+    }
+    
+    // Selected phases (multi-select)
+    if (data.selected_phases && Array.isArray(data.selected_phases)) {
+        const phaseSel = document.getElementById('selected-phases');
+        for (const option of phaseSel.options) {
+            option.selected = data.selected_phases.includes(option.value);
+        }
+    }
+    
+    // Phase analysis
+    if (data.phase_analysis) {
+        document.getElementById('phase-analysis').value = data.phase_analysis;
     }
 }
 
@@ -166,7 +315,7 @@ function loadValues(values) {
 
 // --- Get abundance label from input type ---
 function getAbundanceLabel() {
-    const inputType = document.getElementById('input-type').value;
+    const inputType = getInputTypeValue();
     return inputType;
 }
 
@@ -188,7 +337,12 @@ function updateElementValuesTable() {
     const abundanceLabel = getAbundanceLabel();
 
     let html = `<table class="element-values-table">`;
-    html += `<thead><tr><th>Element</th><th>${abundanceLabel}</th></tr></thead>`;
+    html += `<thead><tr><th>Element</th><th><select id="values-table-input-type" class="px-1 py-0.5 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:ring-1 focus:ring-blue-500">`;
+    html += `<option${abundanceLabel === 'Counts' ? ' selected' : ''}>Counts</option>`;
+    html += `<option${abundanceLabel === 'At %' ? ' selected' : ''}>At %</option>`;
+    html += `<option${abundanceLabel === 'Wt %' ? ' selected' : ''}>Wt %</option>`;
+    html += `<option${abundanceLabel === 'Ox Wt %' ? ' selected' : ''}>Ox Wt %</option>`;
+    html += `</select></th></tr></thead>`;
     html += `<tbody>`;
 
     for (const entry of entries) {
@@ -204,6 +358,17 @@ function updateElementValuesTable() {
 
     html += `</tbody></table>`;
     container.innerHTML = html;
+
+    // Bind change handler on the dynamically-created dropdown
+    const vtInputType = document.getElementById('values-table-input-type');
+    if (vtInputType) {
+        // Remove any previous listener to avoid duplicates
+        const newEl = vtInputType.cloneNode(true);
+        if (vtInputType.parentNode) {
+            vtInputType.parentNode.replaceChild(newEl, vtInputType);
+        }
+        newEl.addEventListener('change', onInputTypeChange);
+    }
 }
 
 // --- Handle direct value input changes ---
@@ -240,7 +405,7 @@ function getConfigForAnalysis(fullAnalysis = false) {
 
     return {
         values,
-        input_type: document.getElementById('input-type').value,
+        input_type: getInputTypeValue(),
         stoichiometry_name: stoichSel.value || null,
         kfactors: kfSel.value || null,
         arbitrary_absorption: absSel.value || null,
@@ -426,86 +591,125 @@ function displayResults(result) {
 
 // --- Download handlers ---
 function setupDownloadButtons() {
-    document.getElementById('download-csv')?.addEventListener('click', () => {
+    document.getElementById('download-csv')?.addEventListener('click', async () => {
         if (!lastResult) {
             setStatus('No results to download.', 'text-yellow-400');
             return;
         }
-        // Fetch CSV from backend (handles full result)
         const config = getConfigForAnalysis(true);
-        fetch('/api/download-csv', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(config),
-        })
-        .then(resp => {
+        try {
+            const resp = await fetch('/api/download-csv', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config),
+            });
             if (!resp.ok) throw new Error('Download failed');
-            return resp.blob();
-        })
-        .then(blob => {
-            downloadBlob(blob, 'stoichiometry_results.csv');
+            const blob = await resp.blob();
+            await downloadBlob(blob, 'stoichiometry_results.csv', 'download');
             setStatus('CSV downloaded.', 'text-green-400');
-        })
-        .catch(err => setStatus(`Download failed: ${err.message}`, 'text-red-400'));
+        } catch (err) {
+            setStatus(`Download failed: ${err.message}`, 'text-red-400');
+        }
     });
 
-    document.getElementById('download-report')?.addEventListener('click', () => {
+    document.getElementById('download-report')?.addEventListener('click', async () => {
         if (!lastResult) {
             setStatus('No results to download.', 'text-yellow-400');
             return;
         }
         const config = getConfigForAnalysis(true);
-        fetch('/api/download-report', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(config),
-        })
-        .then(resp => {
+        try {
+            const resp = await fetch('/api/download-report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config),
+            });
             if (!resp.ok) throw new Error('Download failed');
-            return resp.blob();
-        })
-        .then(blob => {
-            downloadBlob(blob, 'stoichiometry_report.txt');
+            const blob = await resp.blob();
+            await downloadBlob(blob, 'stoichiometry_report.txt', 'download');
             setStatus('Report downloaded.', 'text-green-400');
-        })
-        .catch(err => setStatus(`Download failed: ${err.message}`, 'text-red-400'));
+        } catch (err) {
+            setStatus(`Download failed: ${err.message}`, 'text-red-400');
+        }
     });
 
-    document.getElementById('download-stf')?.addEventListener('click', () => {
+    document.getElementById('download-stf')?.addEventListener('click', async () => {
         if (!lastResult) {
             setStatus('No results to download.', 'text-yellow-400');
             return;
         }
         const config = getConfigForAnalysis(true);
-        fetch('/api/download-stf', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(config),
-        })
-        .then(resp => {
+        try {
+            const resp = await fetch('/api/download-stf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config),
+            });
             if (!resp.ok) throw new Error('Download failed');
-            return resp.blob();
-        })
-        .then(blob => {
-            downloadBlob(blob, 'stoichiometry_results.stf');
+            const blob = await resp.blob();
+            await downloadBlob(blob, 'stoichiometry_results.stf', 'download');
             setStatus('.stf file downloaded.', 'text-green-400');
-        })
-        .catch(err => setStatus(`Download failed: ${err.message}`, 'text-red-400'));
+        } catch (err) {
+            setStatus(`Download failed: ${err.message}`, 'text-red-400');
+        }
     });
 }
 
-function downloadBlob(blob, filename) {
+async function downloadBlob(blob, filename, operationType) {
+    // Try the modern File System Access API for a proper save-as dialog
+    if ('showSaveFilePicker' in window) {
+        try {
+            const options = {
+                suggestedName: filename,
+                types: [{
+                    description: 'File',
+                    accept: { 'application/octet-stream': ['.' + filename.split('.').pop()] },
+                }],
+            };
+            // Pass startIn directory handle if available for downloads
+            if (operationType === 'download' && downloadDirHandle) {
+                options.startIn = downloadDirHandle;
+            }
+            const handle = await window.showSaveFilePicker(options);
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            // Save the directory handle for next time
+            if (operationType === 'download') {
+                try {
+                    const parent = await handle.getParent();
+                    downloadDirHandle = parent;
+                    await saveDirHandle('downloadDirHandle', downloadDirHandle);
+                } catch (parentErr) {
+                    console.warn('Could not get parent directory for download:', parentErr);
+                    // For now, we'll just not persist the directory for this operation
+                }
+            }
+            return;
+        } catch (err) {
+            // User cancelled or API failed — fall through to legacy method
+            if (err.name !== 'AbortError') {
+                console.warn('File System Access API failed, falling back to legacy download:', err);
+            } else {
+                return; // User cancelled
+            }
+        }
+    }
+    // Legacy fallback: create a temporary link and click it
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Wait a short delay before cleaning up to ensure the download starts in all browsers
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 100);
 }
 
-// --- Overlay handlers ---
+    // --- Overlay handlers ---
 function setupOverlayHandlers() {
     const overlay = document.getElementById('element-overlay');
     const backdrop = document.getElementById('overlay-backdrop');
@@ -548,21 +752,114 @@ function setupClearValues() {
     });
 }
 
-// --- File upload handler ---
+// --- File upload handler (using File System Access API) ---
 function setupFileUpload() {
     const uploadBtn = document.getElementById('upload-btn');
-    const fileInput = document.getElementById('file-upload');
     const fileName = document.getElementById('file-name');
 
-    uploadBtn.addEventListener('click', () => fileInput.click());
-
-    fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            loadFile(e.target.files[0]);
-            fileName.textContent = e.target.files[0].name;
-            fileName.classList.remove('hidden');
+    uploadBtn.addEventListener('click', async () => {
+        if ('showOpenFilePicker' in window) {
+            try {
+                const options = {
+                    types: [{
+                        description: 'Data Files',
+                        accept: {
+                            'text/csv': ['.csv'],
+                            'text/plain': ['.txt'],
+                            'application/zip': ['.stf'],
+                        },
+                    }],
+                    multiple: false,
+                };
+                // Pass startIn directory handle if available for uploads
+                if (uploadDirHandle) {
+                    options.startIn = uploadDirHandle;
+                }
+                const [handle] = await window.showOpenFilePicker(options);
+                const file = await handle.getFile();
+                await loadFile(file);
+                fileName.textContent = file.name;
+                fileName.classList.remove('hidden');
+                // Save the directory handle for next time
+                try {
+                    const parent = await handle.getParent();
+                    uploadDirHandle = parent;
+                    await saveDirHandle('uploadDirHandle', uploadDirHandle);
+                } catch (parentErr) {
+                    console.warn('Could not get parent directory for upload:', parentErr);
+                    // Fallback: try to use the handle itself or skip persistence
+                    // For now, we'll just not persist the directory for this operation
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('File upload failed:', err);
+                    setStatus(`Upload failed: ${err.message}`, 'text-red-400');
+                }
+                // User cancelled - do nothing
+            }
+        } else {
+            // Fallback: create a temporary file input
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.csv,.txt,.stf';
+            fileInput.style.display = 'none';
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    loadFile(e.target.files[0]);
+                    fileName.textContent = e.target.files[0].name;
+                    fileName.classList.remove('hidden');
+                }
+            });
+            document.body.appendChild(fileInput);
+            fileInput.click();
+            setTimeout(() => document.body.removeChild(fileInput), 100);
         }
     });
+}
+
+// --- Helper: read input type from values-table dropdown ---
+function getInputTypeValue() {
+    const el = document.getElementById('values-table-input-type');
+    return el ? el.value : 'Counts';
+}
+
+// --- Helper: set input type on values-table dropdown ---
+function setInputTypeValue(val) {
+    const el = document.getElementById('values-table-input-type');
+    if (el) el.value = val;
+}
+
+// --- Reset to default settings ---
+function resetToDefaultSettings() {
+    // 1. Clear element values (sets input type to "Counts" implicitly when table empty)
+    periodicTable.clearValues();
+    updateElementValuesTable();
+    
+    // 2. Reset settings to defaults
+    document.getElementById('k-factors').value = "";
+    document.getElementById('stoichiometry').value = "";
+    document.getElementById('arbitrary-absorption').value = "";
+    document.getElementById('absorption-correction').value = "0";
+    document.getElementById('takeoff').value = "18";
+    
+    // Clear multi-select selections
+    const phaseSel = document.getElementById('selected-phases');
+    for (let i = 0; i < phaseSel.options.length; i++) {
+        phaseSel.options[i].selected = false;
+    }
+    
+    document.getElementById('phase-analysis').value = "";
+    
+    // 3. Update quantification results
+    runQuickQuant();
+}
+
+// --- Reset button ---
+function setupResetButton() {
+    const resetBtn = document.getElementById('reset-btn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', resetToDefaultSettings);
+    }
 }
 
 // --- Example button ---
@@ -572,7 +869,6 @@ function setupExampleButton() {
 
 // --- Settings change listeners ---
 function setupSettingsListeners() {
-    document.getElementById('input-type').addEventListener('change', onInputTypeChange);
     document.getElementById('k-factors').addEventListener('change', runQuickQuant);
     document.getElementById('stoichiometry').addEventListener('change', runQuickQuant);
     document.getElementById('arbitrary-absorption').addEventListener('change', runQuickQuant);
@@ -587,6 +883,9 @@ function setupRunButton() {
 
 // --- Init ---
 async function init() {
+    // Load persisted directory handles first
+    await loadStoredDirHandles();
+    
     periodicTable = new PeriodicTable('element-grid');
 
     await Promise.all([
@@ -600,6 +899,7 @@ async function init() {
     setupClearValues();
     setupFileUpload();
     setupExampleButton();
+    setupResetButton();
     setupSettingsListeners();
     setupRunButton();
     setupDownloadButtons();

@@ -13,6 +13,7 @@ import os
 import sys
 import threading
 from collections import deque
+from dataclasses import asdict
 from typing import Any, Dict, List, Optional
 from collections import defaultdict
 
@@ -124,17 +125,57 @@ def _load_example() -> Dict[str, Any]:
     return {'values': values}
 
 def _parse_upload(file_bytes: bytes, filename: str) -> Dict[str, Any]:
-    """Parse an uploaded file (.csv or .stf) and return element values."""
+    """Parse an uploaded file (.csv, .stf) and return all input data and settings."""
     safe_name = package.safe_filename(filename)
     if safe_name.lower().endswith(('.html', '.htm')):
         raise package.ProjectError('HTML reports cannot be uploaded; upload the matching .stf package.')
     if safe_name.lower().endswith('.stf') or file_bytes.startswith(b'PK\x03\x04'):
         loaded = package.load_stf_bytes(file_bytes)
         if isinstance(loaded, package.Project):
-            return {'values': loaded.input.values}
+            inp = loaded.input
+            opts = loaded.options
+            return {
+                'values': inp.values,
+                'input_type': inp.input_type,
+                'stoichiometry_name': inp.stoichiometry_name,
+                'stoichiometry': inp.stoichiometry,
+                'kfactors': opts.kfactors,
+                'arbitrary_absorption': opts.arbitrary_absorption,
+                'absorption_correction': opts.absorption_correction,
+                'takeoff': opts.takeoff,
+                'selected_phases': opts.selected_phases,
+                'phase_analysis': opts.phase_analysis,
+                'phase_analysis_kwargs': {},
+            }
         else:
-            return {'values': loaded.analysis_input.values}
-    return {'values': package.detect_and_load_input_bytes(file_bytes, safe_name).analysis_input.values}
+            inp = loaded.analysis_input
+            return {
+                'values': inp.values,
+                'input_type': inp.input_type,
+                'stoichiometry_name': getattr(inp, 'stoichiometry_name', None),
+                'stoichiometry': getattr(inp, 'stoichiometry', None),
+                'kfactors': None,
+                'arbitrary_absorption': None,
+                'absorption_correction': None,
+                'takeoff': None,
+                'selected_phases': None,
+                'phase_analysis': None,
+                'phase_analysis_kwargs': {},
+            }
+    result = package.detect_and_load_input_bytes(file_bytes, safe_name)
+    return {
+        'values': result.analysis_input.values,
+        'input_type': result.analysis_input.input_type,
+        'stoichiometry_name': getattr(result.analysis_input, 'stoichiometry_name', None),
+        'stoichiometry': getattr(result.analysis_input, 'stoichiometry', None),
+        'kfactors': None,
+        'arbitrary_absorption': None,
+        'absorption_correction': None,
+        'takeoff': None,
+        'selected_phases': None,
+        'phase_analysis': None,
+        'phase_analysis_kwargs': {},
+    }
 
 def _build_corrections_list(req: AnalysisRequest, quant_data: Optional[Any] = None) -> List[Dict[str, str]]:
     """Build a list of correction factor key-value pairs for display."""
@@ -166,10 +207,6 @@ def _build_corrections_list(req: AnalysisRequest, quant_data: Optional[Any] = No
     else:
         corrections.append({'key': 'oxygen by stoichiometry', 'value': 'no'})
 
-    # Stoichiometry file if enabled
-    if req.stoichiometry_name:
-        corrections.append({'key': 'stoichiometry file', 'value': req.stoichiometry_name})
-
     return corrections
 
 # --- FastAPI App ---
@@ -187,6 +224,16 @@ app.add_middleware(
 # Serve static frontend files
 if os.path.isdir(FRONTEND_DIR):
     app.mount('/static', StaticFiles(directory=FRONTEND_DIR), name='static')
+
+# --- Favicon ---
+@app.get('/favicon.ico')
+async def favicon():
+    """Serve the favicon.ico file."""
+    favicon_path = os.path.join(FRONTEND_DIR, 'favicon.ico')
+    if os.path.isfile(favicon_path):
+        return FileResponse(favicon_path)
+    # Return 204 No Content if no favicon exists
+    return Response(status_code=204)
 
 # --- Health check ---
 @app.get('/healthz')
@@ -221,7 +268,20 @@ async def upload_file(file: UploadFile = File(...)):
     file_bytes = await file.read()
     try:
         result = _parse_upload(file_bytes, file.filename or 'upload')
-        return {'values': result['values'], 'filename': file.filename}
+        # Return all parsed settings so frontend can restore the full project state
+        return {
+            'values': result['values'],
+            'filename': file.filename,
+            'input_type': result.get('input_type', 'Counts'),
+            'stoichiometry_name': result.get('stoichiometry_name'),
+            'stoichiometry': result.get('stoichiometry'),
+            'kfactors': result.get('kfactors'),
+            'arbitrary_absorption': result.get('arbitrary_absorption'),
+            'absorption_correction': result.get('absorption_correction'),
+            'takeoff': result.get('takeoff'),
+            'selected_phases': result.get('selected_phases'),
+            'phase_analysis': result.get('phase_analysis'),
+        }
     except Exception as e:
         raise HTTPException(status_code=400, detail=_safe_error(e))
 
@@ -301,6 +361,7 @@ def run_analysis(req: AnalysisRequest):
             'warnings': result.warnings,
             'quant': result.quant,
             'corrections': corrections,
+            'figures': [asdict(f) for f in result.figures],
         }
         for table in result.tables:
             output['tables'].append({
@@ -365,6 +426,27 @@ def download_report(req: AnalysisRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=_safe_error(e))
 
+
+@app.post('/api/download-html-report')
+def download_html_report(req: AnalysisRequest):
+    """Run analysis and return the HTML report that accompanies the .stf package."""
+    client_id = 'api'
+    if not _run_limiter.allow(client_id):
+        raise HTTPException(status_code=429, detail='Too many requests.')
+
+    try:
+        result = _build_download_analysis(req)
+        project = package.project_from_result(result)
+        html_content = package.render_html_report(project)
+        return Response(
+            content=html_content,
+            media_type='text/html',
+            headers={'Content-Disposition': 'attachment; filename="stoichiometry_report.html"'}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=_safe_error(e))
+
+
 @app.post('/api/download-stf')
 def download_stf(req: AnalysisRequest):
     """Run analysis and return STF package download."""
@@ -375,25 +457,14 @@ def download_stf(req: AnalysisRequest):
     try:
         result = _build_download_analysis(req)
         
-        # Build a proper STF package
-        import zipfile
-        
-        # Create a temp dir for saving
-        import tempfile
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # save_analysis lives on StoichiometryCore, not ProjectPackage
-            core.save_analysis(result, tmpdir, basename='analysis')
-            stf_path = os.path.join(tmpdir, 'analysis.stf')
-            if os.path.exists(stf_path):
-                with open(stf_path, 'rb') as f:
-                    stf_content = f.read()
-                return Response(
-                    content=stf_content,
-                    media_type='application/zip',
-                    headers={'Content-Disposition': 'attachment; filename="stoichiometry_results.stf"'}
-                )
-            else:
-                raise HTTPException(status_code=500, detail='Failed to generate STF package.')
+        # Build a proper STF package from the analysis result
+        project = package.project_from_result(result)
+        stf_bytes = package.serialize_stf(project)
+        return Response(
+            content=stf_bytes,
+            media_type='application/zip',
+            headers={'Content-Disposition': 'attachment; filename="stoichiometry_results.stf"'}
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=_safe_error(e))
 
