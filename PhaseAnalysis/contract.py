@@ -28,8 +28,10 @@ def svg_artifact(figure, artifact_id: str, title: str, alt_text: str) -> ImageAr
     from matplotlib import rc_context
     output = StringIO()
     # Suppress Matplotlib's generated timestamp so saved/replayed analyses are
-    # byte-for-byte reproducible.
-    with rc_context({'svg.hashsalt': 'stoichiometry-fitter'}):
+    # byte-for-byte reproducible. svg.fonttype='none' keeps text as real <text>
+    # elements (Matplotlib's default converts glyphs to <path> outlines, which
+    # can't be selected or copied out of the rendered SVG).
+    with rc_context({'svg.hashsalt': 'stoichiometry-fitter', 'svg.fonttype': 'none'}):
         figure.savefig(output, format='svg', bbox_inches='tight', metadata={'Date': None})
     return ImageArtifact(artifact_id, title, 'image/svg+xml', output.getvalue(), alt_text)
 

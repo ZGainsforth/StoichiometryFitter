@@ -10,8 +10,31 @@ let periodicTable = null;
 let configOptions = {};
 let lastResult = null;
 let isRunning = false;
-let uploadedFileBaseName = null;
 let userSettings = {};
+
+// --- Project name (editable, shown above the periodic table) ---
+function getProjectName() {
+    const el = document.getElementById('project-name');
+    return el ? el.value.trim() : '';
+}
+
+function setProjectName(name) {
+    const el = document.getElementById('project-name');
+    if (el) el.value = name || '';
+}
+
+// Sanitize a project name for use as a download filename.
+function projectNameToFilename(name, fallback) {
+    const cleaned = (name || '').trim().replace(/[\x00-\x1f/\\:*?"<>|]+/g, '_');
+    return cleaned || fallback;
+}
+
+// Count elements with a non-zero value (values objects always carry all 118
+// element keys, most of them zero, so a raw key count misrepresents what
+// was actually loaded).
+function countActiveElements(values) {
+    return Object.values(values || {}).filter((v) => v > 0).length;
+}
 
 // --- Upload/Download directory handle storage ---
 let uploadDirHandle = null;
@@ -263,12 +286,13 @@ async function loadExample() {
     try {
         setStatus('Loading example input...', 'text-blue-400');
         const data = await apiJSON('/api/example');
-        
+
         // Set input type to Counts (example data is in Counts)
         setInputTypeValue('Counts');
+        setProjectName('ExampleInput');
 
         loadValues(data.values);
-        setStatus(`Loaded example input with ${Object.keys(data.values).length} elements.`, 'text-green-400');
+        setStatus(`Loaded example input with ${countActiveElements(data.values)} elements.`, 'text-green-400');
     } catch (err) {
         setStatus(`Failed to load example: ${err.message}`, 'text-red-400');
     }
@@ -277,7 +301,7 @@ async function loadExample() {
 // --- Load file upload ---
 async function loadFile(file) {
     try {
-        uploadedFileBaseName = file.name.replace(/\.[^./\\]+$/, '');
+        setProjectName(file.name.replace(/\.[^./\\]+$/, ''));
         setStatus(`Uploading ${file.name}...`, 'text-blue-400');
         const formData = new FormData();
         formData.append('file', file);
@@ -301,7 +325,7 @@ async function loadFile(file) {
             await runAnalysis();
             // runAnalysis() sets "Analysis complete." status — do NOT overwrite it
         } else {
-            setStatus(`Loaded ${file.name} with ${Object.keys(data.values).length} elements.`, 'text-green-400');
+            setStatus(`Loaded ${file.name} with ${countActiveElements(data.values)} elements.`, 'text-green-400');
         }
     } catch (err) {
         setStatus(`Upload failed: ${err.message}`, 'text-red-400');
@@ -310,6 +334,11 @@ async function loadFile(file) {
 
 // --- Restore settings from uploaded file data ---
 function restoreSettings(data) {
+    // Project name (STF packages carry their own title; prefer it over the filename)
+    if (data.project_name) {
+        setProjectName(data.project_name);
+    }
+
     // Input type
     if (data.input_type) {
         setInputTypeValue(data.input_type);
@@ -480,6 +509,7 @@ function getConfigForAnalysis(fullAnalysis = false) {
 
     return {
         values,
+        project_name: getProjectName() || null,
         input_type: getInputTypeValue(),
         stoichiometry_name: stoichSel.value || null,
         kfactors: kfSel.value || null,
@@ -512,8 +542,10 @@ function displayQuickQuant(result) {
         const entries = Object.entries(result.quant)
             .filter(([sym]) => sym !== '_nonzero_input_' && sym !== '_zero_kfactor_')
             .sort((a, b) => {
-                // Sort by Wt% descending
-                return (b[1].wt_pct || 0) - (a[1].wt_pct || 0);
+                // Sort by atomic number (Z) ascending
+                const za = periodicTable.elements.get(a[0])?.atomic_number ?? Infinity;
+                const zb = periodicTable.elements.get(b[0])?.atomic_number ?? Infinity;
+                return za - zb;
             });
 
         for (const [sym, data] of entries) {
@@ -591,6 +623,199 @@ async function runAnalysis() {
     }
 }
 
+// --- Clipboard helpers ---
+async function copyTextToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+    }
+    // Fallback for non-secure contexts (e.g. plain http://<lan-ip>:8000).
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try {
+        if (!document.execCommand('copy')) throw new Error('execCommand copy failed');
+    } finally {
+        document.body.removeChild(textarea);
+    }
+}
+
+function csvEscape(value) {
+    const text = value == null ? '' : String(value);
+    return /[",\r\n ]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+}
+
+function tableToCSV(table) {
+    const rows = [];
+    for (const tr of table.querySelectorAll('tr')) {
+        const cells = Array.from(tr.querySelectorAll('th,td')).map((cell) => csvEscape(cell.textContent.trim()));
+        rows.push(cells.join(','));
+    }
+    return rows.join('\r\n');
+}
+
+function flashCopyButton(btn, success) {
+    btn.classList.remove('copy-btn-success', 'copy-btn-error');
+    btn.classList.add(success ? 'copy-btn-success' : 'copy-btn-error');
+    setTimeout(() => btn.classList.remove('copy-btn-success', 'copy-btn-error'), 1200);
+}
+
+// Wires a copy-icon button to run an arbitrary async copy action.
+function wireCopyAction(btn, action) {
+    if (!btn) return;
+    btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+            await action();
+            flashCopyButton(btn, true);
+        } catch (err) {
+            console.error('Copy failed:', err);
+            flashCopyButton(btn, false);
+        }
+    });
+}
+
+// Wires a copy-icon button to copy the text returned by getText() to the clipboard.
+function wireCopyButton(btn, getText) {
+    wireCopyAction(btn, async () => {
+        const text = getText();
+        if (!text) return;
+        await copyTextToClipboard(text);
+    });
+}
+
+const COPY_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+const COPY_IMAGE_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-5-5L5 21"></path></svg>';
+
+function createTableCopyButton(table) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.title = 'Copy table as CSV';
+    btn.innerHTML = COPY_ICON_SVG;
+    wireCopyButton(btn, () => tableToCSV(table));
+    return btn;
+}
+
+// Rasterizes an inline <svg> figure to PNG and writes it to the clipboard,
+// since browsers only offer a native "Copy image" context-menu entry for
+// <img>/<canvas> elements, not inline SVG.
+async function copySvgAsImage(svgEl) {
+    if (!navigator.clipboard || !window.ClipboardItem) {
+        throw new Error('Clipboard image copy is not supported in this browser.');
+    }
+    const vb = svgEl.viewBox && svgEl.viewBox.baseVal;
+    let width = vb && vb.width ? vb.width : parseFloat(svgEl.getAttribute('width'));
+    let height = vb && vb.height ? vb.height : parseFloat(svgEl.getAttribute('height'));
+    if (!width || !height) {
+        const rect = svgEl.getBoundingClientRect();
+        width = rect.width;
+        height = rect.height;
+    }
+
+    const svgString = new XMLSerializer().serializeToString(svgEl);
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    try {
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = () => reject(new Error('Failed to rasterize figure.'));
+            img.src = url;
+        });
+
+        const scale = 3; // supersample the vector figure for a crisp raster copy
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(width * scale));
+        canvas.height = Math.max(1, Math.round(height * scale));
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Failed to encode image.'))), 'image/png');
+        });
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    } finally {
+        URL.revokeObjectURL(url);
+    }
+}
+
+function createImageCopyButton(svgEl) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.title = 'Copy image to clipboard';
+    btn.innerHTML = COPY_IMAGE_ICON_SVG;
+    wireCopyAction(btn, () => copySvgAsImage(svgEl));
+    return btn;
+}
+
+function setupCopyButtons() {
+    wireCopyButton(document.getElementById('copy-quant-csv'), () => tableToCSV(document.getElementById('quant-results-table')));
+    wireCopyButton(document.getElementById('copy-corrections-csv'), () => tableToCSV(document.getElementById('corrections-table')));
+    wireCopyButton(document.getElementById('copy-raw-report'), () => document.getElementById('raw-report').textContent);
+}
+
+// --- Right-click "Copy" popup for text selections ---
+// pywebview's WebView2 host suppresses the native context menu (Copy/Paste/etc.)
+// unless launched with debug=True, so right-clicking a selection normally does
+// nothing. This reproduces just the "Copy" entry as a small floating popup.
+function setupSelectionContextMenu() {
+    let menuEl = null;
+
+    function removeMenu() {
+        if (menuEl) {
+            menuEl.remove();
+            menuEl = null;
+        }
+    }
+
+    document.addEventListener('contextmenu', (e) => {
+        removeMenu();
+        const selection = window.getSelection();
+        const text = selection ? selection.toString() : '';
+        if (!text) return;
+
+        e.preventDefault();
+        menuEl = document.createElement('div');
+        menuEl.className = 'copy-context-menu';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = 'Copy';
+        btn.addEventListener('click', async () => {
+            try {
+                await copyTextToClipboard(text);
+            } catch (err) {
+                console.error('Copy failed:', err);
+            }
+            removeMenu();
+        });
+        menuEl.appendChild(btn);
+        document.body.appendChild(menuEl);
+
+        const rect = menuEl.getBoundingClientRect();
+        const x = Math.min(e.clientX, window.innerWidth - rect.width - 4);
+        const y = Math.min(e.clientY, window.innerHeight - rect.height - 4);
+        menuEl.style.left = `${Math.max(4, x)}px`;
+        menuEl.style.top = `${Math.max(4, y)}px`;
+    });
+
+    document.addEventListener('mousedown', (e) => {
+        if (menuEl && !menuEl.contains(e.target)) removeMenu();
+    });
+    document.addEventListener('scroll', removeMenu, true);
+    window.addEventListener('resize', removeMenu);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') removeMenu();
+    });
+}
+
 // --- Display results ---
 function displayResults(result) {
     document.getElementById('results-section').classList.remove('hidden');
@@ -618,15 +843,21 @@ function displayResults(result) {
 
             const section = document.createElement('div');
 
-            if (table.title) {
-                const title = document.createElement('div');
-                title.className = 'results-table-title';
-                title.textContent = table.title;
-                section.appendChild(title);
-            }
-
             const tableEl = document.createElement('table');
             tableEl.className = 'results-table';
+
+            if (table.title) {
+                const titleRow = document.createElement('div');
+                titleRow.className = 'flex items-center justify-between';
+                const title = document.createElement('div');
+                title.className = 'results-table-title flex-1';
+                title.textContent = table.title;
+                titleRow.appendChild(title);
+                titleRow.appendChild(createTableCopyButton(tableEl));
+                section.appendChild(titleRow);
+            } else {
+                section.appendChild(createTableCopyButton(tableEl));
+            }
 
             // Header
             if (table.columns && table.columns.length > 0) {
@@ -658,6 +889,47 @@ function displayResults(result) {
 
             section.appendChild(tableEl);
             tablesEl.appendChild(section);
+        }
+    }
+
+    // Figures (phase analysis plots, ternary diagrams, etc.)
+    const figuresEl = document.getElementById('results-figures');
+    figuresEl.innerHTML = '';
+
+    if (result.figures && result.figures.length > 0) {
+        for (const figure of result.figures) {
+            if (figure.mime_type !== 'image/svg+xml' || !figure.payload) continue;
+
+            const section = document.createElement('div');
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'results-figure';
+            wrapper.innerHTML = figure.payload;
+            const svgEl = wrapper.querySelector('svg');
+
+            if (figure.title) {
+                const titleRow = document.createElement('div');
+                titleRow.className = 'flex items-center justify-between';
+                const title = document.createElement('div');
+                title.className = 'results-table-title flex-1';
+                title.textContent = figure.title;
+                titleRow.appendChild(title);
+                if (svgEl) titleRow.appendChild(createImageCopyButton(svgEl));
+                section.appendChild(titleRow);
+            } else if (svgEl) {
+                section.appendChild(createImageCopyButton(svgEl));
+            }
+
+            section.appendChild(wrapper);
+
+            if (figure.alt_text) {
+                const caption = document.createElement('div');
+                caption.className = 'results-figure-caption';
+                caption.textContent = figure.alt_text;
+                section.appendChild(caption);
+            }
+
+            figuresEl.appendChild(section);
         }
     }
 
@@ -706,7 +978,8 @@ function setupDownloadButtons() {
             });
             if (!resp.ok) throw new Error('Download failed');
             const blob = await resp.blob();
-            await downloadBlob(blob, 'stoichiometry_report.txt', 'download');
+            const filename = `${projectNameToFilename(getProjectName(), 'stoichiometry_report')}.txt`;
+            await downloadBlob(blob, filename, 'download');
             setStatus('Report downloaded.', 'text-green-400');
         } catch (err) {
             setStatus(`Download failed: ${err.message}`, 'text-red-400');
@@ -727,7 +1000,7 @@ function setupDownloadButtons() {
             });
             if (!resp.ok) throw new Error('Download failed');
             const blob = await resp.blob();
-            const filename = uploadedFileBaseName ? `${uploadedFileBaseName}.stf` : 'stoichiometry_results.stf';
+            const filename = `${projectNameToFilename(getProjectName(), 'stoichiometry_results')}.stf`;
             await downloadBlob(blob, filename, 'download');
             setStatus('.stf file downloaded.', 'text-green-400');
         } catch (err) {
@@ -1015,6 +1288,8 @@ async function init() {
     setupRunButton();
     setupDownloadButtons();
     setupFontZoom();
+    setupCopyButtons();
+    setupSelectionContextMenu();
 
     setStatus('Ready. Load a measurement input or .stf project to begin.', '');
 }

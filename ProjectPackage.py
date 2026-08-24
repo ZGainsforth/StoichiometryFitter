@@ -403,6 +403,13 @@ def validate_svg_payload(payload: str) -> str:
                 raise ProjectError('SVG contains an external reference.')
             if not _safe_svg_reference(value):
                 raise ProjectError('SVG contains an unsafe reference.')
+    # Without this, ElementTree.tostring re-serializes the default SVG
+    # namespace under an auto-generated "ns0:" prefix.  Browsers only apply
+    # SVG's foreign-content parsing rules to an unprefixed <svg> tag, so a
+    # prefixed one is treated as inert unknown markup wherever it is inlined
+    # (report.html, the app's live preview) and never renders.
+    ElementTree.register_namespace('', 'http://www.w3.org/2000/svg')
+    ElementTree.register_namespace('xlink', 'http://www.w3.org/1999/xlink')
     return ElementTree.tostring(root, encoding='unicode')
 
 

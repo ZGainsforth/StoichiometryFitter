@@ -136,6 +136,13 @@
                 Load a measurement input or .stf project to begin.
             </div>
 
+            <!-- Project Name -->
+            <div class="mb-4 flex items-center gap-2">
+                <label for="project-name" class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Name</label>
+                <input type="text" id="project-name" placeholder="Untitled Project" autocomplete="off"
+                       class="flex-1 max-w-md px-3 py-1.5 bg-surface border border-border rounded text-sm text-text focus:outline-none focus:ring-1 focus:ring-blue-500">
+            </div>
+
             <!-- Element Section (periodic table + values table) -->
             <div id="element-section" class="mb-6">
                 <!-- Input Type -->
@@ -175,7 +182,12 @@
 
                 <!-- Quant Results (always shown, updated in real-time) -->
                 <div class="mb-6">
-                    <h3 class="text-base font-semibold text-text mb-2">Quantification Results</h3>
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-base font-semibold text-text">Quantification Results</h3>
+                        <button id="copy-quant-csv" type="button" title="Copy table as CSV" class="copy-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                    </div>
                     <table id="quant-results-table" class="results-table">
                         <thead>
                             <tr>
@@ -194,7 +206,12 @@
 
                 <!-- Correction Factors & Parameters -->
                 <div class="mb-6">
-                    <h3 class="text-base font-semibold text-text mb-2">Simulation Parameters</h3>
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-base font-semibold text-text">Simulation Parameters</h3>
+                        <button id="copy-corrections-csv" type="button" title="Copy table as CSV" class="copy-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                    </div>
                     <table id="corrections-table" class="results-table">
                         <thead>
                             <tr>
@@ -219,7 +236,13 @@
                     <summary class="cursor-pointer text-sm font-medium text-text-secondary hover:text-text transition-colors">
                         Raw Text Report
                     </summary>
-                    <pre id="raw-report" class="mt-2 p-4 bg-surface border border-border rounded text-xs text-text-secondary font-mono overflow-x-auto whitespace-pre-wrap"></pre>
+                    <div class="flex justify-end mt-2 mb-1">
+                        <button id="copy-raw-report" type="button" title="Copy report to clipboard" class="copy-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            <span>Copy</span>
+                        </button>
+                    </div>
+                    <pre id="raw-report" class="p-4 bg-surface border border-border rounded text-xs text-text-secondary font-mono overflow-x-auto whitespace-pre-wrap select-text"></pre>
                 </details>
             </div>
         </main>

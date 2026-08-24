@@ -283,6 +283,26 @@ select[multiple] option {
     color: #f87171;
 }
 
+/* Result figures (phase analysis plots, ternary diagrams, etc.) */
+.results-figure {
+    background: #ffffff;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    padding: 8px;
+}
+
+.results-figure svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.results-figure-caption {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 6px;
+}
+
 /* Warnings */
 .warning {
     background: #451a03;
@@ -298,6 +318,68 @@ select[multiple] option {
 button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Copy-to-clipboard icon buttons */
+.copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    color: #94a3b8;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.copy-btn:hover {
+    background: #273449;
+    color: #e2e8f0;
+}
+
+.copy-btn.copy-btn-success {
+    color: #4ade80;
+    border-color: #4ade80;
+}
+
+.copy-btn.copy-btn-error {
+    color: #f87171;
+    border-color: #f87171;
+}
+
+/* Custom right-click "Copy" popup for text selections (the pywebview host
+   suppresses the native context menu, so this stands in for it) */
+.copy-context-menu {
+    position: fixed;
+    z-index: 100;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    padding: 4px;
+}
+
+.copy-context-menu button {
+    display: block;
+    width: 100%;
+    padding: 6px 14px;
+    background: transparent;
+    border: none;
+    color: #e2e8f0;
+    font-size: 0.8125rem;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.copy-context-menu button:hover {
+    background: #273449;
 }
 
 /* Checkbox styling for settings */

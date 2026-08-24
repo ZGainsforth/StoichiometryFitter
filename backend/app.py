@@ -93,6 +93,7 @@ def _abs_corr_um_to_nm(value):
 # --- Pydantic models for API ---
 class AnalysisRequest(BaseModel):
     values: Dict[str, float]
+    project_name: Optional[str] = None
     input_type: str = 'Counts'
     stoichiometry_name: Optional[str] = None
     kfactors: Optional[str] = None
@@ -197,6 +198,7 @@ def _parse_upload(file_bytes: bytes, filename: str) -> Dict[str, Any]:
             opts = loaded.options
             return {
                 'values': inp.values,
+                'project_name': loaded.metadata.get('title'),
                 'input_type': inp.input_type,
                 'stoichiometry_name': inp.stoichiometry_name,
                 'stoichiometry': inp.stoichiometry,
@@ -237,6 +239,11 @@ def _parse_upload(file_bytes: bytes, filename: str) -> Dict[str, Any]:
         'phase_analysis': None,
         'phase_analysis_kwargs': {},
     }
+
+def _project_metadata(req: AnalysisRequest) -> Optional[Dict[str, Any]]:
+    """Build STF/HTML report metadata (e.g. the user-editable project title) from a request."""
+    name = (req.project_name or '').strip()
+    return {'title': name} if name else None
 
 def _build_corrections_list(req: AnalysisRequest, quant_data: Optional[Any] = None) -> List[Dict[str, str]]:
     """Build a list of correction factor key-value pairs for display."""
@@ -281,6 +288,16 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
+
+# The desktop app's webview profile persists its HTTP cache across restarts
+# (see StoichiometryFitterDesktop.py). Force revalidation on every request so
+# an edited frontend file is never served stale from an old session's cache.
+@app.middleware('http')
+async def _no_cache_frontend(request, call_next):
+    response = await call_next(request)
+    if request.url.path == '/' or request.url.path.startswith('/static/'):
+        response.headers['Cache-Control'] = 'no-cache'
+    return response
 
 # Serve static frontend files
 if os.path.isdir(FRONTEND_DIR):
@@ -347,6 +364,7 @@ async def upload_file(file: UploadFile = File(...)):
         return {
             'values': result['values'],
             'filename': file.filename,
+            'project_name': result.get('project_name'),
             'input_type': result.get('input_type', 'Counts'),
             'stoichiometry_name': result.get('stoichiometry_name'),
             'stoichiometry': result.get('stoichiometry'),
@@ -511,7 +529,7 @@ def download_html_report(req: AnalysisRequest):
 
     try:
         result = _build_download_analysis(req)
-        project = package.project_from_result(result)
+        project = package.project_from_result(result, metadata=_project_metadata(req))
         html_content = package.render_html_report(project)
         return Response(
             content=html_content,
@@ -531,9 +549,9 @@ def download_stf(req: AnalysisRequest):
 
     try:
         result = _build_download_analysis(req)
-        
+
         # Build a proper STF package from the analysis result
-        project = package.project_from_result(result)
+        project = package.project_from_result(result, metadata=_project_metadata(req))
         stf_bytes = package.serialize_stf(project)
         return Response(
             content=stf_bytes,
