@@ -57,6 +57,25 @@ class RunRateLimiter:
 
 _run_limiter = RunRateLimiter()
 
+# The API/UI expresses the self-absorption correction (rho * tau) in g/cm3*nm, but
+# the quant core works in g/cm3*um (AbsorptionCorrection.GetAbsorptionCurve returns
+# an attenuation length in microns).  Convert at the API boundary in both directions.
+ABS_CORR_NM_PER_UM = 1000.0
+
+
+def _abs_corr_nm_to_um(value):
+    """Convert an absorption correction from API units (g/cm3*nm) to core units (g/cm3*um)."""
+    if value is None:
+        return None
+    return float(value) / ABS_CORR_NM_PER_UM
+
+
+def _abs_corr_um_to_nm(value):
+    """Convert an absorption correction from core units (g/cm3*um) to API units (g/cm3*nm)."""
+    if value is None:
+        return None
+    return float(value) * ABS_CORR_NM_PER_UM
+
 # --- Pydantic models for API ---
 class AnalysisRequest(BaseModel):
     values: Dict[str, float]
@@ -113,7 +132,7 @@ def _load_example() -> Dict[str, Any]:
     """Load ExampleInput.csv and return parsed element values."""
     example_path = os.path.join(CONFIG_DIR, 'ExampleInput.csv')
     values = {}
-    with open(example_path, 'r') as f:
+    with open(example_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             symbol = row.get('Element', '')
@@ -141,7 +160,7 @@ def _parse_upload(file_bytes: bytes, filename: str) -> Dict[str, Any]:
                 'stoichiometry': inp.stoichiometry,
                 'kfactors': opts.kfactors,
                 'arbitrary_absorption': opts.arbitrary_absorption,
-                'absorption_correction': opts.absorption_correction,
+                'absorption_correction': _abs_corr_um_to_nm(opts.absorption_correction),
                 'takeoff': opts.takeoff,
                 'selected_phases': opts.selected_phases,
                 'phase_analysis': opts.phase_analysis,
@@ -298,7 +317,7 @@ def _build_analysis_options(req: AnalysisRequest) -> core.AnalysisOptions:
     return core.AnalysisOptions(
         kfactors=req.kfactors if req.kfactors else None,
         arbitrary_absorption=req.arbitrary_absorption if req.arbitrary_absorption else None,
-        absorption_correction=req.absorption_correction if req.absorption_correction is not None else 0.0,
+        absorption_correction=_abs_corr_nm_to_um(req.absorption_correction) or 0.0,
         takeoff=req.takeoff,
         selected_phases=req.selected_phases if req.selected_phases else None,
         phase_analysis=req.phase_analysis if req.phase_analysis else None,
@@ -486,7 +505,7 @@ def serve_frontend():
     """Serve the main frontend page."""
     index_path = os.path.join(FRONTEND_DIR, 'index.html')
     if os.path.isfile(index_path):
-        with open(index_path, 'r') as f:
+        with open(index_path, 'r', encoding='utf-8') as f:
             return f.read()
     raise HTTPException(status_code=404, detail='Frontend not found')
 

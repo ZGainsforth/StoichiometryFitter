@@ -691,7 +691,7 @@ def analysis_to_dict(result: AnalysisResult) -> Dict[str, Any]:
 
 def load_analysis_json(path: str) -> Tuple[AnalysisInput, AnalysisOptions]:
     """Load replayable inputs and options from a saved Stoichiometry Fitter JSON file."""
-    with open(path) as fid:
+    with open(path, encoding='utf-8') as fid:
         payload = json.load(fid)
 
     if 'input' not in payload or 'options' not in payload:
@@ -724,7 +724,7 @@ def save_input_csv(analysis_input: AnalysisInput, path: str) -> None:
     input_type = normalize_input_type(analysis_input.input_type)
     header = header_by_type[input_type]
     values = vector_to_element_dict(values_to_vector(analysis_input.values))
-    with open(path, 'w') as fid:
+    with open(path, 'w', encoding='utf-8') as fid:
         fid.write('Element,%s\n' % header)
         for element, value in values.items():
             fid.write('%s,%f\n' % (element, value))
@@ -739,7 +739,7 @@ def save_analysis(result: AnalysisResult, output_dir: str, basename: str = 'anal
     results_json = os.path.join(output_dir, basename + '.json')
 
     save_input_csv(result.input, input_csv)
-    with open(report_txt, 'w') as fid:
+    with open(report_txt, 'w', encoding='utf-8') as fid:
         fid.write(result.report_text)
 
     figure_paths = []
@@ -761,6 +761,6 @@ def save_analysis(result: AnalysisResult, output_dir: str, basename: str = 'anal
     saved = SavedFiles(input_csv=input_csv, report_txt=report_txt, results_json=results_json,
                        figures=figure_paths, legacy_phase_files=legacy_phase_files)
     result.files = asdict(saved)
-    with open(results_json, 'w') as fid:
+    with open(results_json, 'w', encoding='utf-8') as fid:
         json.dump(analysis_to_dict(result), fid, indent=2, sort_keys=True, default=_json_default)
     return saved

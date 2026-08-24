@@ -2,6 +2,8 @@ __author__ = 'Zack Gainsforth'
 __copyright__ = 'Copyright 2016, Zack Gainsforth'
 __email__ = 'zsg@gainsforth.com'
 
+import sys
+
 import matplotlib
 from matplotlib.pyplot import *
 from numpy import *
@@ -17,6 +19,13 @@ def GetAbsorptionCurve(E, WtPct, rho):
     :param rho: Density of the material.
     :return: A vector of the same length as E but with units microns.
     """
+
+    E = asarray(E, dtype=float)
+
+    # Some entries of E are zero because that element has no tabulated fluorescence line (H, He,
+    # and the transuranics).  Those carry no absorption information, so we leave mu at zero for
+    # them, which comes back below as an infinite (i.e. transparent) attenuation length.
+    HasLine = E > 0
 
     # mu is the cross-section.  We don't know it yet, so we start out with a matrix.  One row for each element,
     # and thus one measurement of mu for each.  We'll sum them later because they add linearly.
@@ -43,7 +52,9 @@ def GetAbsorptionCurve(E, WtPct, rho):
         f2 = interp(E, ScatteringData[:,0], ScatteringData[:, 2])
 
         # mua, (f2 is implicitly measured in grams, so I have to unfold that...)
-        mua = 2 * pb.r0 * pb.h*pb.c/E * f2/pb.ElementalWeights[ElementIndex+1]
+        mua = zeros(len(E))
+        mua[HasLine] = (2 * pb.r0 * pb.h*pb.c/E[HasLine] * f2[HasLine]
+                        / pb.ElementalWeights[ElementIndex+1])
     
         # Density in atoms/m3 
         n = 1000*pb.NAvogadro*(WtPct[ElementIndex]/100)
@@ -51,8 +62,12 @@ def GetAbsorptionCurve(E, WtPct, rho):
         # And this gives mu for this element.
         mu[ElementIndex, :] = n*mua
     
-    # Absorption length.  A = 1/e intensity.
-    A = 1./(sum(mu, 0)*rho)*1e3
+    # Absorption length.  A = 1/e intensity.  A zero cross-section means the absorber is
+    # transparent at that energy, which is an infinite attenuation length.
+    murho = sum(mu, 0)*rho
+    A = full(len(E), inf)
+    Absorbs = murho > 0
+    A[Absorbs] = 1./murho[Absorbs]*1e3
     return A
 
 #    loglog(E, A)
@@ -75,27 +90,32 @@ def DoAbsorption(E, Iin, WtPct, rho, AbsorptionLength, Takeoff=90):
     :return: I after absorbing Iin.
     """
 
+    if not 0 < Takeoff <= 90:
+        raise ValueError('Takeoff angle must be in (0, 90] degrees, got %r.' % (Takeoff,))
+
     AbsorptionCurve = GetAbsorptionCurve(E, WtPct, rho)
-    murho = 1/AbsorptionCurve
+    # An infinite attenuation length gives murho = 0, i.e. no absorption at that energy.
+    murho = 1./AbsorptionCurve
 
     # Takeoff coefficient
     TakeoffCoeff = sin(Takeoff*pi/180)
 
-    # Beer's law.
-#    I = nan_to_num(Iin*exp(-1.*AbsorptionLength/AbsorptionCurve))
-#    I = nan_to_num(Iin*exp(-1.*AbsorptionLength*TakeoffCoeff/AbsorptionCurve))
-#    TakeoffCoeff = 1/sin(Takeoff*pi/180); I = nan_to_num(Iin*(1-exp(-AbsorptionLength*TakeoffCoeff/AbsorptionCurve))/(TakeoffCoeff/AbsorptionCurve))
+    # Beer's law, integrated over the path:
+    #     I = I0 * int(exp(-murho*t/sin(Takeoff)), dt for t=0 to AbsorptionLength)
+    # which normalizes to the attenuation factor f(x) = (1-exp(-x))/x, where
+    # x = murho*AbsorptionLength/sin(Takeoff).  A transparent energy (x = 0) gives f = 1,
+    # so those lines pass through untouched instead of turning into 0/0.
+    x = murho*abs(AbsorptionLength)/TakeoffCoeff
+    f = ones(shape(x))
+    Absorbs = x > 0
+    f[Absorbs] = (1.-exp(-x[Absorbs]))/x[Absorbs]
+
     if AbsorptionLength >= 0:
         # If AbsorptionLength is positive, then it means we start with I0 and compute I after being absorbed by AbsorptionLength.
-        I = nan_to_num(Iin*TakeoffCoeff/(murho*AbsorptionLength)*(1-exp(-murho*AbsorptionLength/TakeoffCoeff)))
+        I = Iin*f
     else:
         # If negative, it means we have I and want to figure out what I0 was before being absorbed.
-        # Notice we minus AbsorptionLength since it was input as a negative value, but beers law want's positive values.
-        I = nan_to_num((Iin*murho*(-AbsorptionLength)/TakeoffCoeff)/(1-exp(murho*AbsorptionLength/TakeoffCoeff)))
-
-    """ These come from solving the integral:
-    I = I0 * int(exp(-murho*t/sin(Takeoff)), dt for t=0 to AbsorptionLength)
-    """
+        I = Iin/f
 
     # Return the modified intensity after absorption.
     return I

@@ -214,7 +214,7 @@ def AtPctToWtPct(AtPct, OByStoichiometry=None):
     return WtPct
 
 def GetAbundancesFromCounts(Counts, kfacsfile=None, InputType='Counts', ArbitraryAbsorptionCorrection=None,
-                            AbsorptionCorrection=0, Takeoff=0, OByStoichiometry=None,
+                            AbsorptionCorrection=0, Takeoff=18.0, OByStoichiometry=None,
                             kfactors_data=None, arbitrary_absorption_data=None):
     """Counts (ndarray) is the input vector giving all the counts for each element in order. It is MAXELEMENTS long.
     kfacsfile=None (str) gives the k-factors for each element, or None means not to apply k-factors.
