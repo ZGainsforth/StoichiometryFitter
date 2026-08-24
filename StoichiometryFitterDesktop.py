@@ -40,7 +40,13 @@ def main():
         width=1400,
         height=900,
     )
-    webview.start()
+
+    # pywebview defaults to private_mode=True, which wipes local storage
+    # (including the IndexedDB-stored upload/download directory handles)
+    # every time the window closes. Use a persistent profile directory so
+    # "remember the last used folder" survives across app restarts.
+    storage_path = os.path.join(os.environ.get('LOCALAPPDATA', APP_DIR), 'StoichiometryFitter', 'webview')
+    webview.start(private_mode=False, storage_path=storage_path)
 
 if __name__ == '__main__':
     main()

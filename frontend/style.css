@@ -36,6 +36,7 @@
     cursor: pointer;
     transition: all 0.15s ease;
     position: relative;
+    container-type: inline-size;
 }
 
 .element-grid-full .element-cell:hover {
@@ -46,13 +47,13 @@
 }
 
 .element-grid-full .element-cell .cell-symbol {
-    font-size: 10px;
+    font-size: 31cqi;
     font-weight: 600;
     line-height: 1;
 }
 
 .element-grid-full .element-cell .cell-number {
-    font-size: 7px;
+    font-size: 18cqi;
     color: #64748b;
     line-height: 1;
 }
@@ -71,13 +72,13 @@
 .element-values-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 
 .element-values-table th {
     background: #1e293b;
     color: #94a3b8;
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -96,7 +97,7 @@
 
 .element-values-table td {
     padding: 6px 12px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #e2e8f0;
     text-align: right;
     border-bottom: 1px solid #1e293b;
@@ -119,7 +120,7 @@
     border: 1px solid #334155;
     border-radius: 4px;
     color: #e2e8f0;
-    font-size: 13px;
+    font-size: 0.8125rem;
     text-align: right;
     font-family: 'SF Mono', 'Fira Code', monospace;
 }
@@ -142,7 +143,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 10px;
+    font-size: 0.625rem;
     color: #94a3b8;
 }
 
@@ -223,7 +224,7 @@ select[multiple] option {
 .results-table th {
     background: #1e293b;
     color: #94a3b8;
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -238,7 +239,7 @@ select[multiple] option {
 
 .results-table td {
     padding: 6px 12px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #e2e8f0;
     text-align: right;
     border-bottom: 1px solid #1e293b;
@@ -257,7 +258,7 @@ select[multiple] option {
 
 /* Results table title */
 .results-table-title {
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 600;
     color: #e2e8f0;
     margin-bottom: 8px;
@@ -289,7 +290,7 @@ select[multiple] option {
     color: #fbbf24;
     padding: 6px 10px;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 0.75rem;
     margin-bottom: 4px;
 }
 
@@ -297,13 +298,6 @@ select[multiple] option {
 button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-}
-
-/* Collapse toggle */
-#collapse-toggle {
-    font-family: monospace;
-    font-size: 14px;
-    line-height: 1;
 }
 
 /* Checkbox styling for settings */

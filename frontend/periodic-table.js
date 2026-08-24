@@ -61,8 +61,8 @@ class PeriodicTable {
         this.containerId = containerId;
         this.elements = new Map();
         this.values = new Map();
-        this.expanded = true;
         this.maxValue = 1;
+        this.onValueChange = null;
         this._build();
     }
 
@@ -97,11 +97,10 @@ class PeriodicTable {
     _build() {
         const container = document.getElementById(this.containerId);
         container.innerHTML = '';
+        container.className = 'element-grid-full';
 
-        // Build full grid
-        this.grid = document.createElement('div');
-        this.grid.className = 'element-grid-full';
-        this.grid.style.display = this.expanded ? 'grid' : 'none';
+        // The container itself is the grid
+        this.grid = container;
 
         // Calculate atomic numbers once
         const allSymbols = Object.keys(ELEMENT_POSITIONS).sort((a, b) => {
@@ -124,9 +123,13 @@ class PeriodicTable {
                 <span class="cell-symbol">${symbol}</span>
             `;
             cell.addEventListener('click', () => this.openOverlay(symbol));
+            cell.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                this.updateValue(symbol, 0);
+                if (this.onValueChange) this.onValueChange(symbol, 0);
+            });
             this.grid.appendChild(cell);
         }
-        container.appendChild(this.grid);
     }
 
     setElements(elements) {
@@ -149,6 +152,10 @@ class PeriodicTable {
         this.render();
     }
 
+    _luminance({ r, g, b }) {
+        return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    }
+
     updateValue(symbol, value) {
         this.values.set(symbol, value);
         const cell = this.grid.querySelector(`[data-symbol="${symbol}"]`);
@@ -159,9 +166,11 @@ class PeriodicTable {
                 const color = CATEGORY_COLORS[cat] || '#BAE1FF';
                 const blended = this._blendColor(color, intensity);
                 cell.style.backgroundColor = `rgb(${blended.r}, ${blended.g}, ${blended.b})`;
+                cell.style.color = this._luminance(blended) > 0.6 ? '#0f172a' : '#f8fafc';
                 cell.classList.add('has-value');
             } else {
                 cell.style.backgroundColor = '';
+                cell.style.color = '';
                 cell.classList.remove('has-value');
             }
         }
@@ -173,6 +182,7 @@ class PeriodicTable {
             const cell = this.grid.querySelector(`[data-symbol="${sym}"]`);
             if (cell) {
                 cell.style.backgroundColor = '';
+                cell.style.color = '';
                 cell.classList.remove('has-value');
             }
         }
@@ -194,24 +204,14 @@ class PeriodicTable {
 
             if (val > 0) {
                 gridCell.style.backgroundColor = `rgb(${blended.r}, ${blended.g}, ${blended.b})`;
+                gridCell.style.color = this._luminance(blended) > 0.6 ? '#0f172a' : '#f8fafc';
                 gridCell.classList.add('has-value');
             } else {
                 gridCell.style.backgroundColor = '';
+                gridCell.style.color = '';
                 gridCell.classList.remove('has-value');
             }
         }
-
-        // Update collapse toggle text
-        const btn = document.getElementById('collapse-toggle');
-        if (btn) {
-            btn.textContent = this.expanded ? '▶' : '◀';
-        }
-    }
-
-    toggle() {
-        this.expanded = !this.expanded;
-        this.grid.style.display = this.expanded ? 'grid' : 'none';
-        this.render();
     }
 
     openOverlay(symbol) {
@@ -225,6 +225,7 @@ class PeriodicTable {
         errorEl.classList.add('hidden');
         overlay.classList.remove('hidden');
         valueInput.focus();
+        valueInput.select();
     }
 
     closeOverlay() {

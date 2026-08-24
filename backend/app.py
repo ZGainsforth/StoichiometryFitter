@@ -32,9 +32,23 @@ from pydantic import BaseModel
 APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_DIR = os.path.join(APP_DIR, 'ConfigData')
 FRONTEND_DIR = os.path.join(APP_DIR, 'frontend')
+SETTINGS_PATH = os.path.join(APP_DIR, 'user_settings.json')
 
 # --- Threading lock for analysis ---
 _analysis_lock = threading.Lock()
+
+# --- Threading lock + defaults for persisted user settings ---
+_settings_lock = threading.Lock()
+
+DEFAULT_SETTINGS: Dict[str, Any] = {
+    'kfactors': None,
+    'stoichiometry_name': None,
+    'arbitrary_absorption': None,
+    'absorption_correction': None,
+    'takeoff': 18.0,
+    'selected_phases': None,
+    'phase_analysis': None,
+}
 
 # --- Rate limiter ---
 class RunRateLimiter:
@@ -92,6 +106,15 @@ class ElementValueRequest(BaseModel):
     symbol: str
     value: float
 
+class UserSettingsUpdate(BaseModel):
+    kfactors: Optional[str] = None
+    stoichiometry_name: Optional[str] = None
+    arbitrary_absorption: Optional[str] = None
+    absorption_correction: Optional[float] = None
+    takeoff: Optional[float] = None
+    selected_phases: Optional[List[str]] = None
+    phase_analysis: Optional[str] = None
+
 # --- Helper functions ---
 def _safe_error(error: Exception) -> str:
     if isinstance(error, (package.ProjectError, ValueError, TypeError)):
@@ -127,6 +150,25 @@ def _get_elements_data() -> List[Dict[str, Any]]:
             'value': 0.0,
         })
     return elements
+
+def _load_settings() -> Dict[str, Any]:
+    """Load persisted user settings (last-used dialog selections), merged with defaults."""
+    settings = dict(DEFAULT_SETTINGS)
+    with _settings_lock:
+        try:
+            with open(SETTINGS_PATH, 'r', encoding='utf-8') as f:
+                saved = json.load(f)
+            if isinstance(saved, dict):
+                settings.update({k: v for k, v in saved.items() if k in DEFAULT_SETTINGS})
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            pass
+    return settings
+
+def _save_settings(settings: Dict[str, Any]) -> None:
+    """Persist user settings to disk."""
+    with _settings_lock:
+        with open(SETTINGS_PATH, 'w', encoding='utf-8') as f:
+            json.dump(settings, f, indent=2)
 
 def _load_example() -> Dict[str, Any]:
     """Load ExampleInput.csv and return parsed element values."""
@@ -280,6 +322,20 @@ def get_config_options():
 def get_example():
     """Load ExampleInput.csv."""
     return _load_example()
+
+@app.get('/api/settings')
+def get_settings():
+    """Get persisted user settings (last-used dialog selections)."""
+    return _load_settings()
+
+@app.post('/api/settings')
+def update_settings(req: UserSettingsUpdate):
+    """Persist a partial update to user settings (last-used dialog selections)."""
+    updates = req.dict(exclude_unset=True)
+    current = _load_settings()
+    current.update(updates)
+    _save_settings(current)
+    return current
 
 @app.post('/api/upload')
 async def upload_file(file: UploadFile = File(...)):

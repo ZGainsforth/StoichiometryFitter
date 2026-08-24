@@ -10,6 +10,8 @@ let periodicTable = null;
 let configOptions = {};
 let lastResult = null;
 let isRunning = false;
+let uploadedFileBaseName = null;
+let userSettings = {};
 
 // --- Upload/Download directory handle storage ---
 let uploadDirHandle = null;
@@ -146,6 +148,74 @@ async function loadCategories() {
     }
 }
 
+// --- Persisted user settings (last-used dialog selections) ---
+async function loadUserSettings() {
+    try {
+        userSettings = await apiJSON('/api/settings');
+        applyUserSettings(userSettings);
+    } catch (err) {
+        console.error('Failed to load user settings:', err);
+    }
+}
+
+function applyUserSettings(settings) {
+    const selectIfPresent = (id, value) => {
+        if (!value) return;
+        const sel = document.getElementById(id);
+        if (sel && Array.from(sel.options).some(o => o.value === value)) {
+            sel.value = value;
+        }
+    };
+
+    selectIfPresent('k-factors', settings.kfactors);
+    selectIfPresent('stoichiometry', settings.stoichiometry_name);
+    selectIfPresent('arbitrary-absorption', settings.arbitrary_absorption);
+    selectIfPresent('phase-analysis', settings.phase_analysis);
+
+    if (settings.absorption_correction !== null && settings.absorption_correction !== undefined) {
+        document.getElementById('absorption-correction').value = settings.absorption_correction;
+    }
+    if (settings.takeoff !== null && settings.takeoff !== undefined) {
+        document.getElementById('takeoff').value = settings.takeoff;
+    }
+    if (settings.selected_phases && Array.isArray(settings.selected_phases)) {
+        const phaseSel = document.getElementById('selected-phases');
+        for (const option of phaseSel.options) {
+            option.selected = settings.selected_phases.includes(option.value);
+        }
+    }
+
+    syncKfactorRequirement();
+}
+
+async function saveUserSettings(partial) {
+    try {
+        userSettings = await apiJSON('/api/settings', 'POST', partial);
+    } catch (err) {
+        console.error('Failed to save user settings:', err);
+    }
+}
+
+// --- Ensure a k-factor file is always selected when input type is Counts ---
+function syncKfactorRequirement() {
+    const kfSel = document.getElementById('k-factors');
+    if (!kfSel) return;
+    const noneOption = kfSel.querySelector('option[value=""]');
+    const inputType = getInputTypeValue();
+    if (inputType === 'Counts') {
+        if (noneOption) noneOption.style.display = 'none';
+        if (!kfSel.value) {
+            const hasPreferred = userSettings.kfactors &&
+                Array.from(kfSel.options).some(o => o.value === userSettings.kfactors);
+            const fallback = kfSel.querySelector('option:not([value=""])');
+            kfSel.value = hasPreferred ? userSettings.kfactors : (fallback ? fallback.value : '');
+            if (kfSel.value) saveUserSettings({ kfactors: kfSel.value });
+        }
+    } else if (noneOption) {
+        noneOption.style.display = '';
+    }
+}
+
 // --- Load periodic table ---
 async function loadElements() {
     try {
@@ -161,24 +231,16 @@ function onInputTypeChange() {
     // Re-render the values table with new column label
     updateElementValuesTable();
 
-    // Show/hide (None) option in k-factors based on input type
-    // When Counts is selected, k-factors are required (hide None)
-    // When At%, Wt%, Ox Wt% is selected, k-factors are optional
+    // Show/hide (None) option in k-factors based on input type.
+    // When Counts is selected, k-factors are required (hide None) and a
+    // file is always auto-selected (last used, falling back to the first).
+    // When At%, Wt%, Ox Wt% is selected, k-factors are optional.
     const inputType = getInputTypeValue();
-    const kfSel = document.getElementById('k-factors');
-    const noneOption = kfSel.querySelector('option[value=""]');
-    if (inputType === 'Counts') {
-        noneOption.style.display = 'none';
-        // If currently "None" is selected, auto-select first available
-        if (kfSel.value === '') {
-            const firstOpt = kfSel.querySelector('option:not([value=""])');
-            if (firstOpt) kfSel.value = firstOpt.value;
-        }
-    } else {
-        noneOption.style.display = '';
+    if (inputType !== 'Counts') {
         // Reset to None when switching away from Counts
-        kfSel.value = '';
+        document.getElementById('k-factors').value = '';
     }
+    syncKfactorRequirement();
 
     // Trigger quick quant with new settings
     runQuickQuant();
@@ -204,12 +266,7 @@ async function loadExample() {
         
         // Set input type to Counts (example data is in Counts)
         setInputTypeValue('Counts');
-        
-        // Auto-select first available k-factor (Counts requires k-factors)
-        const kfSel = document.getElementById('k-factors');
-        const firstOpt = kfSel.querySelector('option:not([value=""])');
-        if (firstOpt) kfSel.value = firstOpt.value;
-        
+
         loadValues(data.values);
         setStatus(`Loaded example input with ${Object.keys(data.values).length} elements.`, 'text-green-400');
     } catch (err) {
@@ -220,6 +277,7 @@ async function loadExample() {
 // --- Load file upload ---
 async function loadFile(file) {
     try {
+        uploadedFileBaseName = file.name.replace(/\.[^./\\]+$/, '');
         setStatus(`Uploading ${file.name}...`, 'text-blue-400');
         const formData = new FormData();
         formData.append('file', file);
@@ -303,6 +361,21 @@ function restoreSettings(data) {
     if (data.phase_analysis) {
         document.getElementById('phase-analysis').value = data.phase_analysis;
     }
+
+    // Persist whichever fields the loaded file actually specified as the new
+    // "last used" settings, so the next session (or a fresh file) defaults to
+    // what was just loaded. Fields absent from the file are left untouched.
+    const persisted = {};
+    if (data.kfactors) persisted.kfactors = data.kfactors;
+    if (data.stoichiometry_name) persisted.stoichiometry_name = data.stoichiometry_name;
+    if (data.arbitrary_absorption) persisted.arbitrary_absorption = data.arbitrary_absorption;
+    if (data.absorption_correction !== undefined && data.absorption_correction !== null) {
+        persisted.absorption_correction = data.absorption_correction;
+    }
+    if (data.takeoff !== undefined && data.takeoff !== null) persisted.takeoff = data.takeoff;
+    if (Array.isArray(data.selected_phases)) persisted.selected_phases = data.selected_phases;
+    if (data.phase_analysis) persisted.phase_analysis = data.phase_analysis;
+    if (Object.keys(persisted).length > 0) saveUserSettings(persisted);
 }
 
 // --- Load values into state ---
@@ -369,6 +442,8 @@ function updateElementValuesTable() {
         }
         newEl.addEventListener('change', onInputTypeChange);
     }
+
+    syncKfactorRequirement();
 }
 
 // --- Handle direct value input changes ---
@@ -485,6 +560,11 @@ async function runAnalysis() {
 
     if (!hasValues) {
         setStatus('No element values to analyze. Upload a file or use example input first.', 'text-red-400');
+        return;
+    }
+
+    if (getInputTypeValue() === 'Counts' && !document.getElementById('k-factors').value) {
+        alert('Please select a k-factor file before running analysis on Counts input.');
         return;
     }
 
@@ -647,7 +727,8 @@ function setupDownloadButtons() {
             });
             if (!resp.ok) throw new Error('Download failed');
             const blob = await resp.blob();
-            await downloadBlob(blob, 'stoichiometry_results.stf', 'download');
+            const filename = uploadedFileBaseName ? `${uploadedFileBaseName}.stf` : 'stoichiometry_results.stf';
+            await downloadBlob(blob, filename, 'download');
             setStatus('.stf file downloaded.', 'text-green-400');
         } catch (err) {
             setStatus(`Download failed: ${err.message}`, 'text-red-400');
@@ -736,12 +817,32 @@ function setupOverlayHandlers() {
     });
 }
 
-// --- Collapse toggle ---
-function setupCollapseToggle() {
-    const btn = document.getElementById('collapse-toggle');
-    btn.addEventListener('click', () => {
-        periodicTable.toggle();
+// --- Font zoom (Ctrl/Cmd +/-/0) ---
+const FONT_ZOOM_MIN = 70;
+const FONT_ZOOM_MAX = 150;
+const FONT_ZOOM_STEP = 10;
+
+function setupFontZoom() {
+    document.addEventListener('keydown', (e) => {
+        if (!(e.ctrlKey || e.metaKey)) return;
+        if (e.key === '+' || e.key === '=') {
+            e.preventDefault();
+            adjustFontZoom(FONT_ZOOM_STEP);
+        } else if (e.key === '-' || e.key === '_') {
+            e.preventDefault();
+            adjustFontZoom(-FONT_ZOOM_STEP);
+        } else if (e.key === '0') {
+            e.preventDefault();
+            document.documentElement.style.fontSize = '';
+        }
     });
+}
+
+function adjustFontZoom(deltaPercent) {
+    const current = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const basePercent = (current / 16) * 100;
+    const next = Math.min(FONT_ZOOM_MAX, Math.max(FONT_ZOOM_MIN, basePercent + deltaPercent));
+    document.documentElement.style.fontSize = `${next}%`;
 }
 
 // --- Clear all values ---
@@ -829,28 +930,10 @@ function setInputTypeValue(val) {
     if (el) el.value = val;
 }
 
-// --- Reset to default settings ---
-function resetToDefaultSettings() {
-    // 1. Clear element values (sets input type to "Counts" implicitly when table empty)
+// --- Reset elements (leaves all other settings untouched) ---
+function resetElements() {
     periodicTable.clearValues();
     updateElementValuesTable();
-    
-    // 2. Reset settings to defaults
-    document.getElementById('k-factors').value = "";
-    document.getElementById('stoichiometry').value = "";
-    document.getElementById('arbitrary-absorption').value = "";
-    document.getElementById('absorption-correction').value = "0";
-    document.getElementById('takeoff').value = "18";
-    
-    // Clear multi-select selections
-    const phaseSel = document.getElementById('selected-phases');
-    for (let i = 0; i < phaseSel.options.length; i++) {
-        phaseSel.options[i].selected = false;
-    }
-    
-    document.getElementById('phase-analysis').value = "";
-    
-    // 3. Update quantification results
     runQuickQuant();
 }
 
@@ -858,7 +941,7 @@ function resetToDefaultSettings() {
 function setupResetButton() {
     const resetBtn = document.getElementById('reset-btn');
     if (resetBtn) {
-        resetBtn.addEventListener('click', resetToDefaultSettings);
+        resetBtn.addEventListener('click', resetElements);
     }
 }
 
@@ -869,11 +952,33 @@ function setupExampleButton() {
 
 // --- Settings change listeners ---
 function setupSettingsListeners() {
-    document.getElementById('k-factors').addEventListener('change', runQuickQuant);
-    document.getElementById('stoichiometry').addEventListener('change', runQuickQuant);
-    document.getElementById('arbitrary-absorption').addEventListener('change', runQuickQuant);
+    document.getElementById('k-factors').addEventListener('change', (e) => {
+        saveUserSettings({ kfactors: e.target.value || null });
+        runQuickQuant();
+    });
+    document.getElementById('stoichiometry').addEventListener('change', (e) => {
+        saveUserSettings({ stoichiometry_name: e.target.value || null });
+        runQuickQuant();
+    });
+    document.getElementById('arbitrary-absorption').addEventListener('change', (e) => {
+        saveUserSettings({ arbitrary_absorption: e.target.value || null });
+        runQuickQuant();
+    });
     document.getElementById('absorption-correction').addEventListener('input', runQuickQuant);
+    document.getElementById('absorption-correction').addEventListener('change', (e) => {
+        saveUserSettings({ absorption_correction: parseFloat(e.target.value) || 0 });
+    });
     document.getElementById('takeoff').addEventListener('input', runQuickQuant);
+    document.getElementById('takeoff').addEventListener('change', (e) => {
+        saveUserSettings({ takeoff: parseFloat(e.target.value) || 18 });
+    });
+    document.getElementById('phase-analysis').addEventListener('change', (e) => {
+        saveUserSettings({ phase_analysis: e.target.value || null });
+    });
+    document.getElementById('selected-phases').addEventListener('change', (e) => {
+        const selected = Array.from(e.target.selectedOptions).filter(o => o.value).map(o => o.value);
+        saveUserSettings({ selected_phases: selected });
+    });
 }
 
 // --- Run button ---
@@ -887,6 +992,10 @@ async function init() {
     await loadStoredDirHandles();
     
     periodicTable = new PeriodicTable('element-grid');
+    periodicTable.onValueChange = () => {
+        updateElementValuesTable();
+        runQuickQuant();
+    };
 
     await Promise.all([
         loadConfigOptions(),
@@ -894,8 +1003,10 @@ async function init() {
         loadCategories(),
     ]);
 
+    // Apply last-used dialog selections now that the option lists exist.
+    await loadUserSettings();
+
     setupOverlayHandlers();
-    setupCollapseToggle();
     setupClearValues();
     setupFileUpload();
     setupExampleButton();
@@ -903,6 +1014,7 @@ async function init() {
     setupSettingsListeners();
     setupRunButton();
     setupDownloadButtons();
+    setupFontZoom();
 
     setStatus('Ready. Load a measurement input or .stf project to begin.', '');
 }
