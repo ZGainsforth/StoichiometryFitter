@@ -110,7 +110,7 @@ def AnalyzePhase(AtPct=None, WtPct=None, OxWtPct=None, OByStoich=None):
     # Report number of cations per various numbers of oxygens.
     OutStr += '\n--- Cations per N oxygens Analysis ---\n'
 
-    for n in range(4,20):
+    for n in range(2,20):
         OutStr += CatsPerNOxygens(AtPct, KnownElements, n)
     # OutStr += CatsPerNOxygens(AtPct, KnownElements, 6)
     # OutStr += CatsPerNOxygens(AtPct, KnownElements, 8)
