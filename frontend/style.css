@@ -16,12 +16,69 @@
     background: #64748b;
 }
 
-/* Element grid (full periodic table) */
+/* Element grid (full periodic table). Track templates are set in periodic-table.js
+   so rows/columns can collapse; the table always spans the full width, so the
+   remaining cells grow when columns collapse. */
+.pt-wrapper {
+    --pt-gutter: 14px;
+    margin-bottom: 8px;
+}
+
 .element-grid-full {
     display: grid;
-    grid-template-columns: repeat(18, 1fr);
     gap: 2px;
-    margin-bottom: 8px;
+}
+
+.element-grid-full.pt-fblock {
+    margin-top: 6px;
+}
+
+.element-grid-full .element-cell.pt-hidden {
+    display: none;
+}
+
+/* Collapse/expand chevrons in the header row and left gutter. A collapsed row or
+   column is just a narrow gap, marked by its highlighted tab. */
+.pt-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    border: none;
+    border-radius: 2px;
+    background: transparent;
+    color: #64748b;
+    font-size: 11px;
+    line-height: 1;
+    overflow: hidden;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.pt-toggle::before {
+    content: '\25BE'; /* ▾ */
+}
+
+.pt-toggle:hover {
+    color: #cbd5e1;
+    background: #1e293b;
+}
+
+.pt-toggle.collapsed {
+    background: #334155;
+    color: #cbd5e1;
+    font-size: 8px;
+}
+
+.pt-toggle.collapsed::before {
+    content: '\25B8'; /* ▸ */
+}
+
+.pt-toggle.collapsed:hover {
+    background: #475569;
+    color: #f8fafc;
 }
 
 .element-grid-full .element-cell {

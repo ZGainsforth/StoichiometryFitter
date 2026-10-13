@@ -56,6 +56,12 @@ const ELEMENT_POSITIONS = {
     'Og': [7, 18],
 };
 
+// Rows in the main table (periods) and in the f-block grid (La/Ac series)
+const MAIN_ROWS = [1, 2, 3, 4, 5, 6, 7];
+const FBLOCK_ROWS = [9, 10];
+const ROW_LABELS = { 9: 'lanthanides', 10: 'actinides' };
+const COLLAPSE_STORAGE_KEY = 'stoich.ptCollapse';
+
 class PeriodicTable {
     constructor(containerId) {
         this.containerId = containerId;
@@ -63,7 +69,141 @@ class PeriodicTable {
         this.values = new Map();
         this.maxValue = 1;
         this.onValueChange = null;
+        this.collapsedRows = new Set();
+        this.collapsedCols = new Set();
+        this._loadCollapse();
         this._build();
+    }
+
+    // --- Row/column collapsing ---
+
+    _loadCollapse() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(COLLAPSE_STORAGE_KEY) || '{}');
+            this.collapsedRows = new Set(saved.rows || []);
+            this.collapsedCols = new Set(saved.cols || []);
+        } catch (e) {
+            // Storage unavailable or corrupt: start fully expanded
+        }
+    }
+
+    _saveCollapse() {
+        try {
+            localStorage.setItem(COLLAPSE_STORAGE_KEY, JSON.stringify({
+                rows: [...this.collapsedRows],
+                cols: [...this.collapsedCols],
+            }));
+        } catch (e) {
+            // Ignore: persistence is a convenience only
+        }
+    }
+
+    toggleRow(row) {
+        if (this.collapsedRows.has(row)) this.collapsedRows.delete(row);
+        else this.collapsedRows.add(row);
+        this._applyCollapse();
+        this._saveCollapse();
+    }
+
+    toggleCol(col) {
+        if (this.collapsedCols.has(col)) this.collapsedCols.delete(col);
+        else this.collapsedCols.add(col);
+        this._applyCollapse();
+        this._saveCollapse();
+    }
+
+    expandAll() {
+        this.collapsedRows.clear();
+        this.collapsedCols.clear();
+        this._applyCollapse();
+        this._saveCollapse();
+    }
+
+    /** Collapse every row and column that holds no nonzero value. */
+    collapseUnused() {
+        const usedRows = new Set();
+        const usedCols = new Set();
+        for (const [sym, val] of this.values) {
+            if (!(val > 0) || !ELEMENT_POSITIONS[sym]) continue;
+            const [row, col] = ELEMENT_POSITIONS[sym];
+            usedRows.add(row);
+            if (row <= 7) usedCols.add(col);
+        }
+        // Nothing entered yet: collapsing everything would leave nothing to click
+        if (usedRows.size === 0) return;
+
+        this.collapsedRows = new Set([...MAIN_ROWS, ...FBLOCK_ROWS].filter(r => !usedRows.has(r)));
+        this.collapsedCols = new Set();
+        for (let c = 1; c <= 18; c++) {
+            if (!usedCols.has(c)) this.collapsedCols.add(c);
+        }
+        this._applyCollapse();
+        this._saveCollapse();
+    }
+
+    /** Expand the row (and main-table column) containing symbol. Returns true if anything changed. */
+    _ensureVisible(symbol) {
+        const pos = ELEMENT_POSITIONS[symbol];
+        if (!pos) return false;
+        const [row, col] = pos;
+        let changed = this.collapsedRows.delete(row);
+        if (row <= 7) changed = this.collapsedCols.delete(col) || changed;
+        return changed;
+    }
+
+    _applyCollapse() {
+        if (!this.mainGrid) return;
+        const STRIP = 10;
+        // Expanded columns share whatever width the gutter and collapsed strips leave,
+        // so the table always spans the container and remaining cells grow
+        const nCollapsed = this.collapsedCols.size;
+        const nExpanded = 18 - nCollapsed;
+        const cell = `calc((100% - var(--pt-gutter) - 18 * 2px - ${nCollapsed * STRIP}px) / ${Math.max(nExpanded, 1)})`;
+        const colTrack = c => this.collapsedCols.has(c) ? `${STRIP}px` : cell;
+        const rowTrack = r => this.collapsedRows.has(r) ? `${STRIP}px` : 'auto';
+
+        // Column 1 is the row-toggle gutter; element column c lives in grid column c + 1
+        const mainCols = [];
+        for (let c = 1; c <= 18; c++) mainCols.push(colTrack(c));
+        this.mainGrid.style.gridTemplateColumns = `var(--pt-gutter) ${mainCols.join(' ')}`;
+        this.mainGrid.style.gridTemplateRows = `var(--pt-gutter) ${MAIN_ROWS.map(rowTrack).join(' ')}`;
+
+        // f-block reuses main tracks for groups 1-3 so La/Ac start under group 4, then
+        // splits the remaining width among its 15 cells
+        this.fGrid.style.gridTemplateColumns =
+            `var(--pt-gutter) ${mainCols.slice(0, 3).join(' ')} repeat(15, minmax(0, 1fr))`;
+        this.fGrid.style.gridTemplateRows = FBLOCK_ROWS.map(rowTrack).join(' ');
+
+        for (const cell of this.grid.querySelectorAll('.element-cell')) {
+            const row = +cell.dataset.row;
+            const col = +cell.dataset.col;
+            const hidden = this.collapsedRows.has(row) || (row <= 7 && this.collapsedCols.has(col));
+            cell.classList.toggle('pt-hidden', hidden);
+        }
+
+        for (const btn of this.grid.querySelectorAll('.pt-col-toggle')) {
+            const col = +btn.dataset.col;
+            const collapsed = this.collapsedCols.has(col);
+            btn.classList.toggle('collapsed', collapsed);
+            btn.title = `${collapsed ? 'Expand' : 'Collapse'} group ${col}`;
+        }
+        for (const btn of this.grid.querySelectorAll('.pt-row-toggle')) {
+            const row = +btn.dataset.row;
+            const collapsed = this.collapsedRows.has(row);
+            btn.classList.toggle('collapsed', collapsed);
+            btn.title = `${collapsed ? 'Expand' : 'Collapse'} ${ROW_LABELS[row] || 'period ' + row}`;
+        }
+    }
+
+    _makeToggle(kind, value, gridRow, gridCol) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `pt-toggle pt-${kind}-toggle`;
+        btn.dataset[kind] = value;
+        btn.style.gridRow = gridRow;
+        btn.style.gridColumn = gridCol;
+        btn.addEventListener('click', () => kind === 'row' ? this.toggleRow(value) : this.toggleCol(value));
+        return btn;
     }
 
     _hexToRgb(hex) {
@@ -97,10 +237,25 @@ class PeriodicTable {
     _build() {
         const container = document.getElementById(this.containerId);
         container.innerHTML = '';
-        container.className = 'element-grid-full';
+        container.className = 'pt-wrapper';
 
-        // The container itself is the grid
+        // The container holds the main table and the f-block; cell lookups search it
         this.grid = container;
+        this.mainGrid = document.createElement('div');
+        this.mainGrid.className = 'element-grid-full';
+        this.fGrid = document.createElement('div');
+        this.fGrid.className = 'element-grid-full pt-fblock';
+        container.append(this.mainGrid, this.fGrid);
+
+        for (let c = 1; c <= 18; c++) {
+            this.mainGrid.appendChild(this._makeToggle('col', c, 1, c + 1));
+        }
+        for (const [i, r] of MAIN_ROWS.entries()) {
+            this.mainGrid.appendChild(this._makeToggle('row', r, i + 2, 1));
+        }
+        for (const [i, r] of FBLOCK_ROWS.entries()) {
+            this.fGrid.appendChild(this._makeToggle('row', r, i + 1, 1));
+        }
 
         // Calculate atomic numbers once
         const allSymbols = Object.keys(ELEMENT_POSITIONS).sort((a, b) => {
@@ -113,8 +268,11 @@ class PeriodicTable {
             const cell = document.createElement('div');
             cell.className = 'element-cell';
             cell.dataset.symbol = symbol;
-            cell.style.gridColumn = col;
-            cell.style.gridRow = row;
+            cell.dataset.row = row;
+            cell.dataset.col = col;
+            // Shift by one for the toggle gutter (column) and header (main-table row)
+            cell.style.gridColumn = col + 1;
+            cell.style.gridRow = row <= 7 ? row + 1 : FBLOCK_ROWS.indexOf(row) + 1;
 
             const atomicNum = allSymbols.indexOf(symbol) + 1;
 
@@ -128,8 +286,9 @@ class PeriodicTable {
                 this.updateValue(symbol, 0);
                 if (this.onValueChange) this.onValueChange(symbol, 0);
             });
-            this.grid.appendChild(cell);
+            (row <= 7 ? this.mainGrid : this.fGrid).appendChild(cell);
         }
+        this._applyCollapse();
     }
 
     setElements(elements) {
@@ -143,12 +302,18 @@ class PeriodicTable {
     setValues(values) {
         this.values = new Map();
         let maxVal = 0;
+        let expanded = false;
         for (const [sym, val] of Object.entries(values)) {
             const numVal = parseFloat(val) || 0;
             this.values.set(sym, numVal);
             if (numVal > maxVal) maxVal = numVal;
+            if (numVal > 0) expanded = this._ensureVisible(sym) || expanded;
         }
         this.maxValue = maxVal || 1;
+        if (expanded) {
+            this._applyCollapse();
+            this._saveCollapse();
+        }
         this.render();
     }
 
@@ -158,6 +323,10 @@ class PeriodicTable {
 
     updateValue(symbol, value) {
         this.values.set(symbol, value);
+        if (value > 0 && this._ensureVisible(symbol)) {
+            this._applyCollapse();
+            this._saveCollapse();
+        }
         const cell = this.grid.querySelector(`[data-symbol="${symbol}"]`);
         if (cell) {
             if (value > 0) {

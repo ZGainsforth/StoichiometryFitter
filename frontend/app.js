@@ -1269,6 +1269,8 @@ async function init() {
         updateElementValuesTable();
         runQuickQuant();
     };
+    document.getElementById('pt-collapse-unused').addEventListener('click', () => periodicTable.collapseUnused());
+    document.getElementById('pt-expand-all').addEventListener('click', () => periodicTable.expandAll());
 
     await Promise.all([
         loadConfigOptions(),
